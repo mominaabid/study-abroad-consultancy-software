@@ -12,13 +12,13 @@ import {
   DollarSign,
 } from "lucide-react";
 import logo from "../assets/favicon.png";
-
+import { useNavigate } from "react-router-dom";
 export const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
-
+const navigate = useNavigate();
   const menuItems = [
-    { name: "Dashboard", icon: <Home size={20} /> },
-    { name: "Leads", icon: <BarChart size={20} /> },
+    { name: "Dashboard", icon: <Home size={20} />, path: "/" },
+     { name: "Leads", icon: <BarChart size={20} />, path: "/leads" },
     { name: "Counselor", icon: <User size={20} /> },
     { name: "Applications", icon: <Settings size={20} /> },
     { name: "Payments", icon: <DollarSign size={20} /> },
