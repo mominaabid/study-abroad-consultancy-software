@@ -3,12 +3,15 @@ import React, { useState } from 'react';
 export const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  // Default avatar URL (UI Faces or similar service)
+  const defaultAvatar = "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff";
+
   return (
     <nav className="bg-white shadow-md w-full sticky top-0 z-50">
       <div className="max-w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           
-          {/* Left Side: Logo (Hidden when search is open on mobile) */}
+          {/* Left Side: Logo */}
           <div className={`${isSearchOpen ? 'hidden' : 'flex'} flex-shrink-0 items-center`}>
             <span className="text-xl font-bold text-gray-800 tracking-tight">My Dashboard</span>
           </div>
@@ -33,7 +36,7 @@ export const Header = () => {
               </button>
             </div>
 
-            {/* Mobile Search Toggle (Only visible on small screens when search is closed) */}
+            {/* Mobile Search Toggle */}
             {!isSearchOpen && (
               <button 
                 onClick={() => setIsSearchOpen(true)}
@@ -45,7 +48,7 @@ export const Header = () => {
               </button>
             )}
 
-            {/* Notification & Profile (Hidden when search is open on mobile to save space) */}
+            {/* Notification & Profile */}
             <div className={`${isSearchOpen ? 'hidden' : 'flex'} items-center space-x-4 sm:space-x-6`}>
               <button className="text-gray-500 hover:text-blue-600 transition-colors relative p-1">
                 <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
@@ -57,8 +60,9 @@ export const Header = () => {
               <div className="flex items-center cursor-pointer">
                 <img
                   className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border-2 border-gray-100 hover:border-blue-500 transition-all"
-                  src="https://via.placeholder.com/150"
+                  src={defaultAvatar}
                   alt="User profile"
+                  onError={(e) => { e.target.src = "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y"; }}
                 />
               </div>
             </div>
