@@ -676,7 +676,7 @@ const fetchLeads = useCallback(async () => {
   // ── Fetch counsellors ──────────────────────────────────────────
 const fetchCounsellors = useCallback(async () => {
   try {
-    const res = await fetch(`${BASE_URL}/admin/counsellors/getCounsellors`, {
+    const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
