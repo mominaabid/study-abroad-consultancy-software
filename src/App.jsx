@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 // import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 // import DashboardLayout from "./Components/DashboardLayout";
 // import { AdminDashboard } from "./Pages/AdminPage/AdminDashboard";
@@ -56,6 +57,13 @@ export default function App() {
   useEffect(() => {
     dispatch(loadUser());
   }, [dispatch]);
+=======
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {DashboardLayout} from "./Components/DashboardLayout";
+import { AdminDashboard } from "./Pages/AdminPage/AdminDashboard";
+import Leads from "./Pages/AdminPage/Leads";
+import {Counsellor} from "./Pages/AdminPage/Counsellor";
+>>>>>>> Stashed changes
 
   return (
     <BrowserRouter>
