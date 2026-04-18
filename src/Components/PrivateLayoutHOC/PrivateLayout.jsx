@@ -1,43 +1,31 @@
-import { useState, useEffect, useRef } from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import { Header } from "../../Header";
-import { SideBar } from "../../SideBar";
+import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import { Sidebar } from '../Sidebar';
+import Header from '../Header';
+import './PrivateLayout.css';
 
-export const PrivateLayout = () => {
-  const [isOpen, setIsopen] = useState(false);
-  const location = useLocation();
-  const mainRef = useRef<HTMLDivElement>(null);
-
-  const toggleSideBar = () => {
-    setIsopen((prev) => !prev);
-  };
-
-  // 👇 Scroll reset on route change
-  useEffect(() => {
-    if (mainRef.current) {
-      mainRef.current.scrollTo({
-        top: 0,
-        behavior: "instant", // ya "smooth" agar animation chahiye
-      });
-    }
-  }, [location.pathname, mainRef]);
+export default function PrivateLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <Header isOpen={isOpen} toggleSideBar={toggleSideBar} />
+    <div className="private-layout">
+      <Sidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        onHoverChange={setSidebarHovered}
+      />
 
-      <div className="flex flex-1 overflow-hidden">
-        <SideBar isOpen={isOpen} setIsOpen={setIsopen} />
-
-        <main
-          ref={mainRef}
-          className="flex-1 flex flex-col overflow-y-auto bg-gray-50"
-        >
-          <div>
-            <Outlet />
-          </div>
+      {/* Right side shifts right when sidebar is hovered/expanded */}
+      <div
+        className="private-layout__right"
+        style={{ marginLeft: sidebarHovered ? '256px' : '80px' }}
+      >
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="private-layout__content">
+          <Outlet />
         </main>
       </div>
     </div>
   );
-};
+}

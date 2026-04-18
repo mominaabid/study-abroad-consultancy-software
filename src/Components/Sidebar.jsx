@@ -19,12 +19,12 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
 
   const menuItems = [
     { name: "Dashboard", icon: <Home size={20} />, path: "/" },
-    { name: "Leads", icon: <BarChart size={20} />, path: "/leads" },
-    { name: "Counselor", icon: <User size={20} />, path: "/counsellor" },
-    { name: "Applications", icon: <Settings size={20} /> },
-    { name: "Payments", icon: <DollarSign size={20} /> },
-    { name: "Chats", icon: <MessageSquare size={20} /> },
-    { name: "Notification", icon: <Bell size={20} /> },
+    { name: "Leads", icon: <BarChart size={20} />, path: "/admin/leads" },
+    { name: "Counselor", icon: <User size={20} />, path: "/admin/counsellors" },
+    { name: "Applications", icon: <Settings size={20} />, path: "/admin/applications" },
+    { name: "Payments", icon: <DollarSign size={20} />, path: "/admin/payments" },
+    { name: "Chats", icon: <MessageSquare size={20} />, path: "/admin/chats" },
+    { name: "Notification", icon: <Bell size={20} />, path: "/admin/notifications" },
     { name: "Courses", icon: <GraduationCap size={20} /> },
   ];
 

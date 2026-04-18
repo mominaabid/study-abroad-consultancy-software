@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
-import BASE_URL from "../../Content/Url";
+import {BASE_URL} from "../../Content/Url";
 import "./Leads.css";
-
+import {
+  DataTable,
+  AvatarCell,
+  StatusCell,
+  ActionCell,
+  DateCell,
+  BadgeCell,
+  SelectCell,
+  TablePagination,
+  TableSearch
+} from "../../Components/TableComponents";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STAGES = [
@@ -404,11 +414,21 @@ export default function Leads() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // ── Fetch leads with filters ────────────────────────────────────────────────
- const fetchLeads = useCallback(async () => {
+const fetchLeads = useCallback(async () => {
   setLoading(true);
   try {
-    const res = await fetch(`${BASE_URL}/admin/leads`);
+    const token = localStorage.getItem("token"); // 🔥 get token
+
+    const res = await fetch(`${BASE_URL}/admin/leads`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // 🔥 send token
+      },
+    });
+
     const data = await res.json();
+    console.log("API DATA:", data); // optional debug
 
     const leadsData = Array.isArray(data) ? data : (data.data || []);
     setLeads(leadsData);
@@ -416,7 +436,7 @@ export default function Leads() {
     setPagination({
       page: 1,
       totalPages: 1,
-      total: leadsData.length
+      total: leadsData.length,
     });
 
   } catch (err) {
@@ -444,20 +464,33 @@ const filteredLeads = leads.filter((lead) => {
 });
 
   // ── Fetch counsellors ──────────────────────────────────────────
-  const fetchCounsellors = useCallback(async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/admin/users?role=counsellor`, { headers: headersJSON() });
-      const data = await res.json();
-      setCounsellors(data.data || []);
-    } catch {
-      // silently fail
-    }
-  }, []);
+const fetchCounsellors = useCallback(async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/admin/counsellors/getCounsellors`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await res.json();
+
+    console.log("Counsellors API Response:", data);
+
+    // handle both formats: array OR {data: []}
+    const counsellorsData = Array.isArray(data) ? data : (data.data || []);
+
+    setCounsellors(counsellorsData);
+  } catch (err) {
+    console.error("Failed to fetch counsellors:", err);
+    setCounsellors([]);
+  }
+}, []);
 
   // ── Auto-fetch when filters change ─────────────────────────────
  useEffect(() => {
   fetchLeads();
-}, [fetchLeads]);
+}, []);
 
   // ── Fetch counsellors on mount ─────────────────────────────────
   useEffect(() => {
@@ -472,29 +505,41 @@ const filteredLeads = leads.filter((lead) => {
   }, []);
 
   // ── Create / Update lead ───────────────────────────────────────
-  async function handleSave(form) {
-    const payload = {
-      ...form,
-      counsellor_id: form.counsellor_id ? Number(form.counsellor_id) : null,
-    };
+ async function handleSave(form) {
+  const token = localStorage.getItem("token");
 
+  const payload = {
+    ...form,
+    counsellor_id: form.counsellor_id ? Number(form.counsellor_id) : null,
+  };
+
+  const options = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  };
+
+  try {
     if (editLead) {
       await fetch(`${BASE_URL}/admin/leads/${editLead.id}`, {
         method: "PUT",
-        headers: headersJSON(),
-        body: JSON.stringify(payload),
+        ...options,
       });
     } else {
       await fetch(`${BASE_URL}/admin/leads`, {
         method: "POST",
-        headers: headersJSON(),
-        body: JSON.stringify(payload),
+        ...options,
       });
     }
 
     setEditLead(null);
     fetchLeads(currentPage);
+  } catch (err) {
+    console.error("Save lead failed:", err);
   }
+}
 
   // ── Assign counsellor ──────────────────────────────────────────
   async function handleAssign(leadId, counsellor_id) {
@@ -521,7 +566,6 @@ const filteredLeads = leads.filter((lead) => {
       });
     } catch (err) {
       // Revert on error
-      console.log(err)
       fetchLeads(currentPage);
     }
   }
@@ -563,13 +607,13 @@ const leadsByStage = STAGES.reduce((acc, s) => {
   }
 
   // ── Drag handlers ─────────────────────────────────────────────
-  // const handleDragStart = (leadId) => {
-  //   setDraggingLeadId(leadId);
-  // };
+  const handleDragStart = (leadId) => {
+    setDraggingLeadId(leadId);
+  };
 
-  // const handleDragEnd = () => {
-  //   setDraggingLeadId(null);
-  // };
+  const handleDragEnd = () => {
+    setDraggingLeadId(null);
+  };
 
   const handleDrop = async (leadId, newStatus) => {
     setDraggingLeadId(null);
@@ -595,6 +639,7 @@ const leadsByStage = STAGES.reduce((acc, s) => {
 
       {/* ── Page Header ── */}
       <div className="leads-header">
+        <h1 className="leads-title">Leads Management</h1>
         <div className="leads-header-actions">
           <div className="search-box">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
