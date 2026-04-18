@@ -15,7 +15,6 @@ import {
 export const MainContent = () => {
   return (
     <main className="bg-gray-50 min-h-screen">
-      {/* Top Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Total Leads"
@@ -44,7 +43,6 @@ export const MainContent = () => {
         />
       </div>
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
           <h3 className="font-bold text-gray-800 mb-4">Lead Funnel</h3>
@@ -59,7 +57,6 @@ export const MainContent = () => {
         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden">
           <h3 className="font-bold text-gray-800 mb-2">Revenue Overview</h3>
           <div className="h-40 bg-gradient-to-t from-gray-50 to-white flex items-end">
-            {/* Simple SVG Area Chart Mockup */}
             <svg
               className="w-full h-full text-gray-300"
               viewBox="0 0 400 100"
@@ -81,9 +78,7 @@ export const MainContent = () => {
         </div>
       </div>
 
-      {/* Bottom Section: Table & Sidebars */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Table Section */}
         <div className="xl:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h3 className="font-bold text-gray-800">Recent Leads</h3>
@@ -145,7 +140,6 @@ export const MainContent = () => {
           </div>
         </div>
 
-        {/* Right Sidebar: Quick Actions & Activity */}
         <div className="space-y-6">
           <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
             <h3 className="font-bold text-gray-800 mb-4">Quick Actions</h3>
@@ -205,8 +199,6 @@ export const MainContent = () => {
   );
 };
 
-/* Sub-components for cleaner structure */
-
 const StatCard = ({ title, value, change, icon, isNegative }) => (
   <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-start">
     <div>
@@ -229,7 +221,6 @@ const ProgressBar = ({ label, width }) => (
       <span>{label}</span>
     </div>
     <div className="w-full bg-gray-100 h-6 rounded">
-      {/* Updated background color here */}
       <div
         className="h-full rounded"
         style={{ width, backgroundColor: "#009E99" }}

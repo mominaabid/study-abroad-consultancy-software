@@ -457,7 +457,7 @@ const filteredLeads = leads.filter((lead) => {
   // ── Auto-fetch when filters change ─────────────────────────────
  useEffect(() => {
   fetchLeads();
-}, []);
+}, [fetchLeads]);
 
   // ── Fetch counsellors on mount ─────────────────────────────────
   useEffect(() => {
@@ -521,6 +521,7 @@ const filteredLeads = leads.filter((lead) => {
       });
     } catch (err) {
       // Revert on error
+      console.log(err)
       fetchLeads(currentPage);
     }
   }
@@ -562,13 +563,13 @@ const leadsByStage = STAGES.reduce((acc, s) => {
   }
 
   // ── Drag handlers ─────────────────────────────────────────────
-  const handleDragStart = (leadId) => {
-    setDraggingLeadId(leadId);
-  };
+  // const handleDragStart = (leadId) => {
+  //   setDraggingLeadId(leadId);
+  // };
 
-  const handleDragEnd = () => {
-    setDraggingLeadId(null);
-  };
+  // const handleDragEnd = () => {
+  //   setDraggingLeadId(null);
+  // };
 
   const handleDrop = async (leadId, newStatus) => {
     setDraggingLeadId(null);
@@ -594,7 +595,6 @@ const leadsByStage = STAGES.reduce((acc, s) => {
 
       {/* ── Page Header ── */}
       <div className="leads-header">
-        <h1 className="leads-title">Leads Management</h1>
         <div className="leads-header-actions">
           <div className="search-box">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

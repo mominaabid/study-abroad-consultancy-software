@@ -4,7 +4,6 @@ import {
   Settings,
   User,
   BarChart,
-  Menu,
   X,
   MessageSquare,
   Bell,
@@ -13,13 +12,15 @@ import {
 } from "lucide-react";
 import logo from "../assets/favicon.png";
 import { useNavigate } from "react-router-dom";
-export const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(true);
-const navigate = useNavigate();
+
+export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
+
   const menuItems = [
     { name: "Dashboard", icon: <Home size={20} />, path: "/" },
-     { name: "Leads", icon: <BarChart size={20} />, path: "/leads" },
-    { name: "Counselor", icon: <User size={20} /> },
+    { name: "Leads", icon: <BarChart size={20} />, path: "/leads" },
+    { name: "Counselor", icon: <User size={20} />, path: "/counsellor" },
     { name: "Applications", icon: <Settings size={20} /> },
     { name: "Payments", icon: <DollarSign size={20} /> },
     { name: "Chats", icon: <MessageSquare size={20} /> },
@@ -27,70 +28,72 @@ const navigate = useNavigate();
     { name: "Courses", icon: <GraduationCap size={20} /> },
   ];
 
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (onHoverChange) onHoverChange(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (onHoverChange) onHoverChange(false);
+  };
+
+  const isExpanded = isHovered || (isOpen && window.innerWidth < 768);
+
   return (
     <>
-      {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/20 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* Main Sidebar Container */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 md:sticky md:top-0 h-screen bg-white text-black transition-all duration-300 p-4 flex flex-col border-r border-gray-100
-        ${isOpen ? "w-64 translate-x-0" : "w-20 -translate-x-full md:translate-x-0"}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`fixed inset-y-0 left-0 z-50 bg-white text-black transition-all duration-300 p-4 flex flex-col border-r border-gray-100 shadow-xl
+        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+        md:translate-x-0
+        ${isExpanded ? "w-64" : "w-20"}`}
       >
-        {/* Header / Logo Section */}
-        <div className="flex items-center justify-between mb-8 min-h-[40px] flex-shrink-0">
+        <div className="flex items-center justify-between mb-8">
           <div
-            className={`flex items-center gap-3 transition-all duration-300 ${!isOpen && "md:opacity-0 md:w-0 overflow-hidden"}`}
+            className="flex items-center gap-3 min-w-max cursor-pointer"
+            onClick={() => navigate("/")}
           >
-            <img src={logo} alt="Logo" className="h-8 w-auto object-contain" />
-            <span className="text-lg font-bold tracking-tight text-gray-800">
-              Educatia
-            </span>
+            <img src={logo} alt="Logo" className="h-8 w-8 object-contain" />
+            {isExpanded && (
+              <span className="text-lg font-bold text-gray-800 transition-opacity duration-300">
+                Educatia
+              </span>
+            )}
           </div>
 
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="p-2 rounded-lg hover:bg-[#009E99] hover:text-white transition-colors"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          <button className="md:hidden p-1" onClick={() => setIsOpen(false)}>
+            <X size={24} />
           </button>
         </div>
 
-        {/* Navigation Links - Added overflow-y-auto in case menu is long */}
-        <nav className="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 space-y-2 overflow-y-auto overflow-x-hidden">
           {menuItems.map((item, index) => (
             <div
               key={index}
+              onClick={() => {
+                if (item.path) navigate(item.path);
+                if (window.innerWidth < 768) setIsOpen(false);
+              }}
               className="flex items-center p-3 rounded-xl cursor-pointer hover:bg-[#009E99] hover:text-white transition-all group"
-              title={!isOpen ? item.name : ""}
             >
-              <div className="min-w-[24px]">{item.icon}</div>
-              <span
-                className={`ml-4 font-medium whitespace-nowrap transition-all duration-300 ${!isOpen ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}
-              >
-                {item.name}
-              </span>
+              <div className="min-w-[20px]">{item.icon}</div>
+              {isExpanded && (
+                <span className="ml-4 whitespace-nowrap opacity-100 transition-opacity duration-300">
+                  {item.name}
+                </span>
+              )}
             </div>
           ))}
         </nav>
-
-        {/* Footer */}
-        <div className="border-t border-gray-200 pt-4 mt-auto flex-shrink-0">
-          <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-blue-500 flex-shrink-0" />
-            <div
-              className={`ml-3 transition-all duration-300 ${!isOpen ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}
-            >
-              <p className="text-sm font-medium truncate">Nadeem Munir</p>
-              <p className="text-xs text-gray-500 truncate">nadeem@admin.com</p>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

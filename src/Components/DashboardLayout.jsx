@@ -1,30 +1,31 @@
-import React, { useState } from 'react';
-import {Sidebar} from './Sidebar';
-import {Header}  from './Header';
-import {Footer}  from './Footer';
-import { Outlet } from 'react-router-dom';
+import React, { useState } from "react";
+import { Sidebar } from "./Sidebar";
+import { Header } from "./Header";
+import { Footer } from "./Footer";
+import { Outlet } from "react-router-dom";
 
 export const DashboardLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false); 
 
-  const toggleSideBar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleSideBar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Fixed width based on state */}
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+    <div className="flex min-h-screen bg-gray-50 overflow-x-hidden">
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        setIsOpen={setIsSidebarOpen} 
+        onHoverChange={setIsHovered} 
+      />
 
-      {/* Main Container */}
-      <div className="flex flex-col flex-1 transition-all duration-300">
-        <Header toggleSideBar={toggleSideBar} isOpen={isSidebarOpen} />
-        
-        {/* Scrollable Content Area */}
+      <div
+        className={`flex flex-col flex-1 min-w-0 transition-all duration-300
+        ${(isSidebarOpen || isHovered) ? "md:ml-64" : "md:ml-20"}`}
+      >
+        <Header toggleSideBar={toggleSideBar} />
         <main className="flex-grow p-4 sm:p-6">
-          <Outlet /> {/* This renders AdminDashboard or other routes */}
+          <Outlet />
         </main>
-
         <Footer />
       </div>
     </div>
