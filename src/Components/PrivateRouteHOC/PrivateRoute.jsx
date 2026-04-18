@@ -1,16 +1,16 @@
 import { useSelector } from 'react-redux';
 import { Navigate, Outlet } from 'react-router-dom';
 import { selectIsAuth, selectAuthLoading, selectRole } from '../../redux/slices/authSlice';
-
+ 
 // Usage:
 //   <PrivateRoute allowedRoles={['admin']} />
 //   <PrivateRoute allowedRoles={['admin', 'counsellor']} />
-
+ 
 export default function PrivateRoute({ allowedRoles }) {
   const isAuthenticated = useSelector(selectIsAuth);
   const loading         = useSelector(selectAuthLoading);
   const role            = useSelector(selectRole);
-
+ 
   // Still checking token on app load — show nothing (or spinner)
   if (loading) {
     return (
@@ -27,10 +27,10 @@ export default function PrivateRoute({ allowedRoles }) {
       </div>
     );
   }
-
+ 
   // Not logged in at all → go to login
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-
+ 
   // Logged in but wrong role → go to their own dashboard
   if (allowedRoles && !allowedRoles.includes(role)) {
     if (role === 'admin')      return <Navigate to="/admin/dashboard" replace />;
@@ -38,6 +38,6 @@ export default function PrivateRoute({ allowedRoles }) {
     if (role === 'student')    return <Navigate to="/student/dashboard" replace />;
     return <Navigate to="/login" replace />;
   }
-
+ 
   return <Outlet />;
 }

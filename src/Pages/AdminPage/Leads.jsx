@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-<<<<<<< Updated upstream
 import {BASE_URL} from "../../Content/Url";
-=======
-import { BASE_URL } from "../../Content/Url";
->>>>>>> Stashed changes
 import "./Leads.css";
 import {
   DataTable,
@@ -646,7 +642,6 @@ export default function Leads() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // ── Fetch leads with filters ────────────────────────────────────────────────
-<<<<<<< Updated upstream
 const fetchLeads = useCallback(async () => {
   setLoading(true);
   try {
@@ -662,55 +657,23 @@ const fetchLeads = useCallback(async () => {
 
     const data = await res.json();
     console.log("API DATA:", data); // optional debug
-=======
-  const fetchLeads = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE_URL}/admin/leads`);
-      const data = await res.json();
->>>>>>> Stashed changes
 
-      const leadsData = Array.isArray(data) ? data : data.data || [];
-      setLeads(leadsData);
+    const leadsData = Array.isArray(data) ? data : data.data || [];
+    setLeads(leadsData);
 
-<<<<<<< Updated upstream
     setPagination({
       page: 1,
       totalPages: 1,
       total: leadsData.length,
     });
-=======
-      setPagination({
-        page: 1,
-        totalPages: 1,
-        total: leadsData.length,
-      });
-    } catch (err) {
-      console.error("Failed to fetch leads:", err);
-      setLeads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  const filteredLeads = leads.filter((lead) => {
-    const matchSearch =
-      lead.name?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.email?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.phone?.toLowerCase().includes(search.toLowerCase());
->>>>>>> Stashed changes
-
-    const matchCountry =
-      filterCountry === "All Countries" ||
-      lead.preferred_country === filterCountry;
-
-    const matchStatus =
-      filterStatus === "All Status" || lead.status === filterStatus;
-
-    return matchSearch && matchCountry && matchStatus;
-  });
+  } catch (err) {
+    console.error("Failed to fetch leads:", err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   // ── Fetch counsellors ──────────────────────────────────────────
-<<<<<<< Updated upstream
 const fetchCounsellors = useCallback(async () => {
   try {
     const res = await fetch(`${BASE_URL}/admin/counsellors/getCounsellors`, {
@@ -738,24 +701,6 @@ const fetchCounsellors = useCallback(async () => {
  useEffect(() => {
   fetchLeads();
 }, []);
-=======
-  const fetchCounsellors = useCallback(async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/admin/users?role=counsellor`, {
-        headers: headersJSON(),
-      });
-      const data = await res.json();
-      setCounsellors(data.data || []);
-    } catch {
-      // silently fail
-    }
-  }, []);
-
-  // ── Auto-fetch when filters change ─────────────────────────────
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
->>>>>>> Stashed changes
 
   // ── Fetch counsellors on mount ─────────────────────────────────
   useEffect(() => {
@@ -834,10 +779,6 @@ const fetchCounsellors = useCallback(async () => {
       });
     } catch (err) {
       // Revert on error
-<<<<<<< Updated upstream
-=======
-      console.log(err);
->>>>>>> Stashed changes
       fetchLeads(currentPage);
     }
   }
@@ -886,7 +827,19 @@ const fetchCounsellors = useCallback(async () => {
     a.download = "leads.csv";
     a.click();
   }
-
+const filteredLeads = leads.filter((lead) => {
+  const matchesSearch =
+    !search ||
+    lead.name?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.email?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.phone?.includes(search);
+  const matchesCountry =
+    filterCountry === "All Countries" ||
+    lead.preferred_country === filterCountry;
+  const matchesStatus =
+    filterStatus === "All Status" || lead.status === filterStatus;
+  return matchesSearch && matchesCountry && matchesStatus;
+});
   // ── Group leads by stage for Kanban ───────────────────────────
   const leadsByStage = STAGES.reduce((acc, s) => {
     acc[s.key] = filteredLeads.filter((l) => l.status === s.key);

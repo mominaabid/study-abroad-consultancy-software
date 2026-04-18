@@ -55,7 +55,7 @@ const authSlice = createSlice({
     user: null,        // { id, name, email, role }
     token: null,
     isAuthenticated: false,
-    loading: true,     // true on app load — waiting for loadUser
+    loading: false,// true on app load — waiting for loadUser
     error: null,
   },
   reducers: {
@@ -119,4 +119,4 @@ export const selectToken         = (state) => state.auth.token;
 export const selectIsAuth        = (state) => state.auth.isAuthenticated;
 export const selectAuthLoading   = (state) => state.auth.loading;
 export const selectAuthError     = (state) => state.auth.error;
-export const selectRole          = (state) => state.auth.user?.role;
+export const selectRole = (state) => state.auth?.user?.role || null;
