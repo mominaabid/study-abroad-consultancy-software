@@ -114,7 +114,7 @@ export const EditCounsellorModal = ({
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className={labelClass}>Role</label>
             <input
               type="text"
@@ -125,7 +125,7 @@ export const EditCounsellorModal = ({
                 setFormData({ ...formData, role: e.target.value })
               }
             />
-          </div>
+          </div> */}
 
           <div className="flex items-center justify-center gap-3 pt-4">
             <button

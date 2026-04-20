@@ -8,7 +8,7 @@ const INITIAL_STATE = {
   name: "",
   email: "",
   phone: "",
-  role: "",
+  role: "counsellor",
   status: "active",
 };
 
@@ -106,7 +106,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
             />
           </div>
 
-          <div>
+          {/* <div>
             <label className={labelClass}>Role</label>
             <input
               type="text"
@@ -117,7 +117,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
                 setFormData({ ...formData, role: e.target.value })
               }
             />
-          </div>
+          </div> */}
 
           <div className="flex items-center justify-center gap-3 pt-4">
             <button

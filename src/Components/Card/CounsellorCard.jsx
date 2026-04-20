@@ -1,25 +1,36 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   Mail,
   Phone,
-  Edit2,
   TrendingUp,
   Users,
+  MoreHorizontal,
   Eye,
+  Edit3,
   Trash2,
 } from "lucide-react";
 
 export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
   const { name, role, email, phone, status, assigned_leads, conversion_rate } =
     counselor;
 
-  const isActive = status === "active";
+  // Bahar click karne se menu close ho jaye
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-      {/* Header Section */}
-      <div className="p-5 pb-4 border-b border-slate-50">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-visible group hover:shadow-md transition-all">
+      <div className="p-5 pb-4">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-600">
@@ -27,14 +38,62 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
             </div>
             <div>
               <h3 className="font-bold text-slate-800 leading-tight">{name}</h3>
-              <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mt-0.5">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                 {role}
               </p>
             </div>
           </div>
+
+          {/* Three Dots Menu Container */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+            >
+              <MoreHorizontal size={20} />
+            </button>
+
+            {/* Tooltip / Dropdown Menu */}
+            {showMenu && (
+              <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-10 py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                <button
+                  onClick={() => {
+                    onView();
+                    setShowMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  <Eye size={14} className="text-teal-500" /> View
+                </button>
+                <button
+                  onClick={() => {
+                    onEdit();
+                    setShowMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  <Edit3 size={14} className="text-blue-500" /> Edit
+                </button>
+                <hr className="my-1 border-slate-100" />
+                <button
+                  onClick={() => {
+                    onDelete();
+                    setShowMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Status Badge niche move kar diya design balance ke liye */}
+        <div className="mt-3">
           <span
-            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-              isActive
+            className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+              status === "active"
                 ? "bg-emerald-100 text-emerald-700"
                 : "bg-slate-100 text-slate-600"
             }`}
@@ -44,62 +103,32 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
         </div>
       </div>
 
-      {/* Contact Info */}
-      <div className="px-5 py-4 space-y-2">
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <Mail size={14} className="text-slate-400" />
+      {/* Info Section */}
+      <div className="px-5 py-3 space-y-1.5 border-t border-slate-50">
+        <div className="flex items-center gap-2 text-xs text-slate-600">
+          <Mail size={12} className="text-slate-400" />
           <span className="truncate">{email}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <Phone size={14} className="text-slate-400" />
+        <div className="flex items-center gap-2 text-xs text-slate-600">
+          <Phone size={12} className="text-slate-400" />
           <span>{phone}</span>
         </div>
       </div>
 
       {/* Stats Section */}
-      <div className="px-5 py-4 bg-slate-50 flex border-t border-slate-100">
-        <div className="flex-1">
-          <div className="flex items-center gap-1 text-slate-500 text-xs mb-1">
-            <Users size={12} />
-            <span>Leads</span>
-          </div>
+      <div className="px-5 py-4 bg-slate-50/50 flex border-t border-slate-100 rounded-b-xl">
+        <div className="flex-1 text-center border-r border-slate-200">
+          <p className="text-[10px] text-slate-500 uppercase font-bold">
+            Leads
+          </p>
           <p className="font-bold text-slate-700">{assigned_leads || 0}</p>
         </div>
-        <div className="w-[1px] bg-slate-200 mx-4"></div>
-        <div className="flex-1">
-          <div className="flex items-center gap-1 text-slate-500 text-xs mb-1">
-            <TrendingUp size={12} />
-            <span>Conversion</span>
-          </div>
-          <p className="font-bold text-slate-700">{conversion_rate || 0}%</p>
+        <div className="flex-1 text-center">
+          <p className="text-[10px] text-slate-500 uppercase font-bold">
+            Conv.
+          </p>
+          <p className="font-bold text-teal-600">{conversion_rate || 0}%</p>
         </div>
-      </div>
-
-      {/* Action Footer */}
-      <div className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
-        <button
-          onClick={onView}
-          className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-100"
-        >
-          <Eye size={14} />
-          View
-        </button>
-
-        <button
-          onClick={onEdit}
-          className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold text-teal-600 hover:bg-teal-50 rounded-lg transition-colors border border-teal-50"
-        >
-          <Edit2 size={14} />
-          Edit
-        </button>
-
-        <button
-          onClick={onDelete}
-          className="p-2 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all border border-transparent hover:border-red-100"
-          title="Delete Counselor"
-        >
-          <Trash2 size={16} />
-        </button>
       </div>
     </div>
   );

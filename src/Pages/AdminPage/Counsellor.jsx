@@ -13,6 +13,8 @@ import { DeleteConfirmationModal } from "../../Components/DeleteConfirmationModa
 
 export const Counsellor = () => {
   const [allCounsellors, setAllCounsellors] = useState([]);
+  const [leads, setLeads] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -37,10 +39,27 @@ export const Counsellor = () => {
     }
   }, []);
 
+  const fetchLeads = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get(`${BASE_URL}/admin/leads`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = Array.isArray(res.data) ? res.data : res.data.data || [];
+      setLeads(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await fetchCounsellors();
+      await Promise.all([fetchCounsellors(), fetchLeads()]);
       setLoading(false);
     };
     init();
@@ -101,14 +120,27 @@ export const Counsellor = () => {
     };
   }, [allCounsellors]);
 
+  const counsellorsWithLeads = useMemo(() => {
+    return allCounsellors.map((c) => {
+      const count = leads.filter(
+        (l) => l.counsellor_id === (c.id || c._id),
+      ).length;
+
+      return {
+        ...c,
+        assigned_leads: count,
+      };
+    });
+  }, [allCounsellors, leads]);
+
   const filteredCounsellors = useMemo(() => {
-    return allCounsellors.filter((c) => {
+    return counsellorsWithLeads.filter((c) => {
       const name = c.name?.toLowerCase() || "";
       const role = c.role?.toLowerCase() || "";
       const q = search.toLowerCase();
       return name.includes(q) || role.includes(q);
     });
-  }, [allCounsellors, search]);
+  }, [counsellorsWithLeads, search]);
 
   if (loading) {
     return (
@@ -120,16 +152,8 @@ export const Counsellor = () => {
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen font-sans text-slate-700">
-      <div className="max-w-full mx-auto px-3 py-4">
-        <div className="flex justify-between items-center mb-4">
-          <button
-            onClick={() => setIsAddOpen(true)}
-            className="px-4 py-2 bg-[#00A78E] text-white rounded-lg hover:bg-[#008f7a]"
-          >
-            + Add Counsellor
-          </button>
-        </div>
-
+      <div className="max-w-full mx-auto p-4">
+        {/* Statistics Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <CounsellorStatCard label="Total Counselors" value={stats.total} />
           <CounsellorStatCard label="Active" value={stats.active} />
@@ -140,7 +164,9 @@ export const Counsellor = () => {
           />
         </div>
 
-        <div className="mb-6">
+        {/* Search and Add Button Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+          {/* Search Bar - Top Left */}
           <div className="relative w-full sm:w-96">
             <Search
               className="absolute left-3 top-2.5 text-slate-400"
@@ -153,8 +179,17 @@ export const Counsellor = () => {
               className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
+
+          {/* Add Button - Top Right */}
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="w-full sm:w-auto px-4 py-2 bg-[#009E99] text-white rounded-lg hover:bg-[#008f7a] transition-colors"
+          >
+            + Add Counsellor
+          </button>
         </div>
 
+        {/* Counsellor Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredCounsellors.map((c) => (
             <CounselorCard
@@ -174,6 +209,7 @@ export const Counsellor = () => {
         )}
       </div>
 
+      {/* Modals */}
       <AddCounsellorModal
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}

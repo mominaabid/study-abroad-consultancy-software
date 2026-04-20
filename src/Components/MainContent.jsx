@@ -14,7 +14,7 @@ import {
 
 export const MainContent = () => {
   return (
-    <main className="bg-gray-50 min-h-screen">
+    <main className="p-4 bg-gray-50 min-h-screen">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Total Leads"
