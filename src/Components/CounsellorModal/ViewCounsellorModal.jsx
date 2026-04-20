@@ -1,90 +1,97 @@
 import React from "react";
-import { X, Mail, Phone, Briefcase, Award, TrendingUp, Users } from "lucide-react";
+import { X, Mail, Phone, Briefcase, User, CreditCard, MapPin, TrendingUp, Users } from "lucide-react";
 
 export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
   if (!isOpen || !counselor) return null;
 
   const detailItem = (icon, label, value) => (
-    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-      <div className="text-teal-600 bg-teal-50 p-2 rounded-full">
+    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-teal-100 transition-colors">
+      <div className="text-teal-600 bg-teal-50 p-2 rounded-lg">
         {icon}
       </div>
-      <div>
-        <p className="text-xs text-slate-500 uppercase font-semibold">{label}</p>
-        <p className="text-sm text-slate-800 font-medium">{value || "N/A"}</p>
+      <div className="overflow-hidden">
+        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">{label}</p>
+        <p className="text-sm text-slate-800 font-medium truncate">{value || "N/A"}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-xl font-bold text-slate-800">Counsellor Profile</h2>
-          <button 
-            onClick={onClose}
-            className="p-1 hover:bg-slate-200 rounded-full transition-colors"
-          >
-            <X size={20} className="text-slate-500" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Profile Section */}
-            <div className="flex flex-col items-center text-center space-y-3 md:w-1/3 border-b md:border-b-0 md:border-r border-slate-100 pb-6 md:pb-0 md:pr-6">
-              <div className="w-24 h-24 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-3xl font-bold border-4 border-white shadow-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        
+        {/* Header with Background Pattern */}
+        <div className="relative px-8 py-6 bg-[#00A78E] text-white">
+          <div className="flex justify-between items-start relative z-10">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-md text-white rounded-full flex items-center justify-center text-2xl font-bold border-2 border-white/30">
                 {counselor.name?.charAt(0).toUpperCase()}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900">{counselor.name}</h3>
-                <span className={`inline-block px-3 py-1 mt-1 rounded-full text-xs font-semibold ${
-                  counselor.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                }`}>
-                  {counselor.status?.toUpperCase()}
-                </span>
+                <h2 className="text-2xl font-bold leading-tight">{counselor.name}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                    counselor.status === "active" ? "bg-white text-[#00A78E]" : "bg-red-500 text-white"
+                  }`}>
+                    {counselor.status || "active"}
+                  </span>
+                  <span className="text-teal-100 text-sm opacity-80">| {counselor.role || "Counsellor"}</span>
+                </div>
               </div>
             </div>
+            <button 
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+        </div>
 
-            {/* Details Grid */}
-            <div className="flex-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {detailItem(<Briefcase size={18} />, "Role", counselor.role)}
-                {detailItem(<Mail size={18} />, "Email", counselor.email)}
-                {detailItem(<Phone size={18} />, "Contact", counselor.phone)}
-                {detailItem(<Award size={18} />, "Experience", counselor.experience ? `${counselor.experience} Years` : "N/A")}
+        {/* Content */}
+        <div className="p-8">
+          <div className="space-y-6">
+            
+            {/* Primary Info Grid */}
+            <section>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Personal Information</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {detailItem(<User size={18} />, "Father Name", counselor.father_name)}
+                {detailItem(<CreditCard size={18} />, "CNIC", counselor.cnic)}
+                {detailItem(<Mail size={18} />, "Email Address", counselor.email)}
+                {detailItem(<Phone size={18} />, "Phone Number", counselor.phone)}
+                <div className="sm:col-span-2">
+                  {detailItem(<MapPin size={18} />, "Residential Address", counselor.address)}
+                </div>
               </div>
+            </section>
 
-              {/* Stats Section */}
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="border border-slate-100 rounded-xl p-4 bg-gradient-to-br from-white to-slate-50">
-                  <div className="flex items-center gap-2 text-slate-500 mb-1">
-                    <Users size={16} />
-                    <span className="text-sm font-medium">Assigned Leads</span>
-                  </div>
+            {/* Performance Stats */}
+            <section>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Performance Overview</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-teal-50/50 border border-teal-100 flex flex-col items-center justify-center text-center">
+                  <Users className="text-teal-600 mb-2" size={24} />
                   <p className="text-2xl font-bold text-slate-800">{counselor.assigned_leads || 0}</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Assigned Leads</p>
                 </div>
-                <div className="border border-slate-100 rounded-xl p-4 bg-gradient-to-br from-white to-slate-50">
-                  <div className="flex items-center gap-2 text-slate-500 mb-1">
-                    <TrendingUp size={16} />
-                    <span className="text-sm font-medium">Conversion Rate</span>
-                  </div>
-                  <p className="text-2xl font-bold text-teal-600">{counselor.conversion_rate || 0}%</p>
+                <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex flex-col items-center justify-center text-center">
+                  <TrendingUp className="text-orange-600 mb-2" size={24} />
+                  <p className="text-2xl font-bold text-slate-800">{counselor.conversion_rate || 0}%</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Conversion Rate</p>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors text-sm font-medium"
+            className="px-8 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-all text-sm font-semibold shadow-lg shadow-slate-200"
           >
-            Close
+            Done
           </button>
         </div>
       </div>
