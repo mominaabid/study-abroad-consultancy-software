@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BASE_URL } from "../../Content/Url";
+import {BASE_URL} from "../../Content/Url";
 import "./Leads.css";
 import {
   DataTable,
@@ -10,7 +10,7 @@ import {
   BadgeCell,
   SelectCell,
   TablePagination,
-  TableSearch,
+  TableSearch
 } from "../../Components/TableComponents";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -642,65 +642,65 @@ export default function Leads() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // ── Fetch leads with filters ────────────────────────────────────────────────
-  const fetchLeads = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token"); // 🔥 get token
+const fetchLeads = useCallback(async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("token"); // 🔥 get token
 
-      const res = await fetch(`${BASE_URL}/admin/leads`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // 🔥 send token
-        },
-      });
+    const res = await fetch(`${BASE_URL}/admin/leads`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // 🔥 send token
+      },
+    });
 
-      const data = await res.json();
-      console.log("API DATA:", data); // optional debug
+    const data = await res.json();
+    console.log("API DATA:", data); // optional debug
 
-      const leadsData = Array.isArray(data) ? data : data.data || [];
-      setLeads(leadsData);
+    const leadsData = Array.isArray(data) ? data : data.data || [];
+    setLeads(leadsData);
 
-      setPagination({
-        page: 1,
-        totalPages: 1,
-        total: leadsData.length,
-      });
-    } catch (err) {
-      console.error("Failed to fetch leads:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    setPagination({
+      page: 1,
+      totalPages: 1,
+      total: leadsData.length,
+    });
+  } catch (err) {
+    console.error("Failed to fetch leads:", err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   // ── Fetch counsellors ──────────────────────────────────────────
-  const fetchCounsellors = useCallback(async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+const fetchCounsellors = useCallback(async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      console.log("Counsellors API Response:", data);
+    console.log("Counsellors API Response:", data);
 
-      // handle both formats: array OR {data: []}
-      const counsellorsData = Array.isArray(data) ? data : data.data || [];
+    // handle both formats: array OR {data: []}
+    const counsellorsData = Array.isArray(data) ? data : (data.data || []);
 
-      setCounsellors(counsellorsData);
-    } catch (err) {
-      console.error("Failed to fetch counsellors:", err);
-      setCounsellors([]);
-    }
-  }, []);
+    setCounsellors(counsellorsData);
+  } catch (err) {
+    console.error("Failed to fetch counsellors:", err);
+    setCounsellors([]);
+  }
+}, []);
 
   // ── Auto-fetch when filters change ─────────────────────────────
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+ useEffect(() => {
+  fetchLeads();
+}, []);
 
   // ── Fetch counsellors on mount ─────────────────────────────────
   useEffect(() => {
@@ -715,41 +715,41 @@ export default function Leads() {
   }, []);
 
   // ── Create / Update lead ───────────────────────────────────────
-  async function handleSave(form) {
-    const token = localStorage.getItem("token");
+ async function handleSave(form) {
+  const token = localStorage.getItem("token");
 
-    const payload = {
-      ...form,
-      counsellor_id: form.counsellor_id ? Number(form.counsellor_id) : null,
-    };
+  const payload = {
+    ...form,
+    counsellor_id: form.counsellor_id ? Number(form.counsellor_id) : null,
+  };
 
-    const options = {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    };
+  const options = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  };
 
-    try {
-      if (editLead) {
-        await fetch(`${BASE_URL}/admin/leads/${editLead.id}`, {
-          method: "PUT",
-          ...options,
-        });
-      } else {
-        await fetch(`${BASE_URL}/admin/leads`, {
-          method: "POST",
-          ...options,
-        });
-      }
-
-      setEditLead(null);
-      fetchLeads(currentPage);
-    } catch (err) {
-      console.error("Save lead failed:", err);
+  try {
+    if (editLead) {
+      await fetch(`${BASE_URL}/admin/leads/${editLead.id}`, {
+        method: "PUT",
+        ...options,
+      });
+    } else {
+      await fetch(`${BASE_URL}/admin/leads`, {
+        method: "POST",
+        ...options,
+      });
     }
+
+    setEditLead(null);
+    fetchLeads(currentPage);
+  } catch (err) {
+    console.error("Save lead failed:", err);
   }
+}
 
   // ── Assign counsellor ──────────────────────────────────────────
   async function handleAssign(leadId, counsellor_id) {
@@ -778,7 +778,6 @@ export default function Leads() {
         body: JSON.stringify({ status }),
       });
     } catch (err) {
-      console.log(err);
       // Revert on error
       fetchLeads(currentPage);
     }
@@ -828,19 +827,19 @@ export default function Leads() {
     a.download = "leads.csv";
     a.click();
   }
-  const filteredLeads = leads.filter((lead) => {
-    const matchesSearch =
-      !search ||
-      lead.name?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.email?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.phone?.includes(search);
-    const matchesCountry =
-      filterCountry === "All Countries" ||
-      lead.preferred_country === filterCountry;
-    const matchesStatus =
-      filterStatus === "All Status" || lead.status === filterStatus;
-    return matchesSearch && matchesCountry && matchesStatus;
-  });
+const filteredLeads = leads.filter((lead) => {
+  const matchesSearch =
+    !search ||
+    lead.name?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.email?.toLowerCase().includes(search.toLowerCase()) ||
+    lead.phone?.includes(search);
+  const matchesCountry =
+    filterCountry === "All Countries" ||
+    lead.preferred_country === filterCountry;
+  const matchesStatus =
+    filterStatus === "All Status" || lead.status === filterStatus;
+  return matchesSearch && matchesCountry && matchesStatus;
+});
   // ── Group leads by stage for Kanban ───────────────────────────
   const leadsByStage = STAGES.reduce((acc, s) => {
     acc[s.key] = filteredLeads.filter((l) => l.status === s.key);
@@ -854,13 +853,13 @@ export default function Leads() {
   }
 
   // ── Drag handlers ─────────────────────────────────────────────
-  // const handleDragStart = (leadId) => {
-  //   setDraggingLeadId(leadId);
-  // };
+  const handleDragStart = (leadId) => {
+    setDraggingLeadId(leadId);
+  };
 
-  // const handleDragEnd = () => {
-  //   setDraggingLeadId(null);
-  // };
+  const handleDragEnd = () => {
+    setDraggingLeadId(null);
+  };
 
   const handleDrop = async (leadId, newStatus) => {
     setDraggingLeadId(null);
