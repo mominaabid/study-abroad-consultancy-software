@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import logo from '../../assets/Educatia-Logo.png';
+
 import {
   loginUser,
   clearError,
@@ -9,12 +12,35 @@ import {
   selectIsAuth,
   selectRole,
 } from '../../redux/slices/authSlice';
-import './Login.css';
 
 const ROLE_PATHS = {
-  admin:      '/admin/dashboard',
+  admin: '/admin/dashboard',
   counsellor: '/counsellor/dashboard',
-  student:    '/student/dashboard',
+  student: '/student/dashboard',
+};
+
+// Animation Variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15 }
+  }
+};
+
+const floatAnimation = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.8, ease: "easeOut" }
+  }
 };
 
 export default function Login() {
@@ -22,16 +48,15 @@ export default function Login() {
   const navigate = useNavigate();
 
   const loading = useSelector(selectAuthLoading);
-  const error   = useSelector(selectAuthError);
-  const isAuth  = useSelector(selectIsAuth);
-  const role    = useSelector(selectRole);
+  const error = useSelector(selectAuthError);
+  const isAuth = useSelector(selectIsAuth);
+  const role = useSelector(selectRole);
 
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [touched,  setTouched]  = useState({ email: false, password: false });
+  const [touched, setTouched] = useState({ email: false, password: false });
 
-  // Redirect once authenticated
   useEffect(() => {
     if (isAuth && role && ROLE_PATHS[role]) {
       navigate(ROLE_PATHS[role], { replace: true });
@@ -46,193 +71,188 @@ export default function Login() {
     dispatch(loginUser({ email, password }));
   }
 
-  const emailErr    = touched.email    && !email;
+  const emailErr = touched.email && !email;
   const passwordErr = touched.password && !password;
 
   return (
-    <div className="login-root">
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-[#f0f9f9] overflow-hidden font-sans selection:bg-[#009E99]/20">
+      
+      {/* Animated Background Blobs */}
+      <motion.div 
+        animate={{ scale: [1, 1.25, 1], x: [0, 50, 0], y: [0, -30, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#009E99]/10 blur-3xl" 
+      />
+      <motion.div 
+        animate={{ scale: [1, 1.15, 1], x: [0, -60, 0], y: [0, 50, 0] }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        className="absolute bottom-[-15%] right-[-10%] w-[420px] h-[420px] rounded-full bg-[#009E99]/15 blur-3xl" 
+      />
 
-      {/* ── Left panel — branding ── */}
-      <div className="login-left">
-        <div className="login-left__inner">
-          <div className="brand-mark">
-            <div className="brand-icon">E</div>
-            <span className="brand-name">EDUCATIA</span>
+      <motion.div 
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="container max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-16 z-10"
+      >
+        
+        {/* === LEFT SIDE - BRANDING & ATTRACTIVE ANIMATIONS === */}
+        <div className="hidden lg:flex flex-col justify-center space-y-12">
+          
+          {/* Logo - Increased Size */}
+       
+            <div className="w-24 h-24 flex items-center justify-center drop-shadow-xl">
+              <img 
+                src={logo} 
+                alt="Educatia Logo" 
+                className="w-full h-full object-contain" 
+              />
+            </div>
+         
+        
+
+          {/* Main Heading */}
+          <div className="space-y-6">
+            <motion.h2 
+              variants={fadeInUp}
+              className="text-5xl font-extrabold text-slate-800 leading-[1.05]"
+            >
+              Dream big with <br />
+              <span className="text-[#009E99] relative inline-block">
+                Global Education
+                <motion.svg 
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 1.8, delay: 0.8 }}
+                  className="absolute -bottom-1 left-0 w-full h-4" 
+                  viewBox="0 0 120 12" 
+                  preserveAspectRatio="none"
+                >
+                  <path d="M0 6 Q 30 1 60 6 T 120 6" stroke="#009E99" strokeWidth="5" fill="transparent" strokeLinecap="round" />
+                </motion.svg>
+              </span>
+            </motion.h2>
+
+            <motion.p 
+              variants={fadeInUp}
+              className="text-slate-600 text-xl max-w-md leading-relaxed"
+            >
+              Your seamless journey to international success starts here. 
+              One beautiful platform for students, counsellors &amp; admins.
+            </motion.p>
           </div>
 
-          <div className="brand-headline">
-            <h2>Your gateway to<br />global education</h2>
-            <p>Manage leads, applications, and student journeys — all in one place.</p>
+          {/* Floating Stats Cards */}
+          <div className="grid grid-cols-2 gap-6 pt-2">
+            <motion.div 
+              variants={floatAnimation}
+              whileHover={{ y: -8, scale: 1.03 }}
+              className="bg-white rounded-3xl p-6 shadow-xl shadow-[#009E99]/10 border border-[#009E99]/10"
+            >
+              <div className="text-5xl font-bold text-slate-800 mb-1">2.4k+</div>
+              <div className="text-[#009E99] font-semibold">Students Enrolled</div>
+              <div className="text-xs text-slate-400 mt-4">Across 12+ countries</div>
+            </motion.div>
+
+            <motion.div 
+              variants={floatAnimation}
+              whileHover={{ y: -8, scale: 1.03 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-3xl p-6 shadow-xl shadow-[#009E99]/10 border border-[#009E99]/10"
+            >
+              <div className="text-5xl font-bold text-slate-800 mb-1">98%</div>
+              <div className="text-[#009E99] font-semibold">Success Rate</div>
+              <div className="text-xs text-slate-400 mt-4">In university placements</div>
+            </motion.div>
           </div>
 
-          <div className="brand-stats">
-            <div className="stat">
-              <span className="stat-num">2,400+</span>
-              <span className="stat-label">Students placed</span>
-            </div>
-            <div className="stat-divider" />
-            <div className="stat">
-              <span className="stat-num">48</span>
-              <span className="stat-label">Universities</span>
-            </div>
-            <div className="stat-divider" />
-            <div className="stat">
-              <span className="stat-num">12</span>
-              <span className="stat-label">Countries</span>
-            </div>
-          </div>
-
-          {/* Decorative circles */}
-          <div className="deco-circle deco-circle--1" />
-          <div className="deco-circle deco-circle--2" />
-          <div className="deco-circle deco-circle--3" />
-          <div className="deco-grid" />
+          {/* Small floating badges */}
+          <motion.div 
+            variants={fadeInUp}
+            className="flex gap-6 pt-6"
+          >
+       
+          </motion.div>
         </div>
-      </div>
 
-      {/* ── Right panel — form ── */}
-      <div className="login-right">
-        <div className="login-card">
-
-          <div className="login-card__top">
-            <div className="mobile-brand">
-              <div className="brand-icon brand-icon--sm">E</div>
-              <span className="brand-name brand-name--dark">EDUCATIA</span>
+        {/* === RIGHT SIDE - LOGIN CARD === */}
+        <motion.div 
+          variants={fadeInUp}
+          className="flex items-center justify-center"
+        >
+          <div className="w-full max-w-md bg-white p-10 rounded-[3rem] shadow-[0_30px_70px_-15px_rgba(0,158,153,0.18)] border border-[#009E99]/5">
+            
+            <div className="mb-10 text-center lg:text-left">
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">Welcome back!</h1>
+              <p className="text-slate-400">Please enter your details to sign in.</p>
             </div>
-            <h1 className="login-heading">Welcome back</h1>
-            <p className="login-subheading">Sign in to your portal to continue</p>
-          </div>
 
-          {/* Error alert */}
-          {error && (
-            <div className="alert alert--error" role="alert">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              {error}
-            </div>
-          )}
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-500 text-sm flex items-center gap-3"
+                >
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <form onSubmit={handleSubmit} className="login-form" noValidate>
-
-            {/* Email */}
-            <div className={`field ${emailErr ? 'field--error' : ''}`}>
-              <label htmlFor="email" className="field__label">
-                Email address
-              </label>
-              <div className="field__input-wrap">
-                <span className="field__icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                </span>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-600 ml-1">Email Address</label>
                 <input
-                  id="email"
                   type="email"
                   value={email}
-                  autoComplete="email"
-                  placeholder="you@educatia.com"
-                  autoFocus
+                  placeholder="hello@educatia.com"
+                  className={`w-full bg-slate-50 border-2 ${emailErr ? 'border-red-200' : 'border-transparent'} focus:border-[#009E99]/30 focus:bg-white rounded-2xl p-4 text-slate-800 outline-none transition-all duration-300 shadow-sm`}
                   onChange={e => { setEmail(e.target.value); dispatch(clearError()); }}
                   onBlur={() => setTouched(t => ({ ...t, email: true }))}
                 />
               </div>
-              {emailErr && <span className="field__error">Email is required</span>}
-            </div>
 
-            {/* Password */}
-            <div className={`field ${passwordErr ? 'field--error' : ''}`}>
-              <label htmlFor="password" className="field__label">
-                Password
-              </label>
-              <div className="field__input-wrap">
-                <span className="field__icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                </span>
+              <div className="space-y-2 relative">
+                <label className="text-sm font-semibold text-slate-600 ml-1">Password</label>
                 <input
-                  id="password"
                   type={showPass ? 'text' : 'password'}
                   value={password}
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
+                  className={`w-full bg-slate-50 border-2 ${passwordErr ? 'border-red-200' : 'border-transparent'} focus:border-[#009E99]/30 focus:bg-white rounded-2xl p-4 text-slate-800 outline-none transition-all duration-300 shadow-sm`}
                   onChange={e => { setPassword(e.target.value); dispatch(clearError()); }}
                   onBlur={() => setTouched(t => ({ ...t, password: true }))}
                 />
                 <button
                   type="button"
-                  className="field__eye"
-                  onClick={() => setShowPass(v => !v)}
-                  aria-label={showPass ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-4 top-10 text-[#009E99] hover:opacity-70 font-bold text-xs uppercase tracking-widest transition-all"
                 >
-                  {showPass ? (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                      <line x1="1" y1="1" x2="23" y2="23"/>
-                    </svg>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  )}
+                  {showPass ? 'Hide' : 'Show'}
                 </button>
               </div>
-              {passwordErr && <span className="field__error">Password is required</span>}
-            </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              className={`login-submit ${loading ? 'login-submit--loading' : ''}`}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="submit-spinner" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign in
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                    <polyline points="12 5 19 12 12 19"/>
-                  </svg>
-                </>
-              )}
-            </button>
-
-          </form>
-
-          {/* Role hint pills */}
-          <div className="role-hints">
-            <span className="role-hint">
-              <span className="role-dot role-dot--admin" />
-              Admin
-            </span>
-            <span className="role-hint">
-              <span className="role-dot role-dot--counsellor" />
-              Counsellor
-            </span>
-            <span className="role-hint">
-              <span className="role-dot role-dot--student" />
-              Student
-            </span>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#009E99] disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all duration-300 shadow-xl shadow-[#009E99]/25 flex items-center justify-center gap-2 mt-4"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </motion.button>
+            </form>
           </div>
-
-          <p className="login-footer">
-            Each role is redirected to its own portal after login.
-          </p>
-
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
