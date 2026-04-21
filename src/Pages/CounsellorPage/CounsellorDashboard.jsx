@@ -33,6 +33,7 @@ const STATUS_COLOR = {
   lost:       "bg-gray-100 text-gray-600",
 };
 
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 export const CounsellorDashboard = () => {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ export const CounsellorDashboard = () => {
 
       {/* ── Welcome Banner ── */}
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white rounded-3xl p-8 shadow-xl">
+        <div className="bg-blue-950 text-white rounded-3xl p-8 shadow-xl">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <p className="text-purple-200 text-sm font-medium mb-1">Counsellor Portal</p>
