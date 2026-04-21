@@ -153,44 +153,46 @@ export const Counsellor = () => {
   return (
     <div className="bg-[#F8FAFC] min-h-screen font-sans text-slate-700">
       <div className="max-w-full mx-auto p-4">
-        {/* Statistics Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
+          <div className="flex flex-1 flex-col sm:flex-row items-center justify-between gap-4 w-full md:w-auto">
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-80">
+              <Search
+                className="absolute left-3 top-2.5 text-slate-400"
+                size={18}
+              />
+              <input
+                placeholder="Search counsellors..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm"
+              />
+            </div>
+
+            {/* Add Button */}
+            <button
+              onClick={() => setIsAddOpen(true)}
+              className="w-full sm:w-auto px-6 py-2 bg-[#009E99] text-white font-medium rounded-lg hover:bg-[#008f7a] transition-all shadow-sm flex items-center justify-center gap-2"
+            >
+              <span className="text-xl">+</span> Add Counsellor
+            </button>
+          </div>
+        </div>
+
+        {/* 2. Statistics Section - NOW UNDER THE SEARCH/ADD DIV */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <CounsellorStatCard label="Total Counselors" value={stats.total} />
           <CounsellorStatCard label="Active" value={stats.active} />
-          <CounsellorStatCard label="Total Leads" value={stats.leads} />
           <CounsellorStatCard
             label="Avg Conversion"
             value={`${stats.avgRate}%`}
           />
         </div>
 
-        {/* Search and Add Button Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-          {/* Search Bar - Top Left */}
-          <div className="relative w-full sm:w-96">
-            <Search
-              className="absolute left-3 top-2.5 text-slate-400"
-              size={18}
-            />
-            <input
-              placeholder="Search counsellors..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
+        <hr className="mb-8 border-slate-200" />
 
-          {/* Add Button - Top Right */}
-          <button
-            onClick={() => setIsAddOpen(true)}
-            className="w-full sm:w-auto px-4 py-2 bg-[#009E99] text-white rounded-lg hover:bg-[#008f7a] transition-colors"
-          >
-            + Add Counsellor
-          </button>
-        </div>
-
-        {/* Counsellor Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* 3. Counsellor Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCounsellors.map((c) => (
             <CounselorCard
               key={c.id || c._id}
@@ -203,8 +205,10 @@ export const Counsellor = () => {
         </div>
 
         {filteredCounsellors.length === 0 && (
-          <div className="text-center py-12 text-slate-500">
-            No counsellors found
+          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300 mt-4">
+            <p className="text-slate-500 italic">
+              No counsellors found matching your search
+            </p>
           </div>
         )}
       </div>

@@ -19,7 +19,7 @@ export const DeleteConfirmationModal = ({
       />
 
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-y-auto mx-auto">
-        <div className="flex items-center justify-between px-6 py-4 bg-white rounded-t-xl border-t-4 border-blue-400">
+        <div className="flex items-center justify-between px-6 py-4 bg-white rounded-t-xl border-t-4 border-red-500">
           <h2 className="text-lg font-semibold text-black tracking-wide">
             {title}
           </h2>

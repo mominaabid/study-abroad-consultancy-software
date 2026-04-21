@@ -89,7 +89,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
             className="flex items-center gap-3 min-w-max cursor-pointer"
             onClick={() => navigate(homePath)}
           >
-            <img src={logo} alt="Logo" className="h-8 w-8 object-contain" />
+            <img src={logo} alt="Logo" className="h-8 w-12  object-contain" />
             {isExpanded && (
               <span className="text-lg font-bold text-gray-800 transition-opacity duration-300">
                 Educatia

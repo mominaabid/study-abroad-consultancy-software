@@ -108,12 +108,12 @@ export const Header = ({ toggleSideBar }) => {
                   </span>
                 </div>
 
-                <div className="py-1">
+                {/* <div className="py-1">
                   <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors">
                     <UserIcon size={18} className="text-gray-400" />
                     View Profile
                   </button>
-                </div>
+                </div> */}
 
                 <div className="border-t border-gray-50 mt-1">
                   <button

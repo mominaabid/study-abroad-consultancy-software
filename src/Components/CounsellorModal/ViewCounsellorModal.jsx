@@ -89,9 +89,9 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
         <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end">
           <button
             onClick={onClose}
-            className="px-8 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-all text-sm font-semibold shadow-lg shadow-slate-200"
+            className="px-8 py-2.5 bg-slate-700 text-white rounded-lg  transition-all text-sm font-semibold shadow-lg shadow-slate-200"
           >
-            Done
+            Close
           </button>
         </div>
       </div>

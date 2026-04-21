@@ -1,13 +1,22 @@
-// LeadsComponents/LeadModal.jsx
 import { useState, useEffect } from "react";
 import { SOURCES, STUDY_LEVELS, EMPTY_FORM } from "./LeadsConstants";
+import { InputField } from "../InputFields/InputField"; // Adjust paths as needed
+import { OptionField } from "../InputFields/OptionField";
+import { AddButton } from "../CustomButtons/AddButton";
+import { CancelButton } from "../CustomButtons/CancelButton";
+import { User, Phone, Mail, Globe, BookOpen, UserCheck } from "lucide-react";
 
-export default function LeadModal({ open, onClose, onSave, counsellors, editLead }) {
+export default function LeadModal({
+  open,
+  onClose,
+  onSave,
+  counsellors,
+  editLead,
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Reset form when modal opens or editLead changes
   useEffect(() => {
     if (!open) return;
 
@@ -19,7 +28,9 @@ export default function LeadModal({ open, onClose, onSave, counsellors, editLead
         source: editLead.source || "website",
         preferred_country: editLead.preferred_country || "",
         study_level: editLead.study_level || "",
-        counsellor_id: editLead.counsellor_id ? String(editLead.counsellor_id) : "",
+        counsellor_id: editLead.counsellor_id
+          ? String(editLead.counsellor_id)
+          : "",
       });
     } else {
       setForm({ ...EMPTY_FORM });
@@ -37,7 +48,7 @@ export default function LeadModal({ open, onClose, onSave, counsellors, editLead
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -55,12 +66,29 @@ export default function LeadModal({ open, onClose, onSave, counsellors, editLead
     }
   };
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const handleCustomChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const inputCls = 
-    "h-11 px-4 border border-gray-200 rounded-2xl text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none w-full transition";
+  // Map your constants to the format required by OptionField
+  const sourceOptions = SOURCES.map((s) => ({
+    id: s,
+    value: s,
+    label: s.charAt(0).toUpperCase() + s.slice(1),
+  }));
+
+  const studyLevelOptions = STUDY_LEVELS.map((l) => ({
+    id: l,
+    value: l,
+    label: l,
+  }));
+
+  const counsellorOptions = counsellors.map((c) => ({
+    id: c.id,
+    value: c.id,
+    label: c.name,
+  }));
 
   return (
     <div
@@ -68,7 +96,6 @@ export default function LeadModal({ open, onClose, onSave, counsellors, editLead
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
-        
         {/* Header */}
         <div className="px-6 py-5 border-b flex items-center justify-between">
           <div>
@@ -76,129 +103,108 @@ export default function LeadModal({ open, onClose, onSave, counsellors, editLead
               {editLead ? "Edit Lead" : "Add New Lead"}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              {editLead ? "Update lead information" : "Fill in the details below"}
+              {editLead
+                ? "Update lead information"
+                : "Fill in the details below"}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-2xl hover:text-gray-600 transition"
-          >
-            ✕
-          </button>
+          <CancelButton handleCancel={onClose} />
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 block mb-1">Full Name *</label>
-              <input
-                className={inputCls}
+            <div className="space-y-1">
+              <InputField
+                labelName="Full Name *"
+                name="name"
                 value={form.name}
-                onChange={handleChange("name")}
-                placeholder="John Smith"
+                handlerChange={handleCustomChange}
+                icon={<User size={16} />}
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>
+              )}
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-gray-500 block mb-1">Phone *</label>
-              <input
-                className={inputCls}
+            <div className="space-y-1">
+              <InputField
+                labelName="Phone *"
+                name="phone"
                 value={form.phone}
-                onChange={handleChange("phone")}
-                placeholder="+92 300 1234567"
+                handlerChange={handleCustomChange}
+                icon={<Phone size={16} />}
               />
-              {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+              {errors.phone && (
+                <p className="text-red-500 text-[10px] ml-1">{errors.phone}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 block mb-1">Email</label>
-              <input
-                type="email"
-                className={inputCls}
-                value={form.email}
-                onChange={handleChange("email")}
-                placeholder="student@example.com"
-              />
-            </div>
+            <InputField
+              labelName="Email *"
+              type="email"
+              name="email"
+              value={form.email}
+              handlerChange={handleCustomChange}
+              icon={<Mail size={16} />}
+            />
 
-            <div>
-              <label className="text-xs font-semibold text-gray-500 block mb-1">Source</label>
-              <select
-                className={inputCls}
-                value={form.source}
-                onChange={handleChange("source")}
-              >
-                {SOURCES.map(s => (
-                  <option key={s} value={s}>
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <OptionField
+              labelName="Source *"
+              name="source"
+              value={form.source}
+              handlerChange={handleCustomChange}
+              optionData={sourceOptions}
+              inital="Select Source"
+              icon={<Globe size={16} />}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 block mb-1">Preferred Country</label>
-              <input
-                className={inputCls}
-                value={form.preferred_country}
-                onChange={handleChange("preferred_country")}
-                placeholder="UK, USA, Canada"
-              />
-            </div>
+            <InputField
+              labelName="Preferred Country *"
+              name="preferred_country"
+              value={form.preferred_country}
+              handlerChange={handleCustomChange}
+            />
 
-            <div>
-              <label className="text-xs font-semibold text-gray-500 block mb-1">Study Level</label>
-              <select
-                className={inputCls}
-                value={form.study_level}
-                onChange={handleChange("study_level")}
-              >
-                <option value="">Select level</option>
-                {STUDY_LEVELS.map(l => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-            </div>
+            <OptionField
+              labelName="Study Level *"
+              name="study_level"
+              value={form.study_level}
+              handlerChange={handleCustomChange}
+              optionData={studyLevelOptions}
+              inital="Select level"
+              icon={<BookOpen size={16} />}
+            />
           </div>
 
-          <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-1">Assign Counsellor</label>
-            <select
-              className={inputCls}
-              value={form.counsellor_id || ""}
-              onChange={handleChange("counsellor_id")}
-            >
-              <option value="">Unassigned</option>
-              {counsellors.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <OptionField
+            labelName="Assign Counsellor *"
+            name="counsellor_id"
+            value={form.counsellor_id}
+            handlerChange={handleCustomChange}
+            optionData={counsellorOptions}
+            inital="Unassigned"
+            icon={<UserCheck size={16} />}
+          />
 
-          {/* Buttons */}
+          {/* Footer Buttons */}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 text-sm font-medium text-gray-600 border border-gray-200 rounded-2xl hover:bg-gray-50 transition"
+              className="px-6 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
             >
-              Cancel
+              Close
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-3 text-sm font-semibold text-white bg-teal-600 rounded-2xl hover:bg-teal-700 disabled:opacity-70 transition"
-            >
-              {saving ? "Saving..." : editLead ? "Save Changes" : "Add Lead"}
-            </button>
+            <AddButton
+              label={editLead ? "Update Lead" : "Save Lead"}
+              loading={saving}
+              handleClick={handleSubmit}
+            />
           </div>
         </form>
       </div>

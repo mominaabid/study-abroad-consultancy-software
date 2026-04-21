@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  User,
-  Mail,
-  Phone,
-  TrendingUp,
-  Users,
-  MoreHorizontal,
-  Eye,
-  Edit3,
-  Trash2,
-} from "lucide-react";
+import { User, Mail, Phone, MoreHorizontal } from "lucide-react";
+
+import { ViewIcon } from "../CustomButtons/ViewIcon";
+import { EditIcon } from "../CustomButtons/EditIcon";
+import { DeleteIcon } from "../CustomButtons/DeleteIcon";
 
 export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -17,7 +11,6 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
   const { name, role, email, phone, status, assigned_leads, conversion_rate } =
     counselor;
 
-  // Bahar click karne se menu close ho jaye
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -44,7 +37,6 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
             </div>
           </div>
 
-          {/* Three Dots Menu Container */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
@@ -53,43 +45,49 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
               <MoreHorizontal size={20} />
             </button>
 
-            {/* Tooltip / Dropdown Menu */}
             {showMenu && (
-              <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-10 py-1 animate-in fade-in slide-in-from-top-2 duration-200">
-                <button
-                  onClick={() => {
-                    onView();
-                    setShowMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  <Eye size={14} className="text-teal-500" /> View
-                </button>
-                <button
-                  onClick={() => {
-                    onEdit();
-                    setShowMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  <Edit3 size={14} className="text-blue-500" /> Edit
-                </button>
-                <hr className="my-1 border-slate-100" />
-                <button
-                  onClick={() => {
-                    onDelete();
-                    setShowMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 size={14} /> Delete
-                </button>
+              <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-20 py-2 px-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex flex-col gap-2">
+                  <div
+                    className="flex items-center justify-between hover:bg-slate-50 p-1 rounded-md transition-colors"
+                    onClick={() => {
+                      onView();
+                      setShowMenu(false);
+                    }}
+                  >
+                    <span className="text-sm text-slate-600">View</span>
+                    <ViewIcon handleView={onView} />
+                  </div>
+
+                  <div
+                    className="flex items-center justify-between hover:bg-slate-50 p-1 rounded-md transition-colors"
+                    onClick={() => {
+                      onEdit();
+                      setShowMenu(false);
+                    }}
+                  >
+                    <span className="text-sm text-slate-600">Edit</span>
+                    <EditIcon handleUpdate={onEdit} />
+                  </div>
+
+                  <hr className="border-slate-100" />
+
+                  <div
+                    className="flex items-center justify-between hover:bg-red-50 p-1 rounded-md transition-colors"
+                    onClick={() => {
+                      onDelete();
+                      setShowMenu(false);
+                    }}
+                  >
+                    <span className="text-sm text-red-600">Delete</span>
+                    <DeleteIcon handleDelete={onDelete} />
+                  </div>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Status Badge niche move kar diya design balance ke liye */}
         <div className="mt-3">
           <span
             className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
@@ -103,7 +101,6 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
         </div>
       </div>
 
-      {/* Info Section */}
       <div className="px-5 py-3 space-y-1.5 border-t border-slate-50">
         <div className="flex items-center gap-2 text-xs text-slate-600">
           <Mail size={12} className="text-slate-400" />
@@ -115,7 +112,6 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
         </div>
       </div>
 
-      {/* Stats Section */}
       <div className="px-5 py-4 bg-slate-50/50 flex border-t border-slate-100 rounded-b-xl">
         <div className="flex-1 text-center border-r border-slate-200">
           <p className="text-[10px] text-slate-500 uppercase font-bold">

@@ -2,14 +2,27 @@
 import { useState } from "react";
 import { timeAgo } from "./LeadsConstants";
 import { Avatar } from "./LeadAtoms";
+import { ViewIcon } from "../CustomButtons/ViewIcon";
+import { EditIcon } from "../CustomButtons/EditIcon";
+import { DeleteIcon } from "../CustomButtons/DeleteIcon";
 
 // ─── Kanban Card ───────────────────────────────────────────────────────────────
 
-export function KanbanCard({ lead, onOpen, onMenuAction, onDragStart, onDragEnd, isDragging }) {
+export function KanbanCard({
+  lead,
+  onOpen,
+  onMenuAction,
+  onDragStart,
+  onDragEnd,
+  isDragging,
+}) {
   const [menu, setMenu] = useState(false);
 
   const handleDragStart = (e) => {
-    e.dataTransfer.setData("text/plain", JSON.stringify({ id: lead.id, status: lead.status }));
+    e.dataTransfer.setData(
+      "text/plain",
+      JSON.stringify({ id: lead.id, status: lead.status }),
+    );
     e.dataTransfer.effectAllowed = "move";
     if (onDragStart) onDragStart(lead.id);
   };
@@ -29,8 +42,12 @@ export function KanbanCard({ lead, onOpen, onMenuAction, onDragStart, onDragEnd,
         <div className="flex items-center gap-2.5">
           <Avatar name={lead.name} size={32} />
           <div>
-            <p className="text-[13px] font-semibold text-gray-900 leading-tight">{lead.name}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{lead.study_level || "No level"}</p>
+            <p className="text-[13px] font-semibold text-gray-900 leading-tight">
+              {lead.name}
+            </p>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              {lead.study_level || "No level"}
+            </p>
           </div>
         </div>
 
@@ -38,34 +55,63 @@ export function KanbanCard({ lead, onOpen, onMenuAction, onDragStart, onDragEnd,
         <button
           className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center
                      text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all flex-shrink-0"
-          onClick={(e) => { e.stopPropagation(); setMenu(v => !v); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenu((v) => !v);
+          }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="5"  r="1.5"/>
-            <circle cx="12" cy="12" r="1.5"/>
-            <circle cx="12" cy="19" r="1.5"/>
+            <circle cx="12" cy="5" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="12" cy="19" r="1.5" />
           </svg>
         </button>
 
         {/* Dropdown menu */}
         {menu && (
           <div
-            className="absolute top-8 right-0 bg-white border border-gray-100 rounded-xl shadow-xl z-50 min-w-[150px] overflow-hidden py-1"
+            className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-2 px-2 animate-in fade-in slide-in-from-top-2 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={() => { setMenu(false); onOpen(lead); }}
-              className="flex items-center gap-2.5 w-full px-3.5 py-2 text-[12.5px] text-gray-600 hover:bg-gray-50 text-left">
-              👁 View Details
-            </button>
-            <button onClick={() => { setMenu(false); onMenuAction("edit", lead); }}
-              className="flex items-center gap-2.5 w-full px-3.5 py-2 text-[12.5px] text-gray-600 hover:bg-gray-50 text-left">
-              ✏️ Edit Lead
-            </button>
-            <div className="h-px bg-gray-100 mx-2 my-1" />
-            <button onClick={() => { setMenu(false); onMenuAction("delete", lead); }}
-              className="flex items-center gap-2.5 w-full px-3.5 py-2 text-[12.5px] text-red-500 hover:bg-red-50 text-left">
-              🗑 Delete
-            </button>
+            <div className="flex flex-col gap-2">
+              {/* View Option */}
+              <div
+                className="flex items-center justify-between hover:bg-slate-50 p-1 rounded-md transition-colors cursor-pointer"
+                onClick={() => {
+                  setMenu(false);
+                  onOpen(lead);
+                }}
+              >
+                <span className="text-sm text-slate-600">View</span>
+                <ViewIcon handleView={null} />
+              </div>
+
+              {/* Edit Option */}
+              <div
+                className="flex items-center justify-between hover:bg-slate-50 p-1 rounded-md transition-colors cursor-pointer"
+                onClick={() => {
+                  setMenu(false);
+                  onMenuAction("edit", lead);
+                }}
+              >
+                <span className="text-sm text-slate-600">Edit</span>
+                <EditIcon handleUpdate={null} />
+              </div>
+
+              <hr className="border-slate-100" />
+
+              {/* Delete Option */}
+              <div
+                className="flex items-center justify-between hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer"
+                onClick={() => {
+                  setMenu(false);
+                  onMenuAction("delete", lead);
+                }}
+              >
+                <span className="text-sm text-red-600">Delete</span>
+                <DeleteIcon handleDelete={null} />
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -78,17 +124,24 @@ export function KanbanCard({ lead, onOpen, onMenuAction, onDragStart, onDragEnd,
           { icon: "📞", value: lead.phone },
         ].map(({ icon, value, truncate }) =>
           value ? (
-            <div key={icon} className="flex items-center gap-2 text-[11.5px] text-gray-500">
+            <div
+              key={icon}
+              className="flex items-center gap-2 text-[11.5px] text-gray-500"
+            >
               <span className="text-[10px]">{icon}</span>
-              <span className={truncate ? "truncate max-w-[170px]" : ""}>{value}</span>
+              <span className={truncate ? "truncate max-w-[170px]" : ""}>
+                {value}
+              </span>
             </div>
-          ) : null
+          ) : null,
         )}
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-        <span className="text-[11px] text-gray-400">{timeAgo(lead.createdAt)}</span>
+        <span className="text-[11px] text-gray-400">
+          {timeAgo(lead.createdAt)}
+        </span>
         {lead.counsellor ? (
           <span className="text-[11px] text-teal-600 font-semibold bg-teal-50 px-2 py-0.5 rounded-full">
             {lead.counsellor.name.split(" ")[0]}
@@ -103,16 +156,28 @@ export function KanbanCard({ lead, onOpen, onMenuAction, onDragStart, onDragEnd,
 
 // ─── Kanban Column ─────────────────────────────────────────────────────────────
 
-export function KanbanColumn({ stage, leads, onOpen, onMenuAction, onDrop, draggingLeadId }) {
+export function KanbanColumn({
+  stage,
+  leads,
+  onOpen,
+  onMenuAction,
+  onDrop,
+  draggingLeadId,
+}) {
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleDragOver  = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setIsDragOver(true); };
-  const handleDragLeave = ()  => setIsDragOver(false);
-  const handleDrop      = (e) => {
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+  const handleDragLeave = () => setIsDragOver(false);
+  const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
     const dragData = JSON.parse(e.dataTransfer.getData("text/plain"));
-    if (onDrop && dragData.id && dragData.status !== stage.key) onDrop(dragData.id, stage.key);
+    if (onDrop && dragData.id && dragData.status !== stage.key)
+      onDrop(dragData.id, stage.key);
   };
 
   return (
@@ -130,8 +195,13 @@ export function KanbanColumn({ stage, leads, onOpen, onMenuAction, onDrop, dragg
       {/* Column Header */}
       <div className="px-4 pt-4 pb-3 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: stage.color }} />
-          <span className="text-[13px] font-bold text-gray-800">{stage.label}</span>
+          <div
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ background: stage.color }}
+          />
+          <span className="text-[13px] font-bold text-gray-800">
+            {stage.label}
+          </span>
           <span className="ml-auto text-[11px] font-bold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
             {leads.length}
           </span>
@@ -142,25 +212,33 @@ export function KanbanColumn({ stage, leads, onOpen, onMenuAction, onDrop, dragg
             className="h-full rounded-full transition-all duration-500"
             style={{
               background: stage.color,
-              width: leads.length > 0 ? `${Math.min(leads.length * 15, 100)}%` : "0%",
+              width:
+                leads.length > 0
+                  ? `${Math.min(leads.length * 15, 100)}%`
+                  : "0%",
             }}
           />
         </div>
       </div>
 
       {/* Cards */}
-      <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-2.5 min-h-0" style={{ scrollbarWidth: "thin" }}>
+      <div
+        className="flex-1 overflow-y-auto px-3 pb-4 space-y-2.5 min-h-0"
+        style={{ scrollbarWidth: "thin" }}
+      >
         {leads.length === 0 ? (
           <div
             className={`flex flex-col items-center justify-center py-8 rounded-xl border-2 border-dashed transition-colors
               ${isDragOver ? "bg-white/50" : "border-gray-200"}`}
-            style={isDragOver ? { borderColor: stage.color, color: stage.color } : {}}
+            style={
+              isDragOver ? { borderColor: stage.color, color: stage.color } : {}
+            }
           >
             <div className="text-2xl mb-1 opacity-40">↓</div>
             <span className="text-[11px] text-gray-400">Drop here</span>
           </div>
         ) : (
-          leads.map(lead => (
+          leads.map((lead) => (
             <KanbanCard
               key={lead.id}
               lead={lead}
