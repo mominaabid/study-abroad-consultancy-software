@@ -9,7 +9,7 @@ export const STAGES = [
   { key: "applied",    label: "Applied",    color: "#06b6d4" },
   { key: "visa",       label: "Visa",       color: "#ec4899" },
   { key: "success",    label: "Success",    color: "#10b981" },
-  { key: "lost",       label: "Lost",       color: "#6b7280" },
+  { key: "rejected",       label: "Rejected",       color: "#6b7280" },
 ];
 
 export const STATUS_STYLES = {
@@ -20,7 +20,7 @@ export const STATUS_STYLES = {
   applied:    { bg: "bg-cyan-50",    text: "text-cyan-700",    ring: "ring-cyan-200"    },
   visa:       { bg: "bg-pink-50",    text: "text-pink-700",    ring: "ring-pink-200"    },
   success:    { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200" },
-  lost:       { bg: "bg-gray-100",   text: "text-gray-600",    ring: "ring-gray-200"    },
+  rejected:       { bg: "bg-gray-100",   text: "text-gray-600",    ring: "ring-gray-200"    },
 };
 
 export const COUNTRIES = [

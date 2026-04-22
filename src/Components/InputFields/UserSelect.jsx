@@ -17,7 +17,7 @@ export const UserSelect = ({
         onChange={handlerChange}
         name={name}
         disabled={disabled}
-        className="p-3 rounded bg-white text-gray-800 border-1 shadow rounded-lg border-[#009E99]"
+        className="p-3 rounded bg-white text-gray-500 border-1 shadow rounded-lg border-[#009E99]"
       >
         <option value="">Please Select</option>
 

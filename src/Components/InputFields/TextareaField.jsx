@@ -20,7 +20,7 @@ export const TextareaField = ({
         </label>
 
         <textarea
-          className={`rounded-lg pl-3 bg-white text-gray-900 border border-gray-200 shadow 
+          className={`rounded-lg pl-3 bg-white text-gray-500 border border-gray-200 shadow 
           transition duration-200 focus:outline-none focus:ring-1 focus:ring-[#009E99] appearance-none ${className || ""}`}
           placeholder={placeHolder}
           onChange={handlerChange}

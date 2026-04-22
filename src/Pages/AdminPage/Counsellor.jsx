@@ -151,47 +151,54 @@ export const Counsellor = () => {
   }
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen font-sans text-slate-700">
-      <div className="max-w-full mx-auto p-4">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-          <div className="flex flex-1 flex-col sm:flex-row items-center justify-between gap-4 w-full md:w-auto">
-            {/* Search Bar */}
-            <div className="relative w-full sm:w-80">
-              <Search
-                className="absolute left-3 top-2.5 text-slate-400"
-                size={18}
-              />
+    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden font-sans text-slate-700">
+      {/* ── Top Header ── */}
+      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {/* Title / Info */}
+          <div>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {filteredCounsellors.length} total counsellors
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Search */}
+            <div className="flex items-center gap-2 h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl min-w-[200px] focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100">
+              <Search size={14} className="text-gray-400" />
               <input
                 placeholder="Search counsellors..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm"
+                className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-full"
               />
             </div>
 
-            {/* Add Button */}
+            {/* Add Counsellor */}
             <button
               onClick={() => setIsAddOpen(true)}
-              className="w-full sm:w-auto px-6 py-2 bg-[#009E99] text-white font-medium rounded-lg hover:bg-[#008f7a] transition-all shadow-sm flex items-center justify-center gap-2"
+              className="flex items-center gap-1.5 h-9 px-4 bg-teal-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap"
             >
-              <span className="text-xl">+</span> Add Counsellor
+              <span className="text-sm">+</span>
+              Add Counsellor
             </button>
           </div>
         </div>
+      </div>
 
-        {/* 2. Statistics Section - NOW UNDER THE SEARCH/ADD DIV */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <CounsellorStatCard label="Total Counselors" value={stats.total} />
-          <CounsellorStatCard label="Active" value={stats.active} />
-          <CounsellorStatCard
-            label="Avg Conversion"
-            value={`${stats.avgRate}%`}
-          />
-        </div>
+      {/* ── Stats Section ── */}
+      <div className="flex-shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4">
+        <CounsellorStatCard label="Total Counselors" value={stats.total} />
+        <CounsellorStatCard label="Active" value={stats.active} />
+        <CounsellorStatCard
+          label="Avg Conversion"
+          value={`${stats.avgRate}%`}
+        />
+      </div>
 
-        <hr className="mb-8 border-slate-200" />
-
-        {/* 3. Counsellor Cards Grid */}
+      {/* ── Content ── */}
+      <div className="flex-1 overflow-auto px-6 pb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCounsellors.map((c) => (
             <CounselorCard
@@ -213,7 +220,7 @@ export const Counsellor = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       <AddCounsellorModal
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}

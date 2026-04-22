@@ -30,7 +30,7 @@ const STATUS_COLOR = {
   applied:    "bg-cyan-100 text-cyan-700",
   visa:       "bg-pink-100 text-pink-700",
   success:    "bg-green-100 text-green-700",
-  lost:       "bg-gray-100 text-gray-600",
+  rejected:       "bg-gray-100 text-gray-600",
 };
 
 
@@ -61,7 +61,7 @@ export const CounsellorDashboard = () => {
 
   // ── Derived stats ──────────────────────────────────────────────────────────
   const total      = leads.length;
-  const active     = leads.filter(l => !["success","lost"].includes(l.status)).length;
+  const active     = leads.filter(l => !["success","rejected"].includes(l.status)).length;
   const converted  = leads.filter(l => l.status === "success").length;
   const pending    = leads.filter(l => l.status === "new").length;
 

@@ -4,7 +4,7 @@ import { InputField } from "../InputFields/InputField"; // Adjust paths as neede
 import { OptionField } from "../InputFields/OptionField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
-import { User, Phone, Mail, Globe, BookOpen, UserCheck } from "lucide-react";
+import { User, Phone, Mail, Database, Globe, BookOpen, UserCheck } from "lucide-react";
 
 export default function LeadModal({
   open,
@@ -92,17 +92,17 @@ export default function LeadModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         {/* Header */}
-        <div className="px-6 py-5 border-b flex items-center justify-between">
+        <div className="px-8 pt-8 pb-4 flex justify-between items-start">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-slate-800">
               {editLead ? "Edit Lead" : "Add New Lead"}
             </h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-slate-500 text-sm mt-1">
               {editLead
                 ? "Update lead information"
                 : "Fill in the details below"}
@@ -112,7 +112,7 @@ export default function LeadModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form className="p-8 pt-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <InputField
@@ -141,7 +141,7 @@ export default function LeadModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InputField
               labelName="Email *"
               type="email"
@@ -158,7 +158,7 @@ export default function LeadModal({
               handlerChange={handleCustomChange}
               optionData={sourceOptions}
               inital="Select Source"
-              icon={<Globe size={16} />}
+              icon={<Database size={16} />}
             />
           </div>
 
@@ -168,6 +168,7 @@ export default function LeadModal({
               name="preferred_country"
               value={form.preferred_country}
               handlerChange={handleCustomChange}
+              icon={<Globe size={16} />}
             />
 
             <OptionField
@@ -187,7 +188,7 @@ export default function LeadModal({
             value={form.counsellor_id}
             handlerChange={handleCustomChange}
             optionData={counsellorOptions}
-            inital="Unassigned"
+            inital="Select Counsellor"
             icon={<UserCheck size={16} />}
           />
 
@@ -196,7 +197,7 @@ export default function LeadModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+              className="px-6 py-1.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
             >
               Close
             </button>

@@ -30,7 +30,7 @@ export const InputField = ({
         <input
           type={type}
           autoComplete={autoComplete || "off"}
-          className={`w-full p-2.5 ${icon ? "pl-10" : "pl-3"} border border-gray-200 rounded-lg shadow text-gray-800
+          className={`w-full p-2.5 ${icon ? "pl-10" : "pl-3"} border border-gray-200 rounded-lg shadow text-gray-500
             ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white"}
             focus:outline-none focus:ring-1 focus:ring-[#009E99]
             ${type === "date" ? "relative" : ""}

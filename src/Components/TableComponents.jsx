@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState , useEffect } from "react";
 
 // ─── Helper Functions ───────────────────────────────────────────────────────────
 function initials(name = "") {
@@ -234,7 +234,7 @@ export function StatusCell({ status, className = "" }) {
     applied:    { bg: "bg-cyan-50",   text: "text-cyan-700",   border: "border-cyan-200" },
     visa:       { bg: "bg-pink-50",   text: "text-pink-700",   border: "border-pink-200" },
     success:    { bg: "bg-emerald-50",text: "text-emerald-700",border: "border-emerald-200" },
-    lost:       { bg: "bg-gray-50",   text: "text-gray-700",   border: "border-gray-200" },
+    rejected:       { bg: "bg-gray-50",   text: "text-gray-700",   border: "border-gray-200" },
   };
 
   const s = styles[status?.toLowerCase()] || styles.new;
@@ -346,32 +346,65 @@ export function SelectCell({ value, options, onChange, placeholder = "Select..."
 }
 
 // ─── 15. Date Cell ──────────────────────────────────────────────────────────────
+// ─── 15. Date Cell (Fixed) ──────────────────────────────────────────────────────────────
 export function DateCell({ date, format = "short", className = "" }) {
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "—";
-    const d = new Date(dateStr);
+  const [relativeTime, setRelativeTime] = useState("");
+  
+  useEffect(() => {
+    const updateRelativeTime = () => {
+      if (!date || format !== "relative") return;
+      
+      const d = new Date(date);
+      const diff = Date.now() - d.getTime();
+      const minutes = Math.floor(diff / 60000);
+      
+      let timeStr;
+      if (minutes < 60) {
+        timeStr = `${minutes}m ago`;
+      } else {
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) {
+          timeStr = `${hours}h ago`;
+        } else {
+          const days = Math.floor(hours / 24);
+          if (days < 7) {
+            timeStr = `${days}d ago`;
+          } else {
+            timeStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          }
+        }
+      }
+      setRelativeTime(timeStr);
+    };
+    
+    updateRelativeTime();
+    
+    // Optional: Update every minute for real-time relative times
+    const interval = setInterval(updateRelativeTime, 60000);
+    
+    return () => clearInterval(interval);
+  }, [date, format]);
+  
+  const formatDate = () => {
+    if (!date) return "—";
+    const d = new Date(date);
     
     if (format === "short") {
       return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     }
     if (format === "relative") {
-      const diff = Date.now() - d.getTime();
-      const minutes = Math.floor(diff / 60000);
-      if (minutes < 60) return `${minutes}m ago`;
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) return `${hours}h ago`;
-      const days = Math.floor(hours / 24);
-      if (days < 7) return `${days}d ago`;
+      return relativeTime || d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   return (
     <td className={`px-6 py-4 text-gray-600 whitespace-nowrap ${className}`}>
-      {formatDate(date)}
+      {formatDate()}
     </td>
   );
 }
+
 
 // ─── 16. Link Cell ──────────────────────────────────────────────────────────────
 export function LinkCell({ text, href, onClick, className = "" }) {

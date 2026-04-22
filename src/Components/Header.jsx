@@ -1,23 +1,46 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Menu, LogOut, User as UserIcon, ChevronDown } from "lucide-react";
+import {
+  Menu,
+  LogOut,
+  User as UserIcon,
+  ChevronDown,
+  Bell,
+  Trash2,
+  Clock,
+} from "lucide-react";
 import { logout, selectUser } from "../redux/slices/authSlice";
+import {
+  selectNotifications,
+  selectUnreadCount,
+  markAllAsRead,
+  clearNotifications,
+} from "../redux/slices/notificationSlice";
 
 export const Header = ({ toggleSideBar }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const user = useSelector(selectUser);
-  const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside the profile area
+  const user = useSelector(selectUser);
+  const notifications = useSelector(selectNotifications);
+  const unreadCount = useSelector(selectUnreadCount);
+
+  const dropdownRef = useRef(null);
+  const notifRef = useRef(null);
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotifOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -27,6 +50,13 @@ export const Header = ({ toggleSideBar }) => {
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
+  };
+
+  const handleNotifClick = () => {
+    setNotifOpen(!notifOpen);
+    if (!notifOpen) {
+      dispatch(markAllAsRead());
+    }
   };
 
   const getTitle = () => {
@@ -59,23 +89,77 @@ export const Header = ({ toggleSideBar }) => {
 
         {/* Right Section */}
         <div className="flex items-center space-x-3 sm:space-x-5">
-          {/* Notification Bell */}
-          <button className="text-gray-500 hover:text-blue-600 transition-colors relative p-1">
-            <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {/* ── Notification Bell Dropdown ── */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={handleNotifClick}
+              className="text-gray-500 hover:text-teal-600 transition-colors relative p-2 rounded-full hover:bg-gray-50 focus:outline-none"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-              />
-            </svg>
-          </button>
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                  {unreadCount}
+                </span>
+              )}
+              <Bell size={22} />
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                  <h3 className="font-bold text-gray-800 text-sm">
+                    Notifications
+                  </h3>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={() => dispatch(clearNotifications())}
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                      title="Clear all"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-[400px] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <div className="bg-gray-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Bell size={20} className="text-gray-400" />
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        No new notifications
+                      </p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50/30 transition-colors cursor-default"
+                      >
+                        <p className="text-sm text-gray-700 leading-tight font-medium">
+                          {n.message}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1.5 text-gray-400">
+                          <Clock size={10} />
+                          <p className="text-[10px] uppercase tracking-wider font-semibold">
+                            {n.time}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {notifications.length > 0 && (
+                  <div className="p-2 border-t border-gray-50 bg-gray-50/30">
+                    <button className="w-full py-1.5 text-[11px] font-bold text-teal-600 hover:text-teal-700 uppercase tracking-widest transition-colors">
+                      View Activity Log
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -95,7 +179,7 @@ export const Header = ({ toggleSideBar }) => {
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="px-4 py-3 border-b border-gray-50">
                   <p className="text-sm font-bold text-gray-900 truncate">
                     {user?.name || "Guest"}
@@ -107,13 +191,6 @@ export const Header = ({ toggleSideBar }) => {
                     {user?.role || "User"}
                   </span>
                 </div>
-
-                {/* <div className="py-1">
-                  <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                    <UserIcon size={18} className="text-gray-400" />
-                    View Profile
-                  </button>
-                </div> */}
 
                 <div className="border-t border-gray-50 mt-1">
                   <button

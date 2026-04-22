@@ -13,7 +13,7 @@ export const AddButton = ({
       <button
         type="submit"
         disabled={loading || disabled}
-        className="bg-[#009E99] text-white py-1 px-4 rounded-lg duration-300 
+        className="bg-[#009E99] text-white py-2.5 px-4 rounded-lg duration-300 
                hover:cursor-pointer hover:scale-105 active:scale-95
                shadow-lg shadow-gray-400 hover:shadow-xl hover:shadow-gray-400
                disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"

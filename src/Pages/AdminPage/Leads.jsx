@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
 import "./Leads.css";
 import { FiUsers, FiTrendingUp, FiCheckCircle } from "react-icons/fi";
+import { useDispatch } from "react-redux";
+import { addNotification } from "../../redux/slices/notificationSlice";
 // ── Component imports from Components/LeadsComponents ──────────────────────────
 import {
   STAGES,
@@ -70,6 +72,7 @@ export default function Leads() {
   const [drawerLead, setDrawerLead] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const dispatch = useDispatch();
 
   // ── Fetch Leads ────────────────────────────────────────────────────────────
   const fetchLeads = useCallback(async (page = 1) => {
@@ -164,6 +167,23 @@ export default function Leads() {
       toast.success(
         editLead ? "Lead updated successfully" : "Lead added successfully",
       );
+
+      if (!editLead) {
+        dispatch(
+          addNotification({
+            message: `New Lead added: ${form.name}`,
+          }),
+        );
+      }
+
+      if (editLead) {
+        dispatch(
+          addNotification({
+            message: `Lead Data Edited: ${form.name}`,
+          }),
+        );
+      }
+
       setEditLead(null);
       setModalOpen(false);
       fetchLeads();
@@ -197,12 +217,17 @@ export default function Leads() {
   async function handleStage(leadId, status) {
     const token = localStorage.getItem("token");
     if (!token) return;
+
+    const lead = leads.find((l) => l.id === leadId);
+
     // Optimistic update
     setLeads((prev) =>
       prev.map((l) => (l.id === leadId ? { ...l, status } : l)),
     );
+
     if (drawerLead?.id === leadId)
       setDrawerLead((prev) => ({ ...prev, status }));
+
     try {
       const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/stage`, {
         method: "PUT",
@@ -212,8 +237,18 @@ export default function Leads() {
         },
         body: JSON.stringify({ status }),
       });
+
       if (!res.ok) throw new Error();
+
       toast.success("Status updated");
+
+      if (status === "contacted") {
+        dispatch(
+          addNotification({
+            message: `Lead contacted: ${lead?.name}`,
+          }),
+        );
+      }
     } catch {
       toast.error("Failed to update lead status");
       fetchLeads();
@@ -298,14 +333,15 @@ export default function Leads() {
   const stats = [
     {
       label: "Total Leads",
-      value: leads.length,
+      value: leads.filter((l) => l.status === "new").length,
       icon: <FiUsers />,
       color: "#3b82f6", // blue
     },
     {
       label: "In Progress",
-      value: leads.filter((l) => !["new", "success", "lost"].includes(l.status))
-        .length,
+      value: leads.filter(
+        (l) => !["new", "success", "rejected"].includes(l.status),
+      ).length,
       icon: <FiTrendingUp />,
       color: "#f59e0b", // orange
     },

@@ -8,7 +8,16 @@ import { OptionField } from "../InputFields/OptionField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
-import { User, Mail, Phone, Lock, MapPin, CreditCard } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  Lock,
+  MapPin,
+  CreditCard,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 const INITIAL_STATE = {
   name: "",
@@ -26,6 +35,7 @@ const INITIAL_STATE = {
 export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (!isOpen) return null;
 
@@ -150,22 +160,43 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              labelName="Password *"
-              name="password"
-              type="password"
-              icon={<Lock size={18} />}
-              value={formData.password}
-              handlerChange={handleChange}
-            />
-            <InputField
-              labelName="Confirm Password *"
-              name="confirm_password"
-              type="password"
-              icon={<Lock size={18} />}
-              value={formData.confirm_password}
-              handlerChange={handleChange}
-            />
+            <div className="relative">
+              <InputField
+                labelName="Password *"
+                name="password"
+                // 3. Dynamic type based on state
+                type={showPassword ? "text" : "password"}
+                icon={<Lock size={18} />}
+                value={formData.password}
+                handlerChange={handleChange}
+              />
+              {/* 4. The Toggle Icon */}
+              <button
+                type="button"
+                className="absolute right-3 top-[30px] text-slate-400 hover:text-slate-600 transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <InputField
+                labelName="Confirm Password *"
+                name="confirm_password"
+                type={showPassword ? "text" : "password"}
+                icon={<Lock size={18} />}
+                value={formData.confirm_password}
+                handlerChange={handleChange}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-[30px] text-slate-400 hover:text-slate-600 transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
           </div>
 
           <TextareaField

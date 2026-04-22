@@ -28,7 +28,7 @@ export const OptionField = ({
           disabled={disabled}
           className={`w-full p-2.5 ${
             icon ? "pl-10" : "pl-3"
-          } rounded-lg bg-white text-gray-900 border border-gray-200 shadow 
+          } rounded-lg bg-white text-gray-500 border border-gray-200 shadow 
           transition duration-200 focus:outline-none focus:ring-1 focus:ring-[#009E99] appearance-none`}
         >
           <option value="">{inital}</option>

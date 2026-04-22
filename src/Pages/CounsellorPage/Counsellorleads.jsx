@@ -147,7 +147,7 @@ export default function CounsellorLeads() {
     },
     {
       label: "In Progress",
-      value: leads.filter(l => !["new","success","lost"].includes(l.status)).length,
+      value: leads.filter(l => !["new","success","rejected"].includes(l.status)).length,
       icon: <FiTrendingUp />,
       color: "#f59e0b",
     },
