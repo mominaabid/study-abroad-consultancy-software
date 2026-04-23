@@ -177,7 +177,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               placeholder="34104-0000000-0"
             />
 
-            <OptionField
+            {/* <OptionField
               labelName="Status"
               name="status"
               value={formData.status}
@@ -187,7 +187,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
                 { id: 2, label: "🚫 Inactive", value: "inactive" },
               ]}
               inital="Select Status"
-            />
+            /> */}
           </div>
 
           <TextareaField

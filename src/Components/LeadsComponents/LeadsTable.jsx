@@ -43,7 +43,7 @@ export default function LeadsTable({
                 <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 accent-teal-600" />
               </th>
 
-              {["Lead", "Contact", "Program", "Status", "Assigned To", "Source", "Created", ""].map(h => (
+              {["Lead", "Contact", "Program", "Status", "Source", "Created", ""].map(h => (
                 <th key={h} className={thCls}>{h}</th>
               ))}
             </tr>
@@ -102,29 +102,7 @@ export default function LeadsTable({
                   <StatusBadge status={lead.status} />
                 </td>
 
-                {/* Assigned */}
-                <td className={tdCls} onClick={e => e.stopPropagation()}>
-                  <div className="relative inline-block w-full min-w-[20px]">
-                    <select
-                      className="w-full pl-3 pr-7 py-1.5 border border-gray-200 rounded-lg text-[12px] text-gray-600 bg-white
-                      outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-100 transition appearance-none cursor-pointer"
-                      value={lead.counsellor_id || ""}
-                      onChange={e => onAssign(lead.id, e.target.value)}
-                    >
-                      <option value="">Assign...</option>
-                      {counsellors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      {!counsellors.find(c => c.id === lead.counsellor_id) && lead.counsellor && (
-                        <option value={lead.counsellor_id}>{lead.counsellor.name}</option>
-                      )}
-                    </select>
-
-                    <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M6 9l6 6 6-6"/>
-                      </svg>
-                    </div>
-                  </div>
-                </td>
+           
 
                 {/* Source */}
                 <td className={tdCls}>
