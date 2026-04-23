@@ -82,29 +82,25 @@ export default function CounsellorLeads() {
   }, []);
 
   // ── Update stage (counsellor can change stage of their leads) ──────────────
-  async function handleStage(leadId, status) {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+ async function handleStage(leadId, status, note = "") {
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-    // Optimistic update
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
-    if (drawerLead?.id === leadId) setDrawerLead(prev => ({ ...prev, status }));
+  setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
+  if (drawerLead?.id === leadId) setDrawerLead(prev => ({ ...prev, status }));
 
-    try {
-      const res = await fetch(`${BASE_URL}/counsellor/leads/${leadId}/stage`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error();
-    } catch {
-      alert("Failed to update lead status");
-      fetchLeads();
-    }
+  try {
+    const res = await fetch(`${BASE_URL}/counsellor/leads/${leadId}/stage`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status, note }),  // ✅ send note
+    });
+    if (!res.ok) throw new Error();
+  } catch {
+    alert("Failed to update lead status");
+    fetchLeads();
   }
+}
 
   // ── Export CSV ─────────────────────────────────────────────────────────────
   function handleExport() {
