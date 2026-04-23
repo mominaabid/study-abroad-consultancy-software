@@ -23,7 +23,7 @@ import { Counsellor } from "./Pages/AdminPage/Counsellor";
 // Counsellor Pages
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
-
+import StudentDashboard from "./Pages/StudentPage/StudentDashboard";
 import "./App.css";
 
 export default function App() {
@@ -88,14 +88,7 @@ export default function App() {
         {/* ── Student ── */}
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>
           <Route element={<PrivateLayout />}>
-            <Route
-              path="/student/dashboard"
-              element={
-                <div className="p-10 text-gray-500">
-                  Student Dashboard — coming soon
-                </div>
-              }
-            />
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
             <Route
               path="/student/application"
               element={
