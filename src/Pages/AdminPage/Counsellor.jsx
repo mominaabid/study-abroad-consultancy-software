@@ -151,7 +151,7 @@ export const Counsellor = () => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden font-sans text-slate-700">
+    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-auto font-sans text-slate-700">
       {/* ── Top Header ── */}
       <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -198,7 +198,7 @@ export const Counsellor = () => {
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 overflow-auto px-6 pb-6">
+      <div className="px-6 pb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCounsellors.map((c) => (
             <CounselorCard

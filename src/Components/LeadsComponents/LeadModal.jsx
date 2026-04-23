@@ -1,10 +1,23 @@
 import { useState, useEffect } from "react";
 import { SOURCES, STUDY_LEVELS, EMPTY_FORM } from "./LeadsConstants";
-import { InputField } from "../InputFields/InputField"; // Adjust paths as needed
+import { InputField } from "../InputFields/InputField";
 import { OptionField } from "../InputFields/OptionField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
-import { User, Phone, Mail, Database, Globe, BookOpen, UserCheck } from "lucide-react";
+import { User, Phone, Mail, Globe, BookOpen, UserCheck } from "lucide-react";
+
+// Mapping sources to emojis for dropdown visibility
+const SOURCE_ICONS = {
+  website: "🌐",
+  walkin: "🚶",
+  whatsapp: "💬",
+  email: "📧",
+  facebook: "🔵",
+  referral: "🤝",
+  google_ads: "🔍",
+  linkedin: "💼",
+  agent: "🏢",
+};
 
 export default function LeadModal({
   open,
@@ -43,7 +56,11 @@ export default function LeadModal({
   const validate = () => {
     const e = {};
     if (!form.name?.trim()) e.name = "Name is required";
-    if (!form.phone?.trim()) e.phone = "Phone is required";
+    if (!form.preferred_country?.trim())
+      e.preferred_country = "Preferred country is required";
+    if (!form.phone || form.phone.length !== 11)
+      e.phone = "Phone number must be exactly 11 digits";
+    if (!form.email?.trim()) e.email = "Email is required";
     return e;
   };
 
@@ -68,15 +85,30 @@ export default function LeadModal({
 
   const handleCustomChange = (e) => {
     const { name, value } = e.target;
+    if (value.startsWith(" ")) return;
+    if ((name === "name" || name === "preferred_country") && /\d/.test(value))
+      return;
+    if (name === "phone" && (/[^0-9]/.test(value) || value.length > 11)) return;
+
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrs = { ...prev };
+        delete newErrs[name];
+        return newErrs;
+      });
+    }
   };
 
-  // Map your constants to the format required by OptionField
-  const sourceOptions = SOURCES.map((s) => ({
-    id: s,
-    value: s,
-    label: s.charAt(0).toUpperCase() + s.slice(1),
-  }));
+  // Modified sourceOptions to include icons
+  const sourceOptions = SOURCES.map((s) => {
+    const icon = SOURCE_ICONS[s.toLowerCase()] || "📍";
+    return {
+      id: s,
+      value: s,
+      label: `${icon} ${s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ")}`,
+    };
+  });
 
   const studyLevelOptions = STUDY_LEVELS.map((l) => ({
     id: l,
@@ -96,7 +128,6 @@ export default function LeadModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        {/* Header */}
         <div className="px-8 pt-8 pb-4 flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-bold text-slate-800">
@@ -111,7 +142,6 @@ export default function LeadModal({
           <CancelButton handleCancel={onClose} />
         </div>
 
-        {/* Form */}
         <form className="p-8 pt-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -121,6 +151,8 @@ export default function LeadModal({
                 value={form.name}
                 handlerChange={handleCustomChange}
                 icon={<User size={16} />}
+                maxLength={50}
+                minLength={3}
               />
               {errors.name && (
                 <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>
@@ -129,7 +161,7 @@ export default function LeadModal({
 
             <div className="space-y-1">
               <InputField
-                labelName="Phone *"
+                labelName="Phone (11 digits) *"
                 name="phone"
                 value={form.phone}
                 handlerChange={handleCustomChange}
@@ -142,14 +174,19 @@ export default function LeadModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              labelName="Email *"
-              type="email"
-              name="email"
-              value={form.email}
-              handlerChange={handleCustomChange}
-              icon={<Mail size={16} />}
-            />
+            <div className="space-y-1">
+              <InputField
+                labelName="Email *"
+                type="email"
+                name="email"
+                value={form.email}
+                handlerChange={handleCustomChange}
+                icon={<Mail size={16} />}
+              />
+              {errors.email && (
+                <p className="text-red-500 text-[10px] ml-1">{errors.email}</p>
+              )}
+            </div>
 
             <OptionField
               labelName="Source *"
@@ -158,7 +195,6 @@ export default function LeadModal({
               handlerChange={handleCustomChange}
               optionData={sourceOptions}
               inital="Select Source"
-              icon={<Database size={16} />}
             />
           </div>
 
@@ -169,6 +205,8 @@ export default function LeadModal({
               value={form.preferred_country}
               handlerChange={handleCustomChange}
               icon={<Globe size={16} />}
+              maxLength={50}
+              minLength={3}
             />
 
             <OptionField
@@ -192,7 +230,6 @@ export default function LeadModal({
             icon={<UserCheck size={16} />}
           />
 
-          {/* Footer Buttons */}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"

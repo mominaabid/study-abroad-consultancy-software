@@ -8,9 +8,11 @@ import "react-toastify/dist/ReactToastify.css";
 // Layout + Route Guards
 import PrivateRoute from "./Components/PrivateRouteHOC/PrivateRoute";
 import PrivateLayout from "./Components/PrivateLayoutHOC/PrivateLayout";
-import SetupPassword from "./Pages/Auth/SetupPassword";
+
 // Auth
 import Login from "./Pages/Auth/Login";
+import SetupPassword from "./Pages/Auth/SetupPassword";
+import SetupCounsellorPassword from "./Pages/Auth/SetupCounsellorPassword";
 
 // Admin Pages
 import { AdminDashboard } from "./Pages/AdminPage/AdminDashboard";
@@ -20,9 +22,6 @@ import { Counsellor } from "./Pages/AdminPage/Counsellor";
 // Counsellor Pages
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
-
-// Student Pages
-// import StudentDashboard from './Pages/StudentPage/StudentDashboard';
 
 import "./App.css";
 
@@ -35,24 +34,21 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <ToastContainer
-        position="top-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
+      <ToastContainer position="top-center" autoClose={3000} theme="colored" />
+
       <Routes>
         {/* ── Public ── */}
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
+
+        {/* Setup Routes */}
         <Route path="/setup-password" element={<SetupPassword />} />
-        {/* ── Admin Routes ── */}
+        <Route
+          path="/counsellor/setup-password"
+          element={<SetupCounsellorPassword />}
+        />
+
+        {/* ── Admin ── */}
         <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
           <Route element={<PrivateLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -61,7 +57,7 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* ── Counsellor Routes ── */}
+        {/* ── Counsellor ── */}
         <Route element={<PrivateRoute allowedRoles={["counsellor"]} />}>
           <Route element={<PrivateLayout />}>
             <Route
@@ -69,6 +65,7 @@ export default function App() {
               element={<CounsellorDashboard />}
             />
             <Route path="/counsellor/leads" element={<CounsellorLeads />} />
+
             <Route
               path="/counsellor/applications"
               element={
@@ -77,6 +74,7 @@ export default function App() {
                 </div>
               }
             />
+
             <Route
               path="/counsellor/chats"
               element={
@@ -86,7 +84,7 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* ── Student Routes ── */}
+        {/* ── Student ── */}
         <Route element={<PrivateRoute allowedRoles={["student"]} />}>
           <Route element={<PrivateLayout />}>
             <Route
@@ -95,28 +93,6 @@ export default function App() {
                 <div className="p-10 text-gray-500">
                   Student Dashboard — coming soon
                 </div>
-              }
-            />
-            <Route
-              path="/student/application"
-              element={
-                <div className="p-10 text-gray-500">
-                  Application — coming soon
-                </div>
-              }
-            />
-            <Route
-              path="/student/documents"
-              element={
-                <div className="p-10 text-gray-500">
-                  Documents — coming soon
-                </div>
-              }
-            />
-            <Route
-              path="/student/payments"
-              element={
-                <div className="p-10 text-gray-500">Payments — coming soon</div>
               }
             />
           </Route>

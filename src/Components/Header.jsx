@@ -151,11 +151,7 @@ export const Header = ({ toggleSideBar }) => {
                 </div>
 
                 {notifications.length > 0 && (
-                  <div className="p-2 border-t border-gray-50 bg-gray-50/30">
-                    <button className="w-full py-1.5 text-[11px] font-bold text-teal-600 hover:text-teal-700 uppercase tracking-widest transition-colors">
-                      View Activity Log
-                    </button>
-                  </div>
+                  <div className="p-2 border-t border-gray-50 bg-gray-50/30"></div>
                 )}
               </div>
             )}

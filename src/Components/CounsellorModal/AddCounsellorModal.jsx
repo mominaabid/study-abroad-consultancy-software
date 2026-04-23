@@ -2,22 +2,15 @@ import React, { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
+import { useDispatch } from "react-redux";
+import { addNotification } from "../../redux/slices/notificationSlice";
 
 import { InputField } from "../InputFields/InputField";
 import { OptionField } from "../InputFields/OptionField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
-import {
-  User,
-  Mail,
-  Phone,
-  Lock,
-  MapPin,
-  CreditCard,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { User, Mail, Phone, MapPin, CreditCard } from "lucide-react";
 
 const INITIAL_STATE = {
   name: "",
@@ -25,8 +18,6 @@ const INITIAL_STATE = {
   email: "",
   phone: "",
   cnic: "",
-  password: "",
-  confirm_password: "",
   address: "",
   role: "counsellor",
   status: "active",
@@ -35,45 +26,78 @@ const INITIAL_STATE = {
 export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const dispatch = useDispatch();
 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let formattedValue = value;
+
+    if (formattedValue.startsWith(" ")) return;
+
+    if ((name === "name" || name === "father_name") && value.length > 50)
+      return;
+    if (name === "address" && value.length > 250) return;
+
+    if (name === "name" || name === "father_name") {
+      const alphaRegex = /^[a-zA-Z\s]*$/;
+      if (!alphaRegex.test(formattedValue)) return;
+    }
+
+    if (name === "phone") {
+      const numValue = value.replace(/\D/g, "");
+      if (numValue.length > 11) return;
+      formattedValue = numValue;
+    }
+
+    if (name === "cnic") {
+      const nums = value.replace(/\D/g, "");
+      if (nums.length > 13) return;
+      let masked = nums;
+      if (nums.length > 5 && nums.length <= 12) {
+        masked = `${nums.slice(0, 5)}-${nums.slice(5)}`;
+      } else if (nums.length > 12) {
+        masked = `${nums.slice(0, 5)}-${nums.slice(5, 12)}-${nums.slice(12)}`;
+      }
+      formattedValue = masked;
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.password !== formData.confirm_password) {
-      return toast.error("Passwords do not match!");
+    if (formData.name.trim().length < 3) {
+      return toast.error("Full Name must be at least 3 characters");
+    }
+    if (formData.father_name.trim().length < 3) {
+      return toast.error("Father's Name must be at least 3 characters");
+    }
+    if (formData.address.trim().length < 3) {
+      return toast.error("Address must be at least 3 characters");
+    }
+
+    if (formData.phone.length !== 11) {
+      return toast.error("Phone number must be exactly 11 digits");
+    }
+    if (formData.cnic.length !== 15) {
+      return toast.error("CNIC must be in format: 00000-0000000-0");
     }
 
     try {
       setLoading(true);
-      const res = await axios.post(`${BASE_URL}/admin/addCounsellor`, formData);
-
-      try {
-        await axios.post(
-          `https://formsubmit.co/ajax/${formData.email}`,
-          {
-            _subject: "Welcome! Your Counsellor Account is Ready",
-            _template: "table",
-            "Hello!": formData.name,
-            "Account Message": "Your account has been successfully created.",
-            "Login Email": formData.email,
-            "Temporary Password": formData.password,
-          },
-          { headers: { "Content-Type": "application/json" } },
-        );
-        console.log(res);
-      } catch (emailError) {
-        console.error("Email failed:", emailError);
-      }
+      await axios.post(`${BASE_URL}/admin/addCounsellor`, formData);
 
       toast.success("Counsellor added successfully!");
+
+      dispatch(
+        addNotification({
+          message: `Counsellor "${formData.name}" created & email sent`,
+        }),
+      );
+
       setFormData(INITIAL_STATE);
       onClose();
       if (onSuccess) onSuccess();
@@ -105,9 +129,10 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               labelName="Full Name *"
               name="name"
               type="text"
-              icon={<User size={18} />} // 2. Pass the icon prop here
+              icon={<User size={18} />}
               value={formData.name}
               handlerChange={handleChange}
+              placeholder="Full Name (Min 3, Max 50)"
             />
             <InputField
               labelName="Father Name *"
@@ -116,6 +141,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               icon={<User size={18} />}
               value={formData.father_name}
               handlerChange={handleChange}
+              placeholder="Father's Name (Min 3, Max 50)"
             />
           </div>
 
@@ -127,14 +153,16 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               icon={<Mail size={18} />}
               value={formData.email}
               handlerChange={handleChange}
+              placeholder="email@example.com"
             />
             <InputField
               labelName="Phone Number *"
               name="phone"
-              type="tel"
+              type="text"
               icon={<Phone size={18} />}
               value={formData.phone}
               handlerChange={handleChange}
+              placeholder="03001234567"
             />
           </div>
 
@@ -146,57 +174,20 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               icon={<CreditCard size={18} />}
               value={formData.cnic}
               handlerChange={handleChange}
+              placeholder="34104-0000000-0"
             />
+
             <OptionField
               labelName="Status"
               name="status"
               value={formData.status}
               handlerChange={handleChange}
               optionData={[
-                { id: 1, label: "Active", value: "active" },
-                { id: 2, label: "Inactive", value: "inactive" },
+                { id: 1, label: "✅ Active", value: "active" },
+                { id: 2, label: "🚫 Inactive", value: "inactive" },
               ]}
+              inital="Select Status"
             />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <InputField
-                labelName="Password *"
-                name="password"
-                // 3. Dynamic type based on state
-                type={showPassword ? "text" : "password"}
-                icon={<Lock size={18} />}
-                value={formData.password}
-                handlerChange={handleChange}
-              />
-              {/* 4. The Toggle Icon */}
-              <button
-                type="button"
-                className="absolute right-3 top-[30px] text-slate-400 hover:text-slate-600 transition-colors"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-              </button>
-            </div>
-
-            <div className="relative">
-              <InputField
-                labelName="Confirm Password *"
-                name="confirm_password"
-                type={showPassword ? "text" : "password"}
-                icon={<Lock size={18} />}
-                value={formData.confirm_password}
-                handlerChange={handleChange}
-              />
-              <button
-                type="button"
-                className="absolute right-3 top-[30px] text-slate-400 hover:text-slate-600 transition-colors"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-              </button>
-            </div>
           </div>
 
           <TextareaField
@@ -206,16 +197,18 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
             icon={<MapPin size={18} />}
             value={formData.address}
             handlerChange={handleChange}
+            placeholder="Full Address (Min 3, Max 250)"
           />
 
           <div className="flex items-center justify-end gap-3 pt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-1.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
+              className="px-6 py-2.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
             >
               Close
             </button>
+
             <AddButton
               label="Add Counselor"
               loading={loading}
