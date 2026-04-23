@@ -4,7 +4,8 @@ import { useDispatch } from "react-redux";
 import { loadUser } from "./redux/slices/authSlice";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import CounsellorChat from "./Pages/CounsellorPage/CounsellorChat";
+import StudentChat from "./Pages/StudentPage/StudentChat";
 // Layout + Route Guards
 import PrivateRoute from "./Components/PrivateRouteHOC/PrivateRoute";
 import PrivateLayout from "./Components/PrivateLayoutHOC/PrivateLayout";
@@ -65,7 +66,7 @@ export default function App() {
               element={<CounsellorDashboard />}
             />
             <Route path="/counsellor/leads" element={<CounsellorLeads />} />
-
+            <Route path="/counsellor/chats" element={<CounsellorChat />} />
             <Route
               path="/counsellor/applications"
               element={
@@ -93,6 +94,29 @@ export default function App() {
                 <div className="p-10 text-gray-500">
                   Student Dashboard — coming soon
                 </div>
+              }
+            />
+            <Route
+              path="/student/application"
+              element={
+                <div className="p-10 text-gray-500">
+                  Application — coming soon
+                </div>
+              }
+            />
+            <Route
+              path="/student/documents"
+              element={
+                <div className="p-10 text-gray-500">
+                  Documents — coming soon
+                </div>
+              }
+            />
+            <Route path="/student/chats" element={<StudentChat />} />
+            <Route
+              path="/student/payments"
+              element={
+                <div className="p-10 text-gray-500">Payments — coming soon</div>
               }
             />
           </Route>

@@ -214,46 +214,25 @@ export default function Leads() {
     }
   }
 
-  async function handleStage(leadId, status) {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+async function handleStage(leadId, status, note = "") {
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-    const lead = leads.find((l) => l.id === leadId);
+  setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
+  if (drawerLead?.id === leadId) setDrawerLead(prev => ({ ...prev, status }));
 
-    // Optimistic update
-    setLeads((prev) =>
-      prev.map((l) => (l.id === leadId ? { ...l, status } : l)),
-    );
-
-    if (drawerLead?.id === leadId)
-      setDrawerLead((prev) => ({ ...prev, status }));
-
-    try {
-      const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/stage`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      if (!res.ok) throw new Error();
-
-      toast.success("Status updated");
-
-      if (status === "contacted") {
-        dispatch(
-          addNotification({
-            message: `Lead contacted: ${lead?.name}`,
-          }),
-        );
-      }
-    } catch {
-      toast.error("Failed to update lead status");
-      fetchLeads();
-    }
+  try {
+    const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/stage`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status, note }),  // ✅ send note
+    });
+    if (!res.ok) throw new Error();
+  } catch {
+    alert("Failed to update lead status");
+    fetchLeads();
   }
+}
 
   async function handleDelete(lead) {
     const token = localStorage.getItem("token");
