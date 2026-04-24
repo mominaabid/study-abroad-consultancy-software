@@ -6,6 +6,8 @@ import {
   Upload, FileText, Image, File, CheckCircle,
   XCircle, Clock, AlertTriangle, Trash2,
   Download, RefreshCw, Eye, ChevronDown,
+  History, UserCheck, UserX, Calendar, 
+  ChevronRight, Activity
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -55,8 +57,194 @@ function getFileIcon(mime) {
   return <File size={20} />;
 }
 
+// ── Activity Log Component ───────────────────────────────────────────────────
+function ActivityLog({ doc, isOpen, onClose }) {
+  if (!isOpen) return null;
+
+  // Build activity timeline based on document status and data
+  const activities = [];
+  
+  // Upload activity
+  if (doc.submitted_at) {
+    activities.push({
+      type: 'upload',
+      title: 'Document Uploaded',
+      description: `You uploaded ${doc.original_name}`,
+      date: doc.submitted_at,
+      icon: Upload,
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
+    });
+  }
+  
+  // Review activity (if document was reviewed)
+  if (doc.reviewed_at) {
+    if (doc.status === 'verified') {
+      activities.push({
+        type: 'verified',
+        title: 'Document Verified',
+        description: 'Your document has been verified and approved',
+        date: doc.reviewed_at,
+        icon: CheckCircle,
+        color: 'text-emerald-500',
+        bg: 'bg-emerald-50',
+      });
+    } else if (doc.status === 'rejected' && doc.rejection_reason) {
+      activities.push({
+        type: 'rejected',
+        title: 'Document Rejected',
+        description: `Reason: ${doc.rejection_reason}`,
+        date: doc.reviewed_at,
+        icon: XCircle,
+        color: 'text-red-500',
+        bg: 'bg-red-50',
+      });
+    }
+  }
+  
+  // Add re-upload activity if status is review (means it was re-uploaded after rejection)
+  if (doc.status === 'review' && doc.submitted_at) {
+    // Check if there was a rejection before
+    if (doc.rejection_reason) {
+      activities.push({
+        type: 'reupload',
+        title: 'Document Re-uploaded',
+        description: 'You re-uploaded the document after rejection',
+        date: doc.submitted_at,
+        icon: RefreshCw,
+        color: 'text-purple-500',
+        bg: 'bg-purple-50',
+      });
+    }
+  }
+
+  // Sort activities by date (oldest first)
+  activities.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 z-40"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out animate-slide-in">
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-blue-950 to-teal-900 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                  <History size={20} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Document Timeline</h3>
+                  <p className="text-xs text-blue-200 opacity-90">
+                    {DOC_TYPES.find(t => t.key === doc.doc_type)?.label || doc.doc_type}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition"
+              >
+                <XCircle size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Timeline Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {activities.length === 0 ? (
+              <div className="text-center py-12">
+                <Activity size={48} className="mx-auto text-gray-300 mb-3" />
+                <p className="text-gray-500 text-sm">No activity yet</p>
+                <p className="text-gray-400 text-xs mt-1">Activity log will appear here</p>
+              </div>
+            ) : (
+              <div className="relative">
+                {/* Vertical line */}
+                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
+                
+                {/* Activities */}
+                <div className="space-y-6">
+                  {activities.map((activity, index) => {
+                    const Icon = activity.icon;
+                    return (
+                      <div key={index} className="relative pl-12">
+                        {/* Timeline dot */}
+                        <div className={`absolute left-0 top-0 w-8 h-8 rounded-full ${activity.bg} flex items-center justify-center ring-4 ring-white`}>
+                          <Icon size={16} className={activity.color} />
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-semibold text-gray-800 text-sm">
+                                {activity.title}
+                              </h4>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {activity.description}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
+                            <Calendar size={12} />
+                            <span>{formatDateTime(activity.date)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer with document info */}
+          <div className="p-5 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center">
+                {getFileIcon(doc.file_mime)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-700 truncate">{doc.original_name}</p>
+                <p className="text-xs text-gray-400">{formatSize(doc.file_size)}</p>
+              </div>
+              <a
+                href={doc.file_url}
+                target="_blank"
+                className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 transition flex items-center gap-1"
+              >
+                <Eye size={12} /> View
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
+    </>
+  );
+}
+
 // ── Upload Zone Component ─────────────────────────────────────────────────────
-function UploadZone({ docType, onUpload, uploading, existingDoc }) {
+function UploadZone({ docType, onUpload, uploading }) {
   const [dragOver, setDragOver] = useState(false);
   const [selected, setSelected] = useState(null);
   const [localType, setLocalType] = useState(docType || "");
@@ -91,7 +279,6 @@ function UploadZone({ docType, onUpload, uploading, existingDoc }) {
         Upload New Document
       </h3>
 
-      {/* Doc type selector */}
       <div className="relative mb-3">
         <select
           value={localType}
@@ -108,7 +295,6 @@ function UploadZone({ docType, onUpload, uploading, existingDoc }) {
         <ChevronDown size={14} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
       </div>
 
-      {/* Drop zone */}
       <div
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -161,7 +347,6 @@ function UploadZone({ docType, onUpload, uploading, existingDoc }) {
         )}
       </div>
 
-      {/* Upload button */}
       <button
         onClick={handleSubmit}
         disabled={!selected || !localType || uploading}
@@ -176,7 +361,7 @@ function UploadZone({ docType, onUpload, uploading, existingDoc }) {
           </>
         ) : (
           <>
-         
+            <Upload size={15} />
             Upload Documents
           </>
         )}
@@ -185,18 +370,15 @@ function UploadZone({ docType, onUpload, uploading, existingDoc }) {
   );
 }
 
-// ── Document Card ─────────────────────────────────────────────────────────────
-function DocCard({ doc, onDelete, onReupload }) {
-  const s       = STATUS[doc.status] || STATUS.pending;
-  const Icon    = s.icon;
-  const isRejected  = doc.status === "rejected";
-  const isVerified  = doc.status === "verified";
-  const canDelete   = ["pending", "rejected"].includes(doc.status);
+// ── Document Card with Activity Log Button ────────────────────────────────────
+function DocCard({ doc, onDelete, onReupload, onViewHistory }) {
+  const s = STATUS[doc.status] || STATUS.pending;
+  const Icon = s.icon;
+  const isRejected = doc.status === "rejected";
+  const canDelete = ["pending", "rejected"].includes(doc.status);
 
   return (
     <div className={`bg-white rounded-2xl border ${s.border} shadow-sm overflow-hidden transition-all hover:shadow-md`}>
-
-      {/* Header */}
       <div className={`px-5 py-3 ${s.bg} flex items-center justify-between`}>
         <div className="flex items-center gap-2.5">
           <div className={`w-2 h-2 rounded-full ${s.dot} ${doc.status === "review" ? "animate-pulse" : ""}`} />
@@ -204,10 +386,18 @@ function DocCard({ doc, onDelete, onReupload }) {
             {s.label}
           </span>
         </div>
-        <Icon size={14} className={s.text} />
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onViewHistory(doc)}
+            className="p-1 hover:bg-white/50 rounded-lg transition"
+            title="View History"
+          >
+            <History size={14} className="text-gray-500" />
+          </button>
+          <Icon size={14} className={s.text} />
+        </div>
       </div>
 
-      {/* Body */}
       <div className="p-5">
         <div className="flex items-start gap-3 mb-4">
           <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 flex-shrink-0 border border-gray-100">
@@ -222,7 +412,6 @@ function DocCard({ doc, onDelete, onReupload }) {
           </div>
         </div>
 
-        {/* Timeline */}
         <div className="space-y-2 text-xs text-gray-500 border-t border-gray-50 pt-3">
           <div className="flex justify-between">
             <span className="text-gray-400">Submitted</span>
@@ -236,7 +425,6 @@ function DocCard({ doc, onDelete, onReupload }) {
           )}
         </div>
 
-        {/* Rejection reason */}
         {isRejected && doc.rejection_reason && (
           <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-xl">
             <p className="text-xs font-bold text-red-600 mb-1 flex items-center gap-1.5">
@@ -246,9 +434,7 @@ function DocCard({ doc, onDelete, onReupload }) {
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex gap-2 mt-4">
-          {/* View/Download */}
           <a
             href={doc.file_url}
             target="_blank"
@@ -258,7 +444,6 @@ function DocCard({ doc, onDelete, onReupload }) {
             <Eye size={12} /> View
           </a>
 
-          {/* Re-upload (only if rejected) */}
           {isRejected && (
             <button
               onClick={() => onReupload(doc.doc_type)}
@@ -268,7 +453,6 @@ function DocCard({ doc, onDelete, onReupload }) {
             </button>
           )}
 
-          {/* Delete */}
           {canDelete && (
             <button
               onClick={() => onDelete(doc)}
@@ -285,19 +469,17 @@ function DocCard({ doc, onDelete, onReupload }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function StudentDocuments() {
-  const user = useSelector(selectUser);
-
-  const [documents,   setDocuments]   = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [uploading,   setUploading]   = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [reuploadType, setReuploadType] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedDocForHistory, setSelectedDocForHistory] = useState(null);
 
-  // ── Fetch docs ─────────────────────────────────────────────────────────────
   const fetchDocs = useCallback(async () => {
     try {
-      const res  = await fetch(`${BASE_URL}/student/documents`, {
+      const res = await fetch(`${BASE_URL}/student/documents`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       const data = await res.json();
@@ -311,66 +493,108 @@ export default function StudentDocuments() {
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
-  // ── Upload ─────────────────────────────────────────────────────────────────
+  const updateDocumentInState = (docId, updates) => {
+    setDocuments(prevDocs => 
+      prevDocs.map(doc => doc.id === docId ? { ...doc, ...updates } : doc)
+    );
+  };
+
+  const addDocumentToState = (newDoc) => {
+    setDocuments(prevDocs => [newDoc, ...prevDocs]);
+  };
+
+  const removeDocumentFromState = (docId) => {
+    setDocuments(prevDocs => prevDocs.filter(doc => doc.id !== docId));
+  };
+
   async function handleUpload(file, docType) {
     setUploading(true);
+    
+    const optimisticDoc = {
+      id: `temp-${Date.now()}`,
+      doc_type: docType,
+      status: 'pending',
+      original_name: file.name,
+      file_size: file.size,
+      file_mime: file.type,
+      submitted_at: new Date().toISOString(),
+      reviewed_at: null,
+      rejection_reason: null,
+      file_url: null,
+    };
+    
+    addDocumentToState(optimisticDoc);
+    
     try {
       const formData = new FormData();
-      formData.append("file",     file);
+      formData.append("file", file);
       formData.append("doc_type", docType);
 
       const res = await fetch(`${BASE_URL}/student/documents/upload`, {
-        method:  "POST",
+        method: "POST",
         headers: { Authorization: `Bearer ${getToken()}` },
-        body:    formData,
+        body: formData,
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
+      removeDocumentFromState(optimisticDoc.id);
+      if (data.document) {
+        addDocumentToState({
+          ...data.document,
+          file_url: data.document.file_url,
+          submitted_at: data.document.submitted_at,
+        });
+      }
+      
       toast.success("Document uploaded successfully!");
       setReuploadType("");
-      await fetchDocs();
+      
     } catch (err) {
+      removeDocumentFromState(optimisticDoc.id);
       toast.error(err.message || "Upload failed.");
     } finally {
       setUploading(false);
     }
   }
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
   async function handleDelete(doc) {
+    removeDocumentFromState(doc.id);
+    setDeleteConfirm(null);
+    
     try {
       const res = await fetch(`${BASE_URL}/student/documents/${doc.id}`, {
-        method:  "DELETE",
+        method: "DELETE",
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error((await res.json()).message);
       toast.success("Document deleted.");
-      setDeleteConfirm(null);
-      await fetchDocs();
     } catch (err) {
+      addDocumentToState(doc);
       toast.error(err.message || "Delete failed.");
     }
   }
 
-  // ── Derived ────────────────────────────────────────────────────────────────
+  const handleReupload = (docType) => {
+    setReuploadType(docType);
+    document.getElementById('upload-zone')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const verified = documents.filter(d => d.status === "verified").length;
-  const pending  = documents.filter(d => d.status === "pending").length;
+  const pending = documents.filter(d => d.status === "pending").length;
   const rejected = documents.filter(d => d.status === "rejected").length;
-  const review   = documents.filter(d => d.status === "review").length;
+  const review = documents.filter(d => d.status === "review").length;
 
   const filtered = filterStatus === "all"
     ? documents
     : documents.filter(d => d.status === filterStatus);
 
   const uploadedTypes = new Set(documents.map(d => d.doc_type));
-  const requiredRemaining = DOC_TYPES.filter(t => t.required && !uploadedTypes.has(t.key));
 
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="mb-6">
         <div className="bg-gradient-to-r from-blue-950 to-teal-900 text-white rounded-3xl p-7 shadow-xl relative overflow-hidden">
           <div className="absolute -right-6 -top-6 w-40 h-40 bg-white/5 rounded-full" />
@@ -387,15 +611,21 @@ export default function StudentDocuments() {
         </div>
       </div>
 
-      {/* ── Stats ── */}
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Verified",    count: verified, color: "#10b981", bg: "bg-emerald-50", text: "text-emerald-700" },
-          { label: "Pending",     count: pending,  color: "#f59e0b", bg: "bg-amber-50",   text: "text-amber-700"   },
-          { label: "In Review",   count: review,   color: "#3b82f6", bg: "bg-blue-50",    text: "text-blue-700"    },
-          { label: "Rejected",    count: rejected, color: "#ef4444", bg: "bg-red-50",     text: "text-red-700"     },
+          { label: "Verified", count: verified, status: "verified", color: "#10b981", bg: "bg-emerald-50", text: "text-emerald-700" },
+          { label: "Pending", count: pending, status: "pending", color: "#f59e0b", bg: "bg-amber-50", text: "text-amber-700" },
+          { label: "In Review", count: review, status: "review", color: "#3b82f6", bg: "bg-blue-50", text: "text-blue-700" },
+          { label: "Rejected", count: rejected, status: "rejected", color: "#ef4444", bg: "bg-red-50", text: "text-red-700" },
         ].map(s => (
-          <div key={s.label} className={`${s.bg} rounded-2xl p-4 border border-white`}>
+          <div 
+            key={s.label} 
+            onClick={() => setFilterStatus(s.status)}
+            className={`${s.bg} rounded-2xl p-4 border-2 transition-all cursor-pointer hover:shadow-md
+              ${filterStatus === s.status ? 'border-current shadow-md' : 'border-white'}`}
+            style={{ borderColor: filterStatus === s.status ? s.color : undefined }}
+          >
             <p className={`text-2xl font-bold ${s.text}`}>{s.count}</p>
             <p className="text-xs text-gray-500 font-medium mt-0.5">{s.label}</p>
           </div>
@@ -403,18 +633,16 @@ export default function StudentDocuments() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* ── Left: Upload + Checklist ── */}
+        {/* Left: Upload + Checklist */}
         <div className="space-y-5">
+          <div id="upload-zone">
+            <UploadZone
+              docType={reuploadType}
+              onUpload={handleUpload}
+              uploading={uploading}
+            />
+          </div>
 
-          {/* Upload zone */}
-          <UploadZone
-            docType={reuploadType}
-            onUpload={handleUpload}
-            uploading={uploading}
-          />
-
-          {/* Required checklist */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <h3 className="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">
               <CheckCircle size={15} className="text-teal-500" />
@@ -423,7 +651,7 @@ export default function StudentDocuments() {
             <div className="space-y-2">
               {DOC_TYPES.filter(t => t.required).map(t => {
                 const uploaded = documents.find(d => d.doc_type === t.key);
-                const s        = uploaded ? STATUS[uploaded.status] : null;
+                const s = uploaded ? STATUS[uploaded.status] : null;
                 return (
                   <div key={t.key} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                     <div className="flex items-center gap-2.5">
@@ -445,10 +673,8 @@ export default function StudentDocuments() {
           </div>
         </div>
 
-        {/* ── Right: Document list ── */}
+        {/* Right: Document list */}
         <div className="lg:col-span-2">
-
-          {/* Filter tabs */}
           <div className="flex gap-2 mb-4 flex-wrap">
             {["all", "pending", "review", "verified", "rejected"].map(s => (
               <button
@@ -470,7 +696,6 @@ export default function StudentDocuments() {
             ))}
           </div>
 
-          {/* Cards */}
           {loading ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
@@ -494,7 +719,8 @@ export default function StudentDocuments() {
                   key={doc.id}
                   doc={doc}
                   onDelete={setDeleteConfirm}
-                  onReupload={type => setReuploadType(type)}
+                  onReupload={handleReupload}
+                  onViewHistory={setSelectedDocForHistory}
                 />
               ))}
             </div>
@@ -502,7 +728,7 @@ export default function StudentDocuments() {
         </div>
       </div>
 
-      {/* ── Delete confirm modal ── */}
+      {/* Delete confirm modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
@@ -531,6 +757,15 @@ export default function StudentDocuments() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Activity Log Modal */}
+      {selectedDocForHistory && (
+        <ActivityLog
+          doc={selectedDocForHistory}
+          isOpen={true}
+          onClose={() => setSelectedDocForHistory(null)}
+        />
       )}
     </div>
   );
