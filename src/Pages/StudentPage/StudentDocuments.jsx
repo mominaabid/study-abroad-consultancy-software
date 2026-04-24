@@ -177,7 +177,7 @@ function UploadZone({ docType, onUpload, uploading, existingDoc }) {
         ) : (
           <>
          
-            Upload Document
+            Upload Documents
           </>
         )}
       </button>
