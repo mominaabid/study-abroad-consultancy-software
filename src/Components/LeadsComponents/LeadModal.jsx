@@ -219,17 +219,17 @@ export default function LeadModal({
               icon={<BookOpen size={16} />}
             />
           </div>
-
-          <OptionField
-            labelName="Assign Counsellor *"
-            name="counsellor_id"
-            value={form.counsellor_id}
-            handlerChange={handleCustomChange}
-            optionData={counsellorOptions}
-            inital="Select Counsellor"
-            icon={<UserCheck size={16} />}
-          />
-
+          {editLead && (
+            <OptionField
+              labelName="Assign Counsellor *"
+              name="counsellor_id"
+              value={form.counsellor_id}
+              handlerChange={handleCustomChange}
+              optionData={counsellorOptions}
+              inital="Select Counsellor"
+              icon={<UserCheck size={16} />}
+            />
+          )}
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
