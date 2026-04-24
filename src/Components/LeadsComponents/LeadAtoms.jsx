@@ -16,7 +16,7 @@ export function Avatar({ name = "", size = 36 }) {
   );
 }
 
-// ─── StatusBadge ───────────────────────────────────────────────────────────────
+// ─── StatusBadge-- ───────────────────────────────────────────────────────────────
 
 export function StatusBadge({ status }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES.new;

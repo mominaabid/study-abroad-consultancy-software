@@ -100,7 +100,7 @@ export function KanbanCard({
 
               <hr className="border-slate-100" />
 
-              {/* Delete Option */}
+              {/* Delete Optionsss */}
               <div
                 className="flex items-center justify-between hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer"
                 onClick={() => {

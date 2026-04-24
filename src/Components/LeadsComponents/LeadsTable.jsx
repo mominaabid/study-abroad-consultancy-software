@@ -36,7 +36,7 @@ export default function LeadsTable({
 
         <table className="w-full text-sm border-collapse">
 
-          {/* Header */}
+          {/* Headera */}
           <thead>
             <tr className="bg-gray-50/70 border-b border-gray-200">
               <th className="w-10 px-4 py-3">

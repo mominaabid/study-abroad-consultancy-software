@@ -1,5 +1,5 @@
 // LeadsComponents/LeadsConstants.jsx
-// ─── Stage Pipeline ────────────────────────────────────────────────────────────
+// ─── Stage Pipeliness ────────────────────────────────────────────────────────────
 
 export const STAGES = [
   { key: "new",        label: "New",        color: "#3b82f6" },

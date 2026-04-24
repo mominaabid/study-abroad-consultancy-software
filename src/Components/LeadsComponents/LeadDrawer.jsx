@@ -13,7 +13,7 @@ import {
   FaCalendarAlt,
 } from "react-icons/fa";
 
-// ── Activity Log Constants ──
+// ── Activity Log Constants ──---
 const LOG_COLORS = {
   stage_changed: "bg-purple-500",
   note_added: "bg-teal-500",

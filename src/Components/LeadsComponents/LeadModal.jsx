@@ -100,7 +100,7 @@ export default function LeadModal({
     }
   };
 
-  // Modified sourceOptions to include icons
+  // Modified sourceOptions to include iconss
   const sourceOptions = SOURCES.map((s) => {
     const icon = SOURCE_ICONS[s.toLowerCase()] || "📍";
     return {
