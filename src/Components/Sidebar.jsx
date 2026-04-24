@@ -26,6 +26,7 @@ const COUNSELLOR_MENU = [
   { name: "Applications", icon: <FileText size={20} />,     path: "/counsellor/applications" },
   { name: "Chats",        icon: <MessageSquare size={20} />,path: "/counsellor/chats" },
   { name: "Notifications",icon: <Bell size={20} />,         path: "/counsellor/notifications" },
+  { name: "Documents",    icon: <FileText size={20} />,     path: "/counsellor/documents" },
 ];
 
 const STUDENT_MENU = [
