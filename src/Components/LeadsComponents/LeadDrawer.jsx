@@ -22,14 +22,30 @@ import {
 } from "react-icons/fa";
 
 export default function LeadDrawer({ lead, onClose, onStage }) {
-  const [localStage, setLocalStage] = useState(lead?.status || "");
+  // Initialize localStage from lead.status OR from localStorage if available
+  const [localStage, setLocalStage] = useState(() => {
+    if (lead?.id) {
+      const savedStage = localStorage.getItem(`lead_stage_${lead.id}`);
+      return savedStage || lead?.status || "";
+    }
+    return lead?.status || "";
+  });
+
   const [stageNotesMap, setStageNotesMap] = useState({});
   const [activeTab, setActiveTab] = useState("details");
   const [logs, setLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const stageOrder = STAGES.map((s) => s.key);
+
+  // Save current stage to localStorage whenever it changes
+  useEffect(() => {
+    if (lead?.id && localStage) {
+      localStorage.setItem(`lead_stage_${lead.id}`, localStage);
+    }
+  }, [localStage, lead?.id]);
 
   // Load saved notes from localStorage when component mounts
   useEffect(() => {
@@ -44,7 +60,21 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
         }
       }
     }
+    setIsInitialized(true);
   }, [lead?.id]);
+
+  // Sync with lead.status when it changes from parent (only once after initialization)
+  useEffect(() => {
+    if (isInitialized && lead?.status && lead.status !== localStage) {
+      // Only update if the lead's status from backend is different
+      // This ensures we don't overwrite local changes already saved
+      const savedStage = localStorage.getItem(`lead_stage_${lead.id}`);
+      if (!savedStage || savedStage === lead.status) {
+        setLocalStage(lead.status);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead?.status, lead?.id, isInitialized]); // Remove localStage from dependencies
 
   // Save notes to localStorage whenever they change
   useEffect(() => {
@@ -301,7 +331,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
     return (
       <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-slate-50 rounded-xl">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+          <h3 className="text-xs font-semibold text-slate-600 tracking-wider">
             Current Progress
           </h3>
           <span className="text-xs font-bold text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">

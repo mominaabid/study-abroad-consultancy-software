@@ -1,43 +1,87 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser }  from "../../redux/slices/authSlice";
-import { BASE_URL }    from "../../Content/Url";
+// import { useSelector } from "react-redux";
+// import { selectUser }  from "../../redux/slices/authSlice";
+import { BASE_URL } from "../../Content/Url";
 import {
-  Upload, FileText, Image, File, CheckCircle,
-  XCircle, Clock, AlertTriangle, Trash2,
-  Download, RefreshCw, Eye, ChevronDown,
-  History, UserCheck, UserX, Calendar, 
-  ChevronRight, Activity
+  Upload,
+  FileText,
+  Image,
+  File,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Trash2,
+  Download,
+  RefreshCw,
+  Eye,
+  ChevronDown,
+  History,
+  UserCheck,
+  UserX,
+  Calendar,
+  ChevronRight,
+  Activity,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
 // ── Doc types ─────────────────────────────────────────────────────────────────
 const DOC_TYPES = [
-  { key: "passport",         label: "Passport Copy",          required: true  },
-  { key: "transcript",       label: "Academic Transcript",    required: true  },
-  { key: "sop",              label: "Statement of Purpose",   required: true  },
-  { key: "ielts",            label: "IELTS / English Test",   required: true  },
-  { key: "photo",            label: "Passport Photo",         required: true  },
-  { key: "recommendation",   label: "Recommendation Letter",  required: false },
-  { key: "financial",        label: "Financial Statement",    required: false },
-  { key: "cv",               label: "CV / Resume",            required: false },
-  { key: "other",            label: "Other Document",         required: false },
+  { key: "passport", label: "Passport Copy", required: true },
+  { key: "transcript", label: "Academic Transcript", required: true },
+  { key: "sop", label: "Statement of Purpose", required: true },
+  { key: "ielts", label: "IELTS / English Test", required: true },
+  { key: "photo", label: "Passport Photo", required: true },
+  { key: "recommendation", label: "Recommendation Letter", required: false },
+  { key: "financial", label: "Financial Statement", required: false },
+  { key: "cv", label: "CV / Resume", required: false },
+  { key: "other", label: "Other Document", required: false },
 ];
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS = {
-  pending:  { label: "Pending",     icon: Clock,         bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200",   dot: "bg-amber-400"   },
-  review:   { label: "In Review",   icon: RefreshCw,     bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200",    dot: "bg-blue-400"    },
-  verified: { label: "Verified",    icon: CheckCircle,   bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-400" },
-  rejected: { label: "Rejected",    icon: XCircle,       bg: "bg-red-50",     text: "text-red-700",     border: "border-red-200",     dot: "bg-red-500"     },
+  pending: {
+    label: "Pending",
+    icon: Clock,
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
+    dot: "bg-amber-400",
+  },
+  review: {
+    label: "In Review",
+    icon: RefreshCw,
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "border-blue-200",
+    dot: "bg-blue-400",
+  },
+  verified: {
+    label: "Verified",
+    icon: CheckCircle,
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+    dot: "bg-emerald-400",
+  },
+  rejected: {
+    label: "Rejected",
+    icon: XCircle,
+    bg: "bg-red-50",
+    text: "text-red-700",
+    border: "border-red-200",
+    dot: "bg-red-500",
+  },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function getToken() { return localStorage.getItem("token") || ""; }
+function getToken() {
+  return localStorage.getItem("token") || "";
+}
 
 function formatSize(bytes) {
   if (!bytes) return "—";
-  if (bytes < 1024)       return `${bytes} B`;
+  if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
@@ -45,8 +89,12 @@ function formatSize(bytes) {
 function formatDateTime(dateStr) {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit", hour12: true,
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   });
 }
 
@@ -63,57 +111,57 @@ function ActivityLog({ doc, isOpen, onClose }) {
 
   // Build activity timeline based on document status and data
   const activities = [];
-  
+
   // Upload activity
   if (doc.submitted_at) {
     activities.push({
-      type: 'upload',
-      title: 'Document Uploaded',
+      type: "upload",
+      title: "Document Uploaded",
       description: `You uploaded ${doc.original_name}`,
       date: doc.submitted_at,
       icon: Upload,
-      color: 'text-blue-500',
-      bg: 'bg-blue-50',
+      color: "text-blue-500",
+      bg: "bg-blue-50",
     });
   }
-  
+
   // Review activity (if document was reviewed)
   if (doc.reviewed_at) {
-    if (doc.status === 'verified') {
+    if (doc.status === "verified") {
       activities.push({
-        type: 'verified',
-        title: 'Document Verified',
-        description: 'Your document has been verified and approved',
+        type: "verified",
+        title: "Document Verified",
+        description: "Your document has been verified and approved",
         date: doc.reviewed_at,
         icon: CheckCircle,
-        color: 'text-emerald-500',
-        bg: 'bg-emerald-50',
+        color: "text-emerald-500",
+        bg: "bg-emerald-50",
       });
-    } else if (doc.status === 'rejected' && doc.rejection_reason) {
+    } else if (doc.status === "rejected" && doc.rejection_reason) {
       activities.push({
-        type: 'rejected',
-        title: 'Document Rejected',
+        type: "rejected",
+        title: "Document Rejected",
         description: `Reason: ${doc.rejection_reason}`,
         date: doc.reviewed_at,
         icon: XCircle,
-        color: 'text-red-500',
-        bg: 'bg-red-50',
+        color: "text-red-500",
+        bg: "bg-red-50",
       });
     }
   }
-  
+
   // Add re-upload activity if status is review (means it was re-uploaded after rejection)
-  if (doc.status === 'review' && doc.submitted_at) {
+  if (doc.status === "review" && doc.submitted_at) {
     // Check if there was a rejection before
     if (doc.rejection_reason) {
       activities.push({
-        type: 'reupload',
-        title: 'Document Re-uploaded',
-        description: 'You re-uploaded the document after rejection',
+        type: "reupload",
+        title: "Document Re-uploaded",
+        description: "You re-uploaded the document after rejection",
         date: doc.submitted_at,
         icon: RefreshCw,
-        color: 'text-purple-500',
-        bg: 'bg-purple-50',
+        color: "text-purple-500",
+        bg: "bg-purple-50",
       });
     }
   }
@@ -124,11 +172,8 @@ function ActivityLog({ doc, isOpen, onClose }) {
   return (
     <>
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-40"
-        onClick={onClose}
-      />
-      
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+
       {/* Modal */}
       <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out animate-slide-in">
         <div className="h-full flex flex-col">
@@ -142,7 +187,8 @@ function ActivityLog({ doc, isOpen, onClose }) {
                 <div>
                   <h3 className="font-bold text-lg">Document Timeline</h3>
                   <p className="text-xs text-blue-200 opacity-90">
-                    {DOC_TYPES.find(t => t.key === doc.doc_type)?.label || doc.doc_type}
+                    {DOC_TYPES.find((t) => t.key === doc.doc_type)?.label ||
+                      doc.doc_type}
                   </p>
                 </div>
               </div>
@@ -161,13 +207,15 @@ function ActivityLog({ doc, isOpen, onClose }) {
               <div className="text-center py-12">
                 <Activity size={48} className="mx-auto text-gray-300 mb-3" />
                 <p className="text-gray-500 text-sm">No activity yet</p>
-                <p className="text-gray-400 text-xs mt-1">Activity log will appear here</p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Activity log will appear here
+                </p>
               </div>
             ) : (
               <div className="relative">
                 {/* Vertical line */}
                 <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
-                
+
                 {/* Activities */}
                 <div className="space-y-6">
                   {activities.map((activity, index) => {
@@ -175,10 +223,12 @@ function ActivityLog({ doc, isOpen, onClose }) {
                     return (
                       <div key={index} className="relative pl-12">
                         {/* Timeline dot */}
-                        <div className={`absolute left-0 top-0 w-8 h-8 rounded-full ${activity.bg} flex items-center justify-center ring-4 ring-white`}>
+                        <div
+                          className={`absolute left-0 top-0 w-8 h-8 rounded-full ${activity.bg} flex items-center justify-center ring-4 ring-white`}
+                        >
                           <Icon size={16} className={activity.color} />
                         </div>
-                        
+
                         {/* Content */}
                         <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition">
                           <div className="flex items-start justify-between">
@@ -211,8 +261,12 @@ function ActivityLog({ doc, isOpen, onClose }) {
                 {getFileIcon(doc.file_mime)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-700 truncate">{doc.original_name}</p>
-                <p className="text-xs text-gray-400">{formatSize(doc.file_size)}</p>
+                <p className="text-xs font-medium text-gray-700 truncate">
+                  {doc.original_name}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {formatSize(doc.file_size)}
+                </p>
               </div>
               <a
                 href={doc.file_url}
@@ -282,30 +336,37 @@ function UploadZone({ docType, onUpload, uploading }) {
       <div className="relative mb-3">
         <select
           value={localType}
-          onChange={e => setLocalType(e.target.value)}
+          onChange={(e) => setLocalType(e.target.value)}
           className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 cursor-pointer"
         >
           <option value="">Select document type...</option>
-          {DOC_TYPES.map(t => (
+          {DOC_TYPES.map((t) => (
             <option key={t.key} value={t.key}>
               {t.label} {t.required ? "(Required)" : "(Optional)"}
             </option>
           ))}
         </select>
-        <ChevronDown size={14} className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" />
+        <ChevronDown
+          size={14}
+          className="absolute right-3 top-3.5 text-gray-400 pointer-events-none"
+        />
       </div>
 
       <div
-        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
         className={`relative border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200
-          ${dragOver
-            ? "border-teal-400 bg-teal-50"
-            : selected
-            ? "border-teal-300 bg-teal-50/50"
-            : "border-gray-200 bg-gray-50 hover:border-teal-300 hover:bg-teal-50/30"
+          ${
+            dragOver
+              ? "border-teal-400 bg-teal-50"
+              : selected
+                ? "border-teal-300 bg-teal-50/50"
+                : "border-gray-200 bg-gray-50 hover:border-teal-300 hover:bg-teal-50/30"
           }`}
       >
         <input
@@ -322,11 +383,18 @@ function UploadZone({ docType, onUpload, uploading }) {
               {getFileIcon(selected.type)}
             </div>
             <div className="text-left flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">{selected.name}</p>
-              <p className="text-xs text-gray-400">{formatSize(selected.size)}</p>
+              <p className="text-sm font-semibold text-gray-800 truncate">
+                {selected.name}
+              </p>
+              <p className="text-xs text-gray-400">
+                {formatSize(selected.size)}
+              </p>
             </div>
             <button
-              onClick={e => { e.stopPropagation(); setSelected(null); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelected(null);
+              }}
               className="text-gray-400 hover:text-red-500 transition-colors"
             >
               <XCircle size={18} />
@@ -378,11 +446,17 @@ function DocCard({ doc, onDelete, onReupload, onViewHistory }) {
   const canDelete = ["pending", "rejected"].includes(doc.status);
 
   return (
-    <div className={`bg-white rounded-2xl border ${s.border} shadow-sm overflow-hidden transition-all hover:shadow-md`}>
+    <div
+      className={`bg-white rounded-2xl border ${s.border} shadow-sm overflow-hidden transition-all hover:shadow-md`}
+    >
       <div className={`px-5 py-3 ${s.bg} flex items-center justify-between`}>
         <div className="flex items-center gap-2.5">
-          <div className={`w-2 h-2 rounded-full ${s.dot} ${doc.status === "review" ? "animate-pulse" : ""}`} />
-          <span className={`text-xs font-bold ${s.text} uppercase tracking-wider`}>
+          <div
+            className={`w-2 h-2 rounded-full ${s.dot} ${doc.status === "review" ? "animate-pulse" : ""}`}
+          />
+          <span
+            className={`text-xs font-bold ${s.text} uppercase tracking-wider`}
+          >
             {s.label}
           </span>
         </div>
@@ -405,9 +479,12 @@ function DocCard({ doc, onDelete, onReupload, onViewHistory }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-bold text-gray-800 text-sm capitalize leading-tight">
-              {DOC_TYPES.find(t => t.key === doc.doc_type)?.label || doc.doc_type}
+              {DOC_TYPES.find((t) => t.key === doc.doc_type)?.label ||
+                doc.doc_type}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5 truncate">{doc.original_name}</p>
+            <p className="text-xs text-gray-400 mt-0.5 truncate">
+              {doc.original_name}
+            </p>
             <p className="text-xs text-gray-400">{formatSize(doc.file_size)}</p>
           </div>
         </div>
@@ -415,12 +492,16 @@ function DocCard({ doc, onDelete, onReupload, onViewHistory }) {
         <div className="space-y-2 text-xs text-gray-500 border-t border-gray-50 pt-3">
           <div className="flex justify-between">
             <span className="text-gray-400">Submitted</span>
-            <span className="font-medium text-gray-600">{formatDateTime(doc.submitted_at)}</span>
+            <span className="font-medium text-gray-600">
+              {formatDateTime(doc.submitted_at)}
+            </span>
           </div>
           {doc.reviewed_at && (
             <div className="flex justify-between">
               <span className="text-gray-400">Reviewed</span>
-              <span className="font-medium text-gray-600">{formatDateTime(doc.reviewed_at)}</span>
+              <span className="font-medium text-gray-600">
+                {formatDateTime(doc.reviewed_at)}
+              </span>
             </div>
           )}
         </div>
@@ -430,7 +511,9 @@ function DocCard({ doc, onDelete, onReupload, onViewHistory }) {
             <p className="text-xs font-bold text-red-600 mb-1 flex items-center gap-1.5">
               <AlertTriangle size={12} /> Rejection Reason
             </p>
-            <p className="text-xs text-red-700 leading-relaxed">{doc.rejection_reason}</p>
+            <p className="text-xs text-red-700 leading-relaxed">
+              {doc.rejection_reason}
+            </p>
           </div>
         )}
 
@@ -491,29 +574,31 @@ export default function StudentDocuments() {
     }
   }, []);
 
-  useEffect(() => { fetchDocs(); }, [fetchDocs]);
+  useEffect(() => {
+    fetchDocs();
+  }, [fetchDocs]);
 
-  const updateDocumentInState = (docId, updates) => {
-    setDocuments(prevDocs => 
-      prevDocs.map(doc => doc.id === docId ? { ...doc, ...updates } : doc)
-    );
-  };
+  // const updateDocumentInState = (docId, updates) => {
+  //   setDocuments(prevDocs =>
+  //     prevDocs.map(doc => doc.id === docId ? { ...doc, ...updates } : doc)
+  //   );
+  // };
 
   const addDocumentToState = (newDoc) => {
-    setDocuments(prevDocs => [newDoc, ...prevDocs]);
+    setDocuments((prevDocs) => [newDoc, ...prevDocs]);
   };
 
   const removeDocumentFromState = (docId) => {
-    setDocuments(prevDocs => prevDocs.filter(doc => doc.id !== docId));
+    setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
   };
 
   async function handleUpload(file, docType) {
     setUploading(true);
-    
+
     const optimisticDoc = {
       id: `temp-${Date.now()}`,
       doc_type: docType,
-      status: 'pending',
+      status: "pending",
       original_name: file.name,
       file_size: file.size,
       file_mime: file.type,
@@ -522,9 +607,9 @@ export default function StudentDocuments() {
       rejection_reason: null,
       file_url: null,
     };
-    
+
     addDocumentToState(optimisticDoc);
-    
+
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -547,10 +632,9 @@ export default function StudentDocuments() {
           submitted_at: data.document.submitted_at,
         });
       }
-      
+
       toast.success("Document uploaded successfully!");
       setReuploadType("");
-      
     } catch (err) {
       removeDocumentFromState(optimisticDoc.id);
       toast.error(err.message || "Upload failed.");
@@ -562,7 +646,7 @@ export default function StudentDocuments() {
   async function handleDelete(doc) {
     removeDocumentFromState(doc.id);
     setDeleteConfirm(null);
-    
+
     try {
       const res = await fetch(`${BASE_URL}/student/documents/${doc.id}`, {
         method: "DELETE",
@@ -578,19 +662,22 @@ export default function StudentDocuments() {
 
   const handleReupload = (docType) => {
     setReuploadType(docType);
-    document.getElementById('upload-zone')?.scrollIntoView({ behavior: 'smooth' });
+    document
+      .getElementById("upload-zone")
+      ?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const verified = documents.filter(d => d.status === "verified").length;
-  const pending = documents.filter(d => d.status === "pending").length;
-  const rejected = documents.filter(d => d.status === "rejected").length;
-  const review = documents.filter(d => d.status === "review").length;
+  const verified = documents.filter((d) => d.status === "verified").length;
+  const pending = documents.filter((d) => d.status === "pending").length;
+  const rejected = documents.filter((d) => d.status === "rejected").length;
+  const review = documents.filter((d) => d.status === "review").length;
 
-  const filtered = filterStatus === "all"
-    ? documents
-    : documents.filter(d => d.status === filterStatus);
+  const filtered =
+    filterStatus === "all"
+      ? documents
+      : documents.filter((d) => d.status === filterStatus);
 
-  const uploadedTypes = new Set(documents.map(d => d.doc_type));
+  // const uploadedTypes = new Set(documents.map(d => d.doc_type));
 
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
@@ -614,20 +701,52 @@ export default function StudentDocuments() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Verified", count: verified, status: "verified", color: "#10b981", bg: "bg-emerald-50", text: "text-emerald-700" },
-          { label: "Pending", count: pending, status: "pending", color: "#f59e0b", bg: "bg-amber-50", text: "text-amber-700" },
-          { label: "In Review", count: review, status: "review", color: "#3b82f6", bg: "bg-blue-50", text: "text-blue-700" },
-          { label: "Rejected", count: rejected, status: "rejected", color: "#ef4444", bg: "bg-red-50", text: "text-red-700" },
-        ].map(s => (
-          <div 
-            key={s.label} 
+          {
+            label: "Verified",
+            count: verified,
+            status: "verified",
+            color: "#10b981",
+            bg: "bg-emerald-50",
+            text: "text-emerald-700",
+          },
+          {
+            label: "Pending",
+            count: pending,
+            status: "pending",
+            color: "#f59e0b",
+            bg: "bg-amber-50",
+            text: "text-amber-700",
+          },
+          {
+            label: "In Review",
+            count: review,
+            status: "review",
+            color: "#3b82f6",
+            bg: "bg-blue-50",
+            text: "text-blue-700",
+          },
+          {
+            label: "Rejected",
+            count: rejected,
+            status: "rejected",
+            color: "#ef4444",
+            bg: "bg-red-50",
+            text: "text-red-700",
+          },
+        ].map((s) => (
+          <div
+            key={s.label}
             onClick={() => setFilterStatus(s.status)}
             className={`${s.bg} rounded-2xl p-4 border-2 transition-all cursor-pointer hover:shadow-md
-              ${filterStatus === s.status ? 'border-current shadow-md' : 'border-white'}`}
-            style={{ borderColor: filterStatus === s.status ? s.color : undefined }}
+              ${filterStatus === s.status ? "border-current shadow-md" : "border-white"}`}
+            style={{
+              borderColor: filterStatus === s.status ? s.color : undefined,
+            }}
           >
             <p className={`text-2xl font-bold ${s.text}`}>{s.count}</p>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">{s.label}</p>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">
+              {s.label}
+            </p>
           </div>
         ))}
       </div>
@@ -649,22 +768,33 @@ export default function StudentDocuments() {
               Required Documents
             </h3>
             <div className="space-y-2">
-              {DOC_TYPES.filter(t => t.required).map(t => {
-                const uploaded = documents.find(d => d.doc_type === t.key);
+              {DOC_TYPES.filter((t) => t.required).map((t) => {
+                const uploaded = documents.find((d) => d.doc_type === t.key);
                 const s = uploaded ? STATUS[uploaded.status] : null;
                 return (
-                  <div key={t.key} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div
+                    key={t.key}
+                    className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
+                  >
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0
-                        ${!uploaded ? "bg-gray-200" : s?.dot}`} />
-                      <span className="text-xs font-medium text-gray-700">{t.label}</span>
+                      <div
+                        className={`w-2 h-2 rounded-full flex-shrink-0
+                        ${!uploaded ? "bg-gray-200" : s?.dot}`}
+                      />
+                      <span className="text-xs font-medium text-gray-700">
+                        {t.label}
+                      </span>
                     </div>
                     {uploaded ? (
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s?.bg} ${s?.text}`}>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s?.bg} ${s?.text}`}
+                      >
                         {s?.label}
                       </span>
                     ) : (
-                      <span className="text-[10px] text-gray-400 font-medium">Not uploaded</span>
+                      <span className="text-[10px] text-gray-400 font-medium">
+                        Not uploaded
+                      </span>
                     )}
                   </div>
                 );
@@ -676,20 +806,21 @@ export default function StudentDocuments() {
         {/* Right: Document list */}
         <div className="lg:col-span-2">
           <div className="flex gap-2 mb-4 flex-wrap">
-            {["all", "pending", "review", "verified", "rejected"].map(s => (
+            {["all", "pending", "review", "verified", "rejected"].map((s) => (
               <button
                 key={s}
                 onClick={() => setFilterStatus(s)}
                 className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all
-                  ${filterStatus === s
-                    ? "bg-teal-600 text-white shadow-sm"
-                    : "bg-white text-gray-500 border border-gray-200 hover:border-teal-300"
+                  ${
+                    filterStatus === s
+                      ? "bg-teal-600 text-white shadow-sm"
+                      : "bg-white text-gray-500 border border-gray-200 hover:border-teal-300"
                   }`}
               >
                 {s === "all" ? "All" : STATUS[s]?.label}
                 {s !== "all" && (
                   <span className="ml-1.5 opacity-70">
-                    ({documents.filter(d => d.status === s).length})
+                    ({documents.filter((d) => d.status === s).length})
                   </span>
                 )}
               </button>
@@ -706,15 +837,19 @@ export default function StudentDocuments() {
                 <FileText size={22} className="text-gray-300" />
               </div>
               <p className="text-gray-500 font-semibold text-sm">
-                {filterStatus === "all" ? "No documents uploaded yet" : `No ${STATUS[filterStatus]?.label} documents`}
+                {filterStatus === "all"
+                  ? "No documents uploaded yet"
+                  : `No ${STATUS[filterStatus]?.label} documents`}
               </p>
               <p className="text-gray-400 text-xs mt-1">
-                {filterStatus === "all" ? "Use the upload panel to add your documents" : "Try a different filter"}
+                {filterStatus === "all"
+                  ? "Use the upload panel to add your documents"
+                  : "Try a different filter"}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filtered.map(doc => (
+              {filtered.map((doc) => (
                 <DocCard
                   key={doc.id}
                   doc={doc}
@@ -736,9 +871,18 @@ export default function StudentDocuments() {
               <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Trash2 size={24} className="text-red-500" />
               </div>
-              <h3 className="font-bold text-gray-800 text-lg">Delete Document?</h3>
+              <h3 className="font-bold text-gray-800 text-lg">
+                Delete Document?
+              </h3>
               <p className="text-gray-500 text-sm mt-1">
-                Delete <strong>{DOC_TYPES.find(t => t.key === deleteConfirm.doc_type)?.label}</strong>? This cannot be undone.
+                Delete{" "}
+                <strong>
+                  {
+                    DOC_TYPES.find((t) => t.key === deleteConfirm.doc_type)
+                      ?.label
+                  }
+                </strong>
+                ? This cannot be undone.
               </p>
             </div>
             <div className="flex gap-3">

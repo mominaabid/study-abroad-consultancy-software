@@ -64,6 +64,11 @@ export const Header = ({ toggleSideBar }) => {
     if (location.pathname.includes("leads")) return "Leads Management";
     if (location.pathname.includes("counsellor"))
       return "Counsellor Management";
+    if (location.pathname.includes("application")) return "Student Application";
+    if (location.pathname.includes("documents")) return "Student Documents";
+    if (location.pathname.includes("payments")) return "Student Payments";
+    if (location.pathname.includes("chats")) return "Student Chats";
+
     return "My Dashboard";
   };
 

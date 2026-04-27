@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
@@ -27,6 +27,13 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData(INITIAL_STATE);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
