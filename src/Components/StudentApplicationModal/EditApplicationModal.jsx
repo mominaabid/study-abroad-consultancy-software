@@ -40,7 +40,7 @@ export const EditApplicationModal = ({
     target_university: "",
     course: "",
     counselor_notes: "",
-    status: "In Progress",
+    status: "inquiry", // Changed to match database ENUM
     deadline: "",
     round: "",
   });
@@ -68,7 +68,7 @@ export const EditApplicationModal = ({
         target_university: application.target_university || "",
         course: application.course || "",
         counselor_notes: application.counselor_notes || "",
-        status: application.status || "In Progress",
+        status: application.status || "inquiry", // Changed default to match ENUM
         deadline: application.deadline || "",
         round: application.round || "",
       });
@@ -195,6 +195,18 @@ export const EditApplicationModal = ({
     </button>
   );
 
+  // Status options that match your database ENUM
+  const statusOptions = [
+    { value: "inquiry", label: "Inquiry" },
+    { value: "evaluation", label: "Evaluation" },
+    { value: "application submitted", label: "Application Submitted" },
+    { value: "offer letter received", label: "Offer Letter Received" },
+    { value: "offer letter not received", label: "Offer Letter Not Received" },
+    { value: "visa filed", label: "Visa Filed" },
+    { value: "approved", label: "Approved" },
+    { value: "reject", label: "Reject" },
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -221,11 +233,11 @@ export const EditApplicationModal = ({
               onChange={handleChange}
               className="px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             >
-              <option value="In Progress">In Progress</option>
-              <option value="Submitted">Submitted</option>
-              <option value="Under Review">Under Review</option>
-              <option value="Accepted">Accepted</option>
-              <option value="Rejected">Rejected</option>
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>

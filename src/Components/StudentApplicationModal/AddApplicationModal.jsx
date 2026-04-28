@@ -8,6 +8,7 @@ export const AddApplicationModal = ({
   isOpen,
   onClose,
   onApplicationAdded,
+  user, // Add user prop to receive logged-in user data
 }) => {
   const [activeTab, setActiveTab] = useState("personal");
   const [loading, setLoading] = useState(false);
@@ -39,6 +40,9 @@ export const AddApplicationModal = ({
     target_university: "",
     course: "",
     counselor_notes: "",
+    status: "inquiry", // Default status matching database ENUM
+    deadline: "", // Added deadline field
+    round: "", // Added round field
   });
 
   if (!isOpen) return null;
@@ -99,6 +103,11 @@ export const AddApplicationModal = ({
     try {
       const submitData = new FormData();
 
+      // Add user_id from logged-in user
+      if (user && user.id) {
+        submitData.append("user_id", user.id);
+      }
+
       Object.keys(formData).forEach((key) => {
         if (key === "profile_picture") {
           if (formData.profile_picture) {
@@ -142,6 +151,9 @@ export const AddApplicationModal = ({
         target_university: "",
         course: "",
         counselor_notes: "",
+        status: "inquiry",
+        deadline: "",
+        round: "",
       });
       setUploadedImage(null);
       setImagePreview(null);
@@ -176,6 +188,18 @@ export const AddApplicationModal = ({
     </button>
   );
 
+  // Status options that match your database ENUM
+  const statusOptions = [
+    { value: "inquiry", label: "Inquiry" },
+    { value: "evaluation", label: "Evaluation" },
+    { value: "application submitted", label: "Application Submitted" },
+    { value: "offer letter received", label: "Offer Letter Received" },
+    { value: "offer letter not received", label: "Offer Letter Not Received" },
+    { value: "visa filed", label: "Visa Filed" },
+    { value: "approved", label: "Approved" },
+    { value: "reject", label: "Reject" },
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -189,6 +213,27 @@ export const AddApplicationModal = ({
           >
             <X size={20} />
           </button>
+        </div>
+
+        {/* Status Selection Row */}
+        <div className="px-6 py-3 bg-white border-b">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-gray-600">
+              Initial Status:
+            </span>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex border-b px-6 bg-white overflow-x-auto">
@@ -484,6 +529,32 @@ export const AddApplicationModal = ({
                   onChange={handleChange}
                   className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
                   required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-gray-600">
+                  Application Deadline
+                </label>
+                <input
+                  type="text"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleChange}
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+                  placeholder="e.g. Dec 31, 2026"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold text-gray-600">
+                  Round
+                </label>
+                <input
+                  type="text"
+                  name="round"
+                  value={formData.round}
+                  onChange={handleChange}
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+                  placeholder="e.g. 1, 2, 3"
                 />
               </div>
               <div className="md:col-span-2 space-y-1">
