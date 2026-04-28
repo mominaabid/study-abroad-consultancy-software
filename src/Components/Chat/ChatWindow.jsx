@@ -184,7 +184,7 @@ export default function ChatWindow({ conversation }) {
             </div>
 
             {msgs.map(msg => {
-              const isMine = msg.sender_id === user.id;
+             const isMine = Number(msg.sender_id) === Number(user.id);
 
               return (
                 <div

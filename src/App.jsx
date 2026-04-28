@@ -16,6 +16,7 @@ import SetupPassword from "./Pages/Auth/SetupPassword";
 import SetupCounsellorPassword from "./Pages/Auth/SetupCounsellorPassword";
 
 import { AdminDashboard } from "./Pages/AdminPage/AdminDashboard";
+import AdminChatPage from "./Pages/AdminPage/AdminChat";
 import Leads from "./Pages/AdminPage/Leads";
 import { Counsellor } from "./Pages/AdminPage/Counsellor";
 
@@ -23,7 +24,7 @@ import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard"
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
 import CounsellorChat from "./Pages/CounsellorPage/CounsellorChat";
 import CounsellorDocuments from "./Pages/CounsellorPage/CounsellorDocuments";
-
+import { CounsellorApplication } from "./Pages/CounsellorPage/CounsellorApplication";
 import StudentDashboard from "./Pages/StudentPage/StudentDashboard";
 import StudentChat from "./Pages/StudentPage/StudentChat";
 import StudentDocuments from "./Pages/StudentPage/StudentDocuments";
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="leads" element={<Leads />} />
             <Route path="counsellors" element={<Counsellor />} />
+            <Route path="/admin/chats" element={<AdminChatPage />} />
           </Route>
         </Route>
 
@@ -73,14 +75,8 @@ export default function App() {
             <Route path="leads" element={<CounsellorLeads />} />
             <Route path="chats" element={<CounsellorChat />} />
             <Route path="documents" element={<CounsellorDocuments />} />
-            <Route
-              path="applications"
-              element={
-                <div className="p-10 text-gray-500">
-                  Applications — coming soon
-                </div>
-              }
-            />
+
+         <Route path="applications" element={<CounsellorApplication />} />
           </Route>
         </Route>
 
