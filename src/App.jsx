@@ -19,7 +19,7 @@ import { AdminDashboard } from "./Pages/AdminPage/AdminDashboard";
 import AdminChatPage from "./Pages/AdminPage/AdminChat";
 import Leads from "./Pages/AdminPage/Leads";
 import { Counsellor } from "./Pages/AdminPage/Counsellor";
- 
+ import AdminPayments from "./Pages/AdminPage/AdminPayments";
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
 import CounsellorChat from "./Pages/CounsellorPage/CounsellorChat";
@@ -29,7 +29,7 @@ import StudentDashboard from "./Pages/StudentPage/StudentDashboard";
 import StudentChat from "./Pages/StudentPage/StudentChat";
 import StudentDocuments from "./Pages/StudentPage/StudentDocuments";
 import { StudentApplication } from "./Pages/StudentPage/StudentApplication";
-import { StudentPayment } from "./Pages/StudentPage/StudentPayment";
+import StudentPayments from "./Pages/StudentPage/StudentPayment";
  
 export default function App() {
   const dispatch = useDispatch();
@@ -65,6 +65,7 @@ export default function App() {
             <Route path="leads" element={<Leads />} />
             <Route path="counsellors" element={<Counsellor />} />
             <Route path="/admin/chats" element={<AdminChatPage />} />
+            <Route path="/admin/payments" element={<AdminPayments />} />
           </Route>
         </Route>
  
@@ -87,7 +88,7 @@ export default function App() {
             <Route path="application" element={<StudentApplication />} />
             <Route path="documents" element={<StudentDocuments />} />
             <Route path="chats" element={<StudentChat />} />
-            <Route path="payments" element={<StudentPayment />} />
+           <Route path="/student/payments" element={<StudentPayments />} />
           </Route>
         </Route>
  
