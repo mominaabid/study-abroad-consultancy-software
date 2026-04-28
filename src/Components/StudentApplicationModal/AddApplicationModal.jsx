@@ -1,23 +1,23 @@
 import React, { useState, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { X, User, GraduationCap, FileText, Upload, Camera } from "lucide-react";
+import { X, Camera } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
 
 export const AddApplicationModal = ({
   isOpen,
   onClose,
   onApplicationAdded,
-  user, // Add user prop to receive logged-in user data
+  user,
 }) => {
   const [activeTab, setActiveTab] = useState("personal");
   const [loading, setLoading] = useState(false);
   const [setUploadedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    // Personal Info
     full_name: "",
     email: "",
     phone: "",
@@ -28,28 +28,199 @@ export const AddApplicationModal = ({
     passport_number: "",
     nationality: "",
     profile_picture: null,
-    // Academic Info
     last_degree: "",
     institute: "",
     cgpa: "",
     passing_year: "",
     english_test: "IELTS",
     test_score: "",
-    // Application Details
     target_country: "",
     target_university: "",
     course: "",
     counselor_notes: "",
-    status: "inquiry", // Default status matching database ENUM
-    deadline: "", // Added deadline field
-    round: "", // Added round field
+    status: "inquiry",
+    deadline: "",
+    round: "",
   });
 
   if (!isOpen) return null;
 
+  // Helper functions
+  const hasLeadingSpaces = (value) => {
+    return value && value.startsWith(" ");
+  };
+
+  const containsNumbers = (value) => {
+    return /[0-9]/.test(value);
+  };
+
+  const containsLetters = (value) => {
+    return /[a-zA-Z]/.test(value);
+  };
+
+  const validatePhone = (value) => {
+    if (!value) return null;
+    if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+    if (containsLetters(value)) return "Cannot contain alphabets";
+    if (!/^\d{11}$/.test(value)) return "Phone number must be exactly 11 digits";
+    return null;
+  };
+
+  const validateCnic = (value) => {
+    if (!value) return null;
+    if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+    if (containsLetters(value)) return "Cannot contain alphabets";
+    const cleanCnic = value.replace(/-/g, "");
+    if (!/^\d{13}$/.test(cleanCnic)) return "CNIC must be exactly 13 digits";
+    return null;
+  };
+
+  const validatePassport = (value) => {
+    if (!value) return null;
+    if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+    if (!/^[A-Za-z0-9]{6,9}$/.test(value)) {
+      return "Passport number must be 6-9 characters (letters and numbers only)";
+    }
+    return null;
+  };
+
+  const validateCgpa = (value) => {
+    if (!value) return null;
+    if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+    if (containsLetters(value)) return "Cannot contain alphabets";
+    if (!/^\d+(\.\d+)?$/.test(value)) return "Enter a valid CGPA (e.g., 3.5)";
+    return null;
+  };
+
+  const validateTestScore = (value) => {
+    if (!value) return null;
+    if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+    if (containsLetters(value)) return "Cannot contain alphabets";
+    if (!/^\d+(\.\d+)?$/.test(value)) return "Enter a valid test score (e.g., 7.0)";
+    return null;
+  };
+
+  const validateAge = (age) => {
+    if (!age) return "Age is required";
+    const ageNum = parseInt(age);
+    if (isNaN(ageNum)) return "Invalid age";
+    if (ageNum < 18) return "Age must be 18 or older";
+    return null;
+  };
+
+  const validateTextOnlyField = (value, min = 3, max = 50) => {
+    if (!value) return null;
+    if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+    if (containsNumbers(value)) return "Cannot contain numbers";
+    if (value.length < min) return `Minimum ${min} characters required`;
+    if (value.length > max) return `Maximum ${max} characters allowed`;
+    return null;
+  };
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case "full_name":
+      case "nationality":
+      case "target_country":
+      case "target_university":
+      case "course":
+      case "last_degree":
+      case "institute":
+      case "gender":
+        return validateTextOnlyField(value, 3, 50);
+      
+      case "phone":
+        return validatePhone(value);
+      
+      case "cnic":
+        return validateCnic(value);
+      
+      case "passport_number":
+        return validatePassport(value);
+      
+      case "cgpa":
+        return validateCgpa(value);
+      
+      case "test_score":
+        return validateTestScore(value);
+      
+      case "counselor_notes": {
+        if (!value) return null;
+        if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+        if (value.length < 3) return "Minimum 3 characters required";
+        if (value.length > 250) return "Maximum 250 characters allowed";
+        return null;
+      }
+      
+      case "email": {
+        if (!value) return null;
+        if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+        if (!/^\S+@\S+\.\S+$/.test(value)) return "Enter a valid email address";
+        return null;
+      }
+      
+      case "age":
+        return validateAge(value);
+      
+      case "passing_year": {
+        if (!value) return null;
+        if (hasLeadingSpaces(value)) return "Cannot start with spaces";
+        if (containsLetters(value)) return "Cannot contain alphabets";
+        const year = parseInt(value);
+        const currentYear = new Date().getFullYear();
+        if (year < 1950 || year > currentYear + 5) {
+          return `Year must be between 1950 and ${currentYear + 5}`;
+        }
+        return null;
+      }
+      
+      case "dob": {
+        if (!value) return "Date of birth is required";
+        const birthDate = new Date(value);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age < 18) return "Age must be 18 or older";
+        return null;
+      }
+      
+      default:
+        return null;
+    }
+  };
+
+  // Check if all required fields are filled and valid
+  const isFormComplete = () => {
+    const requiredFields = [
+      "full_name", "email", "cnic", "nationality", "gender",
+      "last_degree", "institute", "cgpa", "passing_year",
+      "target_country", "target_university", "course", "dob"
+    ];
+    
+    // Check if all required fields have values
+    const allFieldsFilled = requiredFields.every(field => {
+      const value = formData[field];
+      return value && value.toString().trim() !== "";
+    });
+    
+    if (!allFieldsFilled) return false;
+    
+    // Check if there are any validation errors
+    const hasErrors = Object.values(errors).some(error => error !== null && error !== undefined);
+    
+    return !hasErrors;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    const error = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: error }));
 
     if (name === "dob" && value) {
       const birthDate = new Date(value);
@@ -62,8 +233,21 @@ export const AddApplicationModal = ({
       ) {
         age--;
       }
-      setFormData((prev) => ({ ...prev, age: age.toString() }));
+      const ageStr = age.toString();
+      setFormData((prev) => ({ ...prev, age: ageStr }));
+      const ageError = validateAge(ageStr);
+      setErrors((prev) => ({ ...prev, age: ageError }));
     }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    const trimmedValue = value.replace(/^\s+/, "");
+    if (trimmedValue !== value) {
+      setFormData((prev) => ({ ...prev, [name]: trimmedValue }));
+    }
+    const error = validateField(name, trimmedValue);
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleImageUpload = (e) => {
@@ -96,14 +280,40 @@ export const AddApplicationModal = ({
     }
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    const fieldsToValidate = [
+      "full_name", "email", "phone", "cnic", "nationality", "gender",
+      "last_degree", "institute", "cgpa", "passing_year",
+      "target_country", "target_university", "course", "dob", "age"
+    ];
+    
+    fieldsToValidate.forEach(field => {
+      if (field === "phone" && !formData.phone) return;
+      if (field === "passport_number" && !formData.passport_number) return;
+      if (field === "test_score" && !formData.test_score) return;
+      
+      const error = validateField(field, formData[field]);
+      if (error) newErrors[field] = error;
+    });
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error("Please fix the validation errors before submitting");
+      return;
+    }
+    
     setLoading(true);
 
     try {
       const submitData = new FormData();
 
-      // Add user_id from logged-in user
       if (user && user.id) {
         submitData.append("user_id", user.id);
       }
@@ -128,7 +338,12 @@ export const AddApplicationModal = ({
         },
       );
 
-      toast.success("Application created successfully!");
+      toast.success(
+        `Application created successfully! A confirmation email has been sent to ${formData.email}`,
+        {
+          autoClose: 5000,
+        },
+      );
 
       setFormData({
         full_name: "",
@@ -157,10 +372,11 @@ export const AddApplicationModal = ({
       });
       setUploadedImage(null);
       setImagePreview(null);
+      setErrors({});
       setActiveTab("personal");
 
       if (onApplicationAdded) {
-        onApplicationAdded(response.data);
+        onApplicationAdded(response.data.application);
       }
 
       onClose();
@@ -188,17 +404,59 @@ export const AddApplicationModal = ({
     </button>
   );
 
-  // Status options that match your database ENUM
-  const statusOptions = [
-    { value: "inquiry", label: "Inquiry" },
-    { value: "evaluation", label: "Evaluation" },
-    { value: "application submitted", label: "Application Submitted" },
-    { value: "offer letter received", label: "Offer Letter Received" },
-    { value: "offer letter not received", label: "Offer Letter Not Received" },
-    { value: "visa filed", label: "Visa Filed" },
-    { value: "approved", label: "Approved" },
-    { value: "reject", label: "Reject" },
-  ];
+  const renderInput = (name, type, placeholder, required, options = {}) => {
+    const error = errors[name];
+    return (
+      <div className="space-y-1">
+        <label className="text-sm font-semibold text-gray-600">
+          {placeholder} {required && "*"}
+        </label>
+        {type === "select" ? (
+          <select
+            name={name}
+            value={formData[name]}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none ${
+              error ? "border-red-500" : ""
+            }`}
+            required={required}
+          >
+            {options.children}
+          </select>
+        ) : type === "textarea" ? (
+          <textarea
+            name={name}
+            value={formData[name]}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            rows={options.rows || 3}
+            className={`w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none resize-none ${
+              error ? "border-red-500" : ""
+            }`}
+            placeholder={placeholder}
+            required={required}
+          />
+        ) : (
+          <input
+            type={type}
+            name={name}
+            value={formData[name]}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none ${
+              error ? "border-red-500" : ""
+            }`}
+            placeholder={placeholder}
+            required={required}
+          />
+        )}
+        {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+      </div>
+    );
+  };
+
+  const isSubmitDisabled = loading || !isFormComplete();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -213,27 +471,6 @@ export const AddApplicationModal = ({
           >
             <X size={20} />
           </button>
-        </div>
-
-        {/* Status Selection Row */}
-        <div className="px-6 py-3 bg-white border-b">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-gray-600">
-              Initial Status:
-            </span>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div className="flex border-b px-6 bg-white overflow-x-auto">
@@ -275,50 +512,10 @@ export const AddApplicationModal = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="full_name"
-                    value={formData.full_name}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                    placeholder="Enter student name"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                    placeholder="student@example.com"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    Phone / WhatsApp
-                  </label>
-                  <input
-                    type="text"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                    placeholder="+92 XXX XXXXXXX"
-                  />
-                </div>
-
+                {renderInput("full_name", "text", "Full Name", true)}
+                {renderInput("email", "email", "Email Address", true)}
+                {renderInput("phone", "tel", "Phone / WhatsApp", false)}
+                
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-gray-600">
                     Gender *
@@ -327,7 +524,10 @@ export const AddApplicationModal = ({
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+                    onBlur={handleBlur}
+                    className={`w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none ${
+                      errors.gender ? "border-red-500" : ""
+                    }`}
                     required
                   >
                     <option value="">Select Gender</option>
@@ -335,141 +535,25 @@ export const AddApplicationModal = ({
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
+                  {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    Date of Birth *
-                  </label>
-                  <input
-                    type="date"
-                    name="dob"
-                    value={formData.dob}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    Age
-                  </label>
-                  <input
-                    type="number"
-                    name="age"
-                    value={formData.age}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50"
-                    placeholder="Auto-calculated from DOB"
-                    readOnly
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    CNIC Number *
-                  </label>
-                  <input
-                    type="text"
-                    name="cnic"
-                    value={formData.cnic}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                    placeholder="12345-1234567-1"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    Passport Number
-                  </label>
-                  <input
-                    type="text"
-                    name="passport_number"
-                    value={formData.passport_number}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                    placeholder="A12345678"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-600">
-                    Nationality *
-                  </label>
-                  <input
-                    type="text"
-                    name="nationality"
-                    value={formData.nationality}
-                    onChange={handleChange}
-                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                    placeholder="e.g. Pakistani"
-                    required
-                  />
-                </div>
+                {renderInput("dob", "date", "Date of Birth", true)}
+                {renderInput("age", "number", "Age", false)}
+                {renderInput("cnic", "text", "CNIC Number", true)}
+                {renderInput("passport_number", "text", "Passport Number", false)}
+                {renderInput("nationality", "text", "Nationality", true)}
               </div>
             </div>
           )}
 
           {activeTab === "academic" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Last Completed Degree *
-                </label>
-                <input
-                  type="text"
-                  name="last_degree"
-                  value={formData.last_degree}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="e.g. Bachelor in CS"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Institute/University *
-                </label>
-                <input
-                  type="text"
-                  name="institute"
-                  value={formData.institute}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  CGPA / Percentage *
-                </label>
-                <input
-                  type="text"
-                  name="cgpa"
-                  value={formData.cgpa}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="3.5/4.0"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Passing Year *
-                </label>
-                <input
-                  type="number"
-                  name="passing_year"
-                  value={formData.passing_year}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="2023"
-                  required
-                />
-              </div>
+              {renderInput("last_degree", "text", "Last Completed Degree", true)}
+              {renderInput("institute", "text", "Institute/University", true)}
+              {renderInput("cgpa", "text", "CGPA / Percentage", true)}
+              {renderInput("passing_year", "number", "Passing Year", true)}
+              
               <div className="space-y-1">
                 <label className="text-sm font-semibold text-gray-600">
                   English Proficiency Test
@@ -486,103 +570,21 @@ export const AddApplicationModal = ({
                   <option value="None">None/MOI</option>
                 </select>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Test Score (Overall)
-                </label>
-                <input
-                  type="text"
-                  name="test_score"
-                  value={formData.test_score}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="e.g. 7.0"
-                />
-              </div>
+              
+              {renderInput("test_score", "text", "Test Score (Overall)", false)}
             </div>
           )}
 
           {activeTab === "details" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Target Country *
-                </label>
-                <input
-                  type="text"
-                  name="target_country"
-                  value={formData.target_country}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="e.g. UK, Canada"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Target University *
-                </label>
-                <input
-                  type="text"
-                  name="target_university"
-                  value={formData.target_university}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Application Deadline
-                </label>
-                <input
-                  type="text"
-                  name="deadline"
-                  value={formData.deadline}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="e.g. Dec 31, 2026"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Round
-                </label>
-                <input
-                  type="text"
-                  name="round"
-                  value={formData.round}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="e.g. 1, 2, 3"
-                />
-              </div>
-              <div className="md:col-span-2 space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Proposed Course *
-                </label>
-                <input
-                  type="text"
-                  name="course"
-                  value={formData.course}
-                  onChange={handleChange}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-                  placeholder="e.g. MSc Data Science"
-                  required
-                />
-              </div>
-              <div className="md:col-span-2 space-y-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Counselor Initial Notes
-                </label>
-                <textarea
-                  name="counselor_notes"
-                  value={formData.counselor_notes}
-                  onChange={handleChange}
-                  rows="3"
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none resize-none"
-                  placeholder="Any specific requirements or student concerns..."
-                ></textarea>
+              {renderInput("target_country", "text", "Target Country", true)}
+              {renderInput("target_university", "text", "Target University", true)}
+              {renderInput("deadline", "text", "Application Deadline", false)}
+              {renderInput("round", "text", "Round", false)}
+              {renderInput("course", "text", "Proposed Course", true)}
+              
+              <div className="md:col-span-2">
+                {renderInput("counselor_notes", "textarea", "Counselor Initial Notes", false, { rows: 3 })}
               </div>
             </div>
           )}
@@ -598,8 +600,10 @@ export const AddApplicationModal = ({
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitDisabled}
+              className={`px-5 py-2 text-sm font-semibold text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isSubmitDisabled ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+              }`}
             >
               {loading ? "Creating..." : "Create Application"}
             </button>

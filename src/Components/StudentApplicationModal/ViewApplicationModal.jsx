@@ -1,4 +1,5 @@
 import React from "react";
+
 import {
   X,
   User,
@@ -73,6 +74,31 @@ const formatDate = (dateString) => {
   });
 };
 
+// Format date and time for display
+const formatDateTime = (dateString) => {
+  if (!dateString) return null;
+  try {
+    const date = new Date(dateString);
+    // Check if date is valid
+    if (isNaN(date.getTime())) return null;
+    return {
+      date: date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
+      time: date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    };
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return null;
+  }
+};
+
 // Helper component for BarChart icon
 const BarChart = ({ size, className }) => (
   <svg
@@ -93,7 +119,7 @@ const BarChart = ({ size, className }) => (
   </svg>
 );
 
-// Application Stages for Vertical Stepper
+// Application Stages for Vertical Stepper - with date fields
 const applicationStages = [
   {
     id: "inquiry",
@@ -101,6 +127,7 @@ const applicationStages = [
     description: "Initial application inquiry received",
     icon: Clock,
     color: "blue",
+    dateField: "inquiry_date",
   },
   {
     id: "evaluation",
@@ -108,6 +135,7 @@ const applicationStages = [
     description: "Application under review",
     icon: FileText,
     color: "purple",
+    dateField: "evaluation_date",
   },
   {
     id: "application submitted",
@@ -115,20 +143,23 @@ const applicationStages = [
     description: "Application sent to university",
     icon: CheckCircle,
     color: "indigo",
+    dateField: "application_submitted_date",
   },
   {
     id: "offer letter received",
     label: "Offer Letter Received",
-    description: "Conditional/Unconditional offer received",
+    description: "Offer received",
     icon: Award,
     color: "green",
+    dateField: "offer_received_date",
   },
   {
     id: "offer letter not received",
     label: "Offer Not Received",
-    description: "Application rejected or no offer",
+    description: "Application rejected",
     icon: XCircle,
     color: "red",
+    dateField: "offer_not_received_date",
   },
   {
     id: "visa filed",
@@ -136,6 +167,7 @@ const applicationStages = [
     description: "Visa application submitted",
     icon: Globe,
     color: "orange",
+    dateField: "visa_filed_date",
   },
   {
     id: "approved",
@@ -143,13 +175,15 @@ const applicationStages = [
     description: "Visa approved - Ready to travel",
     icon: CheckCircle2,
     color: "emerald",
+    dateField: "approved_date",
   },
   {
     id: "reject",
     label: "Rejected",
-    description: "Application rejected",
+    description: "Visa rejected",
     icon: XCircle,
     color: "red",
+    dateField: "reject_date",
   },
 ];
 
@@ -159,6 +193,11 @@ export const ViewApplicationModal = ({ application, onClose }) => {
   // Find current stage index
   const currentStageIndex = applicationStages.findIndex(
     (s) => s.id === application.status,
+  );
+
+  // Get stages that have been reached (including current stage)
+  const reachedStages = applicationStages.filter(
+    (_, index) => index <= currentStageIndex,
   );
 
   return (
@@ -370,21 +409,24 @@ export const ViewApplicationModal = ({ application, onClose }) => {
 
                 <div className="relative">
                   <div className="space-y-0">
-                    {applicationStages.map((stage, index) => {
+                    {reachedStages.map((stage, index) => {
                       const isCompleted = currentStageIndex > index;
                       const isCurrent = stage.id === application.status;
                       const StageIcon = stage.icon;
 
-                      // Check if user has reached or passed this stage
-                      const hasReachedStage = currentStageIndex >= index;
+                      // Get date and time for this stage
+                      const stageDate = application[stage.dateField];
+                      const dateTime = stageDate
+                        ? formatDateTime(stageDate)
+                        : null;
 
                       return (
                         <div key={stage.id} className="relative">
                           {/* Connector Line */}
-                          {index < applicationStages.length - 1 && (
+                          {index < reachedStages.length - 1 && (
                             <div
                               className={`absolute left-4 top-8 w-0.5 ${
-                                isCompleted ? "bg-green-500" : "bg-gray-300"
+                                isCompleted ? "bg-green-500" : "bg-blue-400"
                               }`}
                               style={{ height: "calc(100% - 1rem)" }}
                             />
@@ -442,11 +484,28 @@ export const ViewApplicationModal = ({ application, onClose }) => {
                                 )}
                               </div>
 
-                              {/* Description - Only render if user has reached or passed this stage */}
-                              {hasReachedStage && (
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  {stage.description}
-                                </p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {stage.description}
+                              </p>
+
+                              {/* Show Date and Time if available */}
+                              {dateTime && (
+                                <div className="flex items-center gap-2 mt-2 text-xs bg-gray-50 p-1.5 rounded-md">
+                                  <Calendar
+                                    size={12}
+                                    className="text-gray-400"
+                                  />
+                                  <span className="text-gray-600">
+                                    {dateTime.date}
+                                  </span>
+                                  <Clock
+                                    size={12}
+                                    className="text-gray-400 ml-1"
+                                  />
+                                  <span className="text-gray-600 font-medium">
+                                    {dateTime.time}
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </div>

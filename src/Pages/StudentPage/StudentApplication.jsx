@@ -20,7 +20,6 @@ import {
   CheckCircle2,
   GraduationCap,
   Plus,
-  RefreshCw,
   Edit,
   XCircle,
   Clock,
@@ -305,15 +304,13 @@ export const StudentApplication = () => {
   const progressValue =
     requiredDocsCount > 0 ? (verifiedCount / requiredDocsCount) * 100 : 0;
 
-  const handleRefresh = () => {
-    fetchDashboardData();
-    toast.info("Refreshing dashboard...");
-  };
-
   const handleAddApplication = async (newApplication) => {
-    // This function will be called after the application is successfully created
-    // The modal already makes the API call with user_id
-    setApplications([newApplication, ...applications]);
+    // Add the new application to the beginning of the applications array
+    // This ensures it shows up immediately without needing a refresh
+    setApplications((prevApplications) => [
+      newApplication,
+      ...prevApplications,
+    ]);
   };
 
   // Handle status update from ViewApplicationModal
@@ -341,10 +338,9 @@ export const StudentApplication = () => {
     return (
       <div className="p-6 bg-slate-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw
-            className="animate-spin mx-auto mb-4 text-blue-600"
-            size={40}
-          />
+          <div className="animate-spin mx-auto mb-4">
+            <GraduationCap className="text-blue-600" size={40} />
+          </div>
           <p className="text-slate-600">Loading your dashboard...</p>
         </div>
       </div>
@@ -380,16 +376,7 @@ export const StudentApplication = () => {
       </div>
 
       <div className="mb-8">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-bold text-slate-700">Applications</h3>
-          <button
-            onClick={handleRefresh}
-            className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm transition-colors"
-          >
-            <RefreshCw size={14} />
-            Refresh
-          </button>
-        </div>
+        <h3 className="text-lg font-bold text-slate-700 mb-3">Applications</h3>
 
         <div className="space-y-4">
           {applications.length === 0 ? (
