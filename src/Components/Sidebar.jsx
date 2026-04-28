@@ -17,16 +17,17 @@ const ADMIN_MENU = [
   { name: "Applications", icon: <Settings size={20} />,     path: "/admin/applications" },
   { name: "Payments",     icon: <DollarSign size={20} />,   path: "/admin/payments" },
   { name: "Chats",        icon: <MessageSquare size={20} />,path: "/admin/chats" },
-  { name: "Notifications",icon: <Bell size={20} />,         path: "/admin/notifications" },
+  // { name: "Notifications",icon: <Bell size={20} />,         path: "/admin/notifications" },
 ];
 
 const COUNSELLOR_MENU = [
   { name: "Dashboard",    icon: <Home size={20} />,         path: "/counsellor/dashboard" },
   { name: "My Leads",     icon: <BarChart size={20} />,     path: "/counsellor/leads" },
+   { name: "Documents",    icon: <FileText size={20} />,     path: "/counsellor/documents" },
   { name: "Applications", icon: <FileText size={20} />,     path: "/counsellor/applications" },
   { name: "Chats",        icon: <MessageSquare size={20} />,path: "/counsellor/chats" },
-  { name: "Notifications",icon: <Bell size={20} />,         path: "/counsellor/notifications" },
-  { name: "Documents",    icon: <FileText size={20} />,     path: "/counsellor/documents" },
+
+ 
 ];
 
 const STUDENT_MENU = [

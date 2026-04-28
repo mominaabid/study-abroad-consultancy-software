@@ -4,7 +4,8 @@ import {
   CheckCircle, XCircle, Clock, RefreshCw,
   FileText, Image, File, Eye, AlertTriangle,
   Users, Search, UserCircle, FolderOpen, Grid3x3, List,
-  History, Calendar, Upload, UserCheck, UserX, Activity
+  History, Calendar, Upload, UserCheck, UserX, Activity,
+  Zap, RotateCcw
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -35,76 +36,156 @@ function formatSize(b) { if (!b) return "—"; if (b < 1024 * 1024) return `${(b
 function formatDT(d) { if (!d) return "—"; return new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }); }
 function fileIcon(mime) { if (!mime) return <File size={18} />; if (mime.startsWith("image/")) return <Image size={18} />; if (mime === "application/pdf") return <FileText size={18} />; return <File size={18} />; }
 
-// ── Activity Log Modal Component ──────────────────────────────────────────────
+// ── Activity Log Modal Component - Shows Complete History ─────────────────────
+// ── Activity Log Modal Component - Shows COMPLETE History with All Rejections ──
 function ActivityLogModal({ doc, onClose }) {
-  // Build activity timeline based on document data
   const activities = [];
   
-  // Initial upload
+  // Helper to format duration
+  const getDuration = (startDate, endDate) => {
+    const diff = Math.abs(new Date(endDate) - new Date(startDate));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (86400000)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (3600000)) / (1000 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0) return `${minutes}m`;
+    return 'just now';
+  };
+
+  // 1. INITIAL UPLOAD - Always show when document was first created
   if (doc.submitted_at) {
     activities.push({
       type: 'upload',
-      title: 'Document Uploaded',
-      description: `${doc.student_name} uploaded ${doc.original_name}`,
+      title: ' Document Uploaded',
+      description: `${doc.student_name} uploaded "${doc.original_name}"`,
       date: doc.submitted_at,
       icon: Upload,
       color: 'text-blue-500',
       bg: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      details: `File: ${doc.original_name} • Size: ${formatSize(doc.file_size)}`
     });
   }
   
-  // If document was reviewed (verified or rejected)
-  if (doc.reviewed_at) {
-    if (doc.status === 'verified') {
-      activities.push({
-        type: 'verified',
-        title: 'Document Verified',
-        description: `Document was verified and approved by ${doc.reviewer_name || 'Counsellor'}`,
-        date: doc.reviewed_at,
-        icon: UserCheck,
-        color: 'text-emerald-500',
-        bg: 'bg-emerald-50',
-      });
-    } else if (doc.status === 'rejected') {
-      activities.push({
-        type: 'rejected',
-        title: 'Document Rejected',
-        description: `Rejection reason: ${doc.rejection_reason}`,
-        date: doc.reviewed_at,
-        icon: UserX,
-        color: 'text-red-500',
-        bg: 'bg-red-50',
-      });
-    }
+  // 2. PROCESS STATUS HISTORY FROM BACKEND - THIS IS THE KEY PART!
+  // This will show ALL previous rejections, re-uploads, and verifications
+  if (doc.status_history && Array.isArray(doc.status_history) && doc.status_history.length > 0) {
+    console.log('📜 Processing history entries:', doc.status_history.length); // Debug
+    
+    doc.status_history.forEach((event, index) => {
+      console.log(`History ${index + 1}:`, event); // Debug each event
+      
+      if (event.action === 'rejected') {
+        activities.push({
+          type: 'rejected',
+          title: `❌ Document Rejected ${event.review_count ? `(#${event.review_count})` : ''}`,
+          description: `Document was rejected by ${event.performed_by_name || 'Counsellor'}`,
+          date: event.performed_at,
+          icon: XCircle,
+          color: 'text-red-500',
+          bg: 'bg-red-50',
+          borderColor: 'border-red-200',
+          performedBy: event.performed_by_name,
+          details: ` Rejection reason: "${event.rejection_reason || event.note || 'No reason provided'}"`,
+          status: event.status,
+          reviewNumber: event.review_count || index + 1
+        });
+      } 
+      else if (event.action === 'verified') {
+        activities.push({
+          type: 'verified',
+          title: `Document Verified`,
+          description: `Document was approved by ${event.performed_by_name || 'Counsellor'}`,
+          date: event.performed_at,
+          icon: CheckCircle,
+          color: 'text-emerald-500',
+          bg: 'bg-emerald-50',
+          borderColor: 'border-emerald-200',
+          performedBy: event.performed_by_name,
+          details: `Document verified and accepted`,
+          status: event.status
+        });
+      }
+      else if (event.action === 'reupload') {
+        activities.push({
+          type: 'reupload',
+          title: `🔄 Document Re-uploaded`,
+          description: `Student uploaded a new version after rejection`,
+          date: event.performed_at,
+          icon: RotateCcw,
+          color: 'text-purple-500',
+          bg: 'bg-purple-50',
+          borderColor: 'border-purple-200',
+          performedBy: event.performed_by_name || doc.student_name,
+          details: event.note || 'Document re-uploaded for review',
+          previousRejectionReason: event.previous_rejection_reason
+        });
+      }
+    });
   }
   
-  // Check if document was re-uploaded (indicated by review status and rejection reason existing)
-  if (doc.status === 'review' && doc.rejection_reason && doc.submitted_at) {
-    // Find if there was a rejection before current submission
+  // 3. ADD CURRENT STATUS AS THE FINAL STATE
+  const lastHistoryEntry = doc.status_history && doc.status_history.length > 0 
+    ? doc.status_history[doc.status_history.length - 1] 
+    : null;
+  
+  // Add current status if it's different from last history entry or if no history
+  if (doc.status === 'verified' && (!lastHistoryEntry || lastHistoryEntry.action !== 'verified')) {
     activities.push({
-      type: 'reupload',
-      title: 'Document Re-uploaded',
-      description: `${doc.student_name} re-uploaded the document after rejection`,
+      type: 'verified-current',
+      title: ` Currently Verified`,
+      description: `Document is verified and approved`,
+      date: doc.reviewed_at || new Date(),
+      icon: CheckCircle,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-50',
+      borderColor: 'border-emerald-200',
+      details: `Final status: Verified`,
+      isCurrent: true
+    });
+  } 
+  else if (doc.status === 'rejected' && (!lastHistoryEntry || lastHistoryEntry.action !== 'rejected')) {
+    activities.push({
+      type: 'rejected-current',
+      title: ` Currently Rejected`,
+      description: `Document is currently rejected and needs re-upload`,
+      date: doc.reviewed_at || new Date(),
+      icon: XCircle,
+      color: 'text-red-500',
+      bg: 'bg-red-50',
+      borderColor: 'border-red-200',
+      details: ` Rejection reason: "${doc.rejection_reason}"`,
+      isCurrent: true
+    });
+  } 
+  else if (doc.status === 'review') {
+    activities.push({
+      type: 'review',
+      title: ` Under Review`,
+      description: `Document is waiting for counsellor review`,
       date: doc.submitted_at,
-      icon: RefreshCw,
-      color: 'text-purple-500',
-      bg: 'bg-purple-50',
+      icon: Clock,
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      details: `Document has been re-uploaded and pending review`,
+      isCurrent: true
     });
   }
-
-  // Sort activities by date (oldest first)
+  
+  // Sort by date (oldest first) to show proper timeline
   activities.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Get rejection count
+  const rejectionCount = activities.filter(a => a.type === 'rejected' || a.type === 'rejected-current').length;
+  const reuploadCount = activities.filter(a => a.type === 'reupload').length;
 
   return (
     <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-40"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out">
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out animate-slide-in">
         <div className="h-full flex flex-col">
           {/* Header */}
           <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-blue-950 to-teal-900 text-white">
@@ -120,24 +201,50 @@ function ActivityLogModal({ doc, onClose }) {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition"
-              >
+              <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition">
                 <XCircle size={20} />
               </button>
             </div>
           </div>
 
-          {/* Student Info */}
+          {/* Student Info with Statistics */}
           <div className="p-4 bg-gray-50 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <UserCircle size={32} className="text-gray-400" />
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold text-gray-800 text-sm">{doc.student_name}</p>
                 <p className="text-xs text-gray-500">{doc.student_email}</p>
               </div>
+              <div className="text-right">
+                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS[doc.status]?.badge}`}>
+                  {STATUS[doc.status]?.label}
+                </span>
+                {rejectionCount > 0 && (
+                  <p className="text-[10px] text-red-500 mt-1">Rejected {rejectionCount} time{rejectionCount > 1 ? 's' : ''}</p>
+                )}
+              </div>
             </div>
+            
+            {/* Quick Stats */}
+            {(rejectionCount > 0 || reuploadCount > 0) && (
+              <div className="mt-3 flex gap-2 text-[10px]">
+                {rejectionCount > 0 && (
+                  <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full">
+                     {rejectionCount} Rejection{rejectionCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                {reuploadCount > 0 && (
+                  <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                     {reuploadCount} Re-upload{reuploadCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                {doc.review_count > 0 && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                     {doc.review_count} Review{doc.review_count > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Timeline Content */}
@@ -146,38 +253,75 @@ function ActivityLogModal({ doc, onClose }) {
               <div className="text-center py-12">
                 <Activity size={48} className="mx-auto text-gray-300 mb-3" />
                 <p className="text-gray-500 text-sm">No activity yet</p>
-                <p className="text-gray-400 text-xs mt-1">Activity log will appear here</p>
               </div>
             ) : (
               <div className="relative">
-                {/* Vertical line */}
-                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
+                {/* Vertical timeline line */}
+                <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-400 via-gray-300 to-red-400 rounded-full" />
                 
                 {/* Activities */}
                 <div className="space-y-6">
                   {activities.map((activity, index) => {
                     const Icon = activity.icon;
+                    const isLast = index === activities.length - 1;
+                    const nextActivity = activities[index + 1];
+                    const duration = nextActivity ? getDuration(activity.date, nextActivity.date) : null;
+                    
+                    // Check if this is a rejection to highlight it
+                    const isRejection = activity.type === 'rejected' || activity.type === 'rejected-current';
+                    
                     return (
-                      <div key={index} className="relative pl-12">
+                      <div key={index} className="relative group">
                         {/* Timeline dot */}
-                        <div className={`absolute left-0 top-0 w-8 h-8 rounded-full ${activity.bg} flex items-center justify-center ring-4 ring-white`}>
+                        <div className={`absolute left-0 top-0 w-8 h-8 rounded-full ${activity.bg} flex items-center justify-center ring-4 ring-white shadow-md z-10 transition-transform group-hover:scale-110 ${activity.isCurrent ? 'ring-2 ring-teal-400 shadow-lg' : ''} ${isRejection ? 'ring-2 ring-red-200' : ''}`}>
                           <Icon size={16} className={activity.color} />
                         </div>
                         
-                        {/* Content */}
-                        <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition">
-                          <div>
-                            <h4 className="font-semibold text-gray-800 text-sm">
-                              {activity.title}
-                            </h4>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {activity.description}
-                            </p>
+                        {/* Content card */}
+                        <div className={`ml-12 rounded-xl p-4 transition-all ${activity.isCurrent ? 'bg-teal-50 border-2 border-teal-200 shadow-md' : isRejection ? 'bg-red-50 border border-red-200' : 'bg-white border border-gray-100 shadow-sm hover:shadow-md'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className={`font-bold text-sm ${activity.isCurrent ? 'text-teal-700' : isRejection ? 'text-red-700' : 'text-gray-800'}`}>
+                                  {activity.title}
+                                </h4>
+                                {activity.isCurrent && (
+                                  <span className="text-[10px] bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                                    Current
+                                  </span>
+                                )}
+                                {activity.performedBy && !activity.isCurrent && (
+                                  <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                    by {activity.performedBy}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {activity.description}
+                              </p>
+                              {activity.details && (
+                                <div className={`mt-2 p-2 rounded-lg ${isRejection ? 'bg-red-100' : 'bg-gray-50'}`}>
+                                  <p className="text-xs text-gray-700">
+                                    <span className="font-medium">{isRejection ? '🔴' : ''} Details:</span> {activity.details}
+                                  </p>
+                                </div>
+                              )}
+                              {activity.previousRejectionReason && (
+                                <div className="mt-2 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                                  <p className="text-xs text-yellow-700">
+                                    <span className="font-medium">⚠️ Previous rejection reason:</span> {activity.previousRejectionReason}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
-                            <Calendar size={12} />
-                            <span>{formatDT(activity.date)}</span>
+                          
+                          <div className="flex items-center gap-2 mt-3 text-xs">
+                            <Calendar size={12} className="text-gray-400" />
+                            <span className="text-gray-500">{formatDT(activity.date)}</span>
                           </div>
+                          
+                    
                         </div>
                       </div>
                     );
@@ -185,12 +329,15 @@ function ActivityLogModal({ doc, onClose }) {
                 </div>
               </div>
             )}
+            
+            {/* Summary Stats */}
+         
           </div>
 
-          {/* Footer with document info and current status */}
-          <div className="p-5 border-t border-gray-100 bg-gray-50">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center">
+          {/* Footer with file info */}
+          <div className="p-4 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center">
                 {fileIcon(doc.file_mime)}
               </div>
               <div className="flex-1 min-w-0">
@@ -200,31 +347,20 @@ function ActivityLogModal({ doc, onClose }) {
               <a
                 href={doc.file_url}
                 target="_blank"
-                className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 transition flex items-center gap-1"
+                rel="noopener noreferrer"
+                className="px-3 py-2 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 transition flex items-center gap-1"
               >
                 <Eye size={12} /> View
               </a>
             </div>
-            
-            {/* Current Status Badge */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-              <span className="text-xs text-gray-500">Current Status</span>
-              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${STATUS[doc.status]?.badge}`}>
-                {STATUS[doc.status]?.label}
-              </span>
-            </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
+      
+      <style>{`
         @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-          }
-          to {
-            transform: translateX(0);
-          }
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
         }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
@@ -276,16 +412,7 @@ function RejectModal({ doc, onConfirm, onCancel }) {
 // ── Student Tab Component ─────────────────────────────────────────────────────
 function StudentTab({ student, isActive, onClick, counts }) {
   return (
-    <button
-      onClick={onClick}
-      className={`
-        relative w-full px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-3 text-left
-        ${isActive 
-          ? 'bg-white shadow-lg border border-gray-100 text-gray-800' 
-          : 'hover:bg-white/60 text-gray-500 hover:text-gray-700'
-        }
-      `}
-    >
+    <button onClick={onClick} className={`relative w-full px-4 py-3 rounded-xl transition-all duration-200 flex items-center gap-3 text-left ${isActive ? 'bg-white shadow-lg border border-gray-100 text-gray-800' : 'hover:bg-white/60 text-gray-500 hover:text-gray-700'}`}>
       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isActive ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-500'}`}>
         <UserCircle size={16} />
       </div>
@@ -299,9 +426,7 @@ function StudentTab({ student, isActive, onClick, counts }) {
         {counts.verified > 0 && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded">{counts.verified}</span>}
         {counts.rejected > 0 && <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded">{counts.rejected}</span>}
       </div>
-      {isActive && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-teal-500 rounded-full" />
-      )}
+      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-teal-500 rounded-full" />}
     </button>
   );
 }
@@ -333,18 +458,12 @@ function DocumentRow({ doc, onVerify, onReject, onViewHistory, verifying, reject
             {s.label}
           </span>
           {doc.status === "review" && (
-            <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">
-              Re-uploaded
-            </span>
+            <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">Re-uploaded</span>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-xs text-gray-500">
-        {formatDT(doc.submitted_at)}
-      </td>
-      <td className="px-4 py-3 text-xs text-gray-500">
-        {doc.reviewed_at ? formatDT(doc.reviewed_at) : '—'}
-      </td>
+      <td className="px-4 py-3 text-xs text-gray-500">{formatDT(doc.submitted_at)}</td>
+      <td className="px-4 py-3 text-xs text-gray-500">{doc.reviewed_at ? formatDT(doc.reviewed_at) : '—'}</td>
       <td className="px-4 py-3 max-w-[250px]">
         {doc.status === "rejected" && doc.rejection_reason && (
           <div className="flex items-start gap-1">
@@ -355,63 +474,30 @@ function DocumentRow({ doc, onVerify, onReject, onViewHistory, verifying, reject
       </td>
       <td className="px-4 py-3">
         <div className="flex gap-1.5">
-          {/* History Button */}
-          <button
-            onClick={() => onViewHistory(doc)}
-            className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-500 transition"
-            title="View History"
-          >
+          <button onClick={() => onViewHistory(doc)} className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-500 transition" title="View History">
             <History size={15} />
           </button>
-          
-          <a
-            href={doc.file_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition"
-            title="View Document"
-          >
+          <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition" title="View Document">
             <Eye size={15} />
           </a>
-          
           {doc.status !== "verified" && (
-            <button
-              onClick={() => onVerify(doc.id)}
-              disabled={verifying === doc.id}
-              className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition"
-              title="Verify"
-            >
-              {verifying === doc.id ? (
-                <div className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <CheckCircle size={15} />
-              )}
+            <button onClick={() => onVerify(doc.id)} disabled={verifying === doc.id} className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition" title="Verify">
+              {verifying === doc.id ? <div className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" /> : <CheckCircle size={15} />}
             </button>
           )}
-          
           {doc.status !== "rejected" && doc.status !== "verified" && (
-            <button
-              onClick={() => onReject(doc)}
-              disabled={rejecting === doc.id}
-              className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition"
-              title="Reject"
-            >
+            <button onClick={() => onReject(doc)} disabled={rejecting === doc.id} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition" title="Reject">
               <XCircle size={15} />
             </button>
           )}
-          
-          {doc.status === "verified" && (
-            <span className="p-1.5 text-emerald-400">
-              <CheckCircle size={15} />
-            </span>
-          )}
+          {doc.status === "verified" && <span className="p-1.5 text-emerald-400"><CheckCircle size={15} /></span>}
         </div>
       </td>
     </tr>
   );
 }
 
-// ── Document Grid Card with History ─────────────────────────────────────────
+// ── Document Grid Card ─────────────────────────────────────────────────────────
 function DocumentGridCard({ doc, onVerify, onReject, onViewHistory, verifying, rejecting }) {
   const s = STATUS[doc.status] || STATUS.pending;
   
@@ -423,47 +509,30 @@ function DocumentGridCard({ doc, onVerify, onReject, onViewHistory, verifying, r
             {fileIcon(doc.file_mime)}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-800 text-sm capitalize">
-              {DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}
-            </p>
+            <p className="font-semibold text-gray-800 text-sm capitalize">{DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}</p>
             <p className="text-xs text-gray-400 truncate">{doc.original_name}</p>
           </div>
         </div>
-        <button
-          onClick={() => onViewHistory(doc)}
-          className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-500 transition"
-          title="View History"
-        >
+        <button onClick={() => onViewHistory(doc)} className="p-1.5 rounded-lg hover:bg-purple-50 text-purple-500 transition" title="View History">
           <History size={15} />
         </button>
       </div>
-      
       <div className="flex items-center gap-2 mt-2">
-        <span className={`text-xs px-2 py-0.5 rounded-full ${s.badge}`}>
-          {s.label}
-        </span>
+        <span className={`text-xs px-2 py-0.5 rounded-full ${s.badge}`}>{s.label}</span>
         <span className="text-xs text-gray-400">{formatSize(doc.file_size)}</span>
       </div>
-      
       {doc.status === "rejected" && doc.rejection_reason && (
         <div className="mt-2 p-2 bg-red-50 rounded-lg">
           <p className="text-xs text-red-600 line-clamp-2">{doc.rejection_reason}</p>
         </div>
       )}
-      
       <div className="flex gap-2 mt-3">
-        <a href={doc.file_url} target="_blank" className="text-teal-600 text-xs hover:underline flex items-center gap-1">
-          <Eye size={12} /> View
-        </a>
+        <a href={doc.file_url} target="_blank" className="text-teal-600 text-xs hover:underline flex items-center gap-1"><Eye size={12} /> View</a>
         {doc.status !== "verified" && (
-          <button onClick={() => onVerify(doc.id)} className="text-emerald-600 text-xs hover:underline flex items-center gap-1">
-            <CheckCircle size={12} /> Verify
-          </button>
+          <button onClick={() => onVerify(doc.id)} className="text-emerald-600 text-xs hover:underline flex items-center gap-1"><CheckCircle size={12} /> Verify</button>
         )}
         {doc.status !== "rejected" && doc.status !== "verified" && (
-          <button onClick={() => onReject(doc)} className="text-red-600 text-xs hover:underline flex items-center gap-1">
-            <XCircle size={12} /> Reject
-          </button>
+          <button onClick={() => onReject(doc)} className="text-red-600 text-xs hover:underline flex items-center gap-1"><XCircle size={12} /> Reject</button>
         )}
       </div>
     </div>
@@ -483,7 +552,6 @@ export default function CounsellorDocuments() {
   const [rejectDoc, setRejectDoc] = useState(null);
   const [selectedDocForHistory, setSelectedDocForHistory] = useState(null);
 
-  // ── Fetch ────────────────────────────────────────────────────────────────
   const fetchDocs = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/counsellor/documents/all`, {
@@ -501,113 +569,47 @@ export default function CounsellorDocuments() {
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
-  // ── Update Document in State Optimistically ──────────────────────────────
   const updateDocumentInState = (docId, updates) => {
-    setDocuments(prevDocs => 
-      prevDocs.map(doc => 
-        doc.id === docId ? { ...doc, ...updates } : doc
-      )
-    );
+    setDocuments(prevDocs => prevDocs.map(doc => doc.id === docId ? { ...doc, ...updates } : doc));
   };
 
-  // ── Verify with Optimistic Update ────────────────────────────────────────
-// ── Verify with Optimistic Update ────────────────────────────────────────
-async function handleVerify(docId) {
-  const docToVerify = documents.find(doc => doc.id === docId);
-  if (!docToVerify) return;
+  async function handleVerify(docId) {
+    const docToVerify = documents.find(doc => doc.id === docId);
+    if (!docToVerify) return;
 
-  setVerifying(docId);
-  updateDocumentInState(docId, {
-    status: 'verified',
-    reviewed_at: new Date().toISOString(),
-    reviewed_by_name: 'Counsellor' // Changed: removed req.user
-  });
-
-  try {
-    const res = await fetch(`${BASE_URL}/counsellor/documents/${docId}/verify`, {
-      method: "PUT",
-      headers: { 
-        Authorization: `Bearer ${getToken()}`,
-        'Content-Type': 'application/json'
-      },
-    });
-    
-    if (!res.ok) {
-      const errorData = await res.json();
-      updateDocumentInState(docId, { status: docToVerify.status });
-      throw new Error(errorData.message || 'Verification failed');
-    }
-    
-    toast.success("Document verified successfully!");
-    
-    const result = await res.json();
-    console.log('Verify response:', result); // Debug log
-    
+    setVerifying(docId);
     updateDocumentInState(docId, {
       status: 'verified',
-      reviewed_at: result.document?.reviewed_at || new Date().toISOString()
+      reviewed_at: new Date().toISOString(),
     });
-    
-  } catch (err) {
-    console.error('Verify error:', err);
-    toast.error(err.message || "Failed to verify.");
-    updateDocumentInState(docId, { status: docToVerify.status });
-  } finally {
-    setVerifying(null);
-  }
-}
 
-// ── Reject with Optimistic Update ────────────────────────────────────────
-async function handleReject(docId, reason) {
-  const docToReject = documents.find(doc => doc.id === docId);
-  if (!docToReject) return;
-
-  setRejecting(docId);
-  updateDocumentInState(docId, {
-    status: 'rejected',
-    rejection_reason: reason,
-    reviewed_at: new Date().toISOString(),
-    reviewed_by_name: 'Counsellor' // Changed: removed req.user
-  });
-
-  try {
-    const res = await fetch(`${BASE_URL}/counsellor/documents/${docId}/reject`, {
-      method: "PUT",
-      headers: { 
-        "Content-Type": "application/json", 
-        Authorization: `Bearer ${getToken()}` 
-      },
-      body: JSON.stringify({ reason }),
-    });
-    
-    if (!res.ok) {
-      const errorData = await res.json();
-      updateDocumentInState(docId, { status: docToReject.status, rejection_reason: null });
-      throw new Error(errorData.message || 'Rejection failed');
+    try {
+      const res = await fetch(`${BASE_URL}/counsellor/documents/${docId}/verify`, {
+        method: "PUT",
+        headers: { 
+          Authorization: `Bearer ${getToken()}`,
+          'Content-Type': 'application/json'
+        },
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        updateDocumentInState(docId, { status: docToVerify.status });
+        throw new Error(errorData.message || 'Verification failed');
+      }
+      
+      toast.success("Document verified successfully!");
+      await fetchDocs();
+      
+    } catch (err) {
+      console.error('Verify error:', err);
+      toast.error(err.message || "Failed to verify.");
+      updateDocumentInState(docId, { status: docToVerify.status });
+    } finally {
+      setVerifying(null);
     }
-    
-    toast.success("Document rejected. Student notified.");
-    setRejectDoc(null);
-    
-    const result = await res.json();
-    console.log('Reject response:', result); // Debug log
-    
-    updateDocumentInState(docId, {
-      status: 'rejected',
-      rejection_reason: reason,
-      reviewed_at: result.document?.reviewed_at || new Date().toISOString()
-    });
-    
-  } catch (err) {
-    console.error('Reject error:', err);
-    toast.error(err.message || "Failed to reject.");
-    updateDocumentInState(docId, { status: docToReject.status, rejection_reason: null });
-  } finally {
-    setRejecting(null);
   }
-}
 
-  // ── Reject with Optimistic Update ────────────────────────────────────────
   async function handleReject(docId, reason) {
     const docToReject = documents.find(doc => doc.id === docId);
     if (!docToReject) return;
@@ -617,32 +619,30 @@ async function handleReject(docId, reason) {
       status: 'rejected',
       rejection_reason: reason,
       reviewed_at: new Date().toISOString(),
-      reviewed_by_name: req?.user?.name || 'Counsellor'
     });
 
     try {
       const res = await fetch(`${BASE_URL}/counsellor/documents/${docId}/reject`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${getToken()}` 
+        },
         body: JSON.stringify({ reason }),
       });
       
       if (!res.ok) {
+        const errorData = await res.json();
         updateDocumentInState(docId, { status: docToReject.status, rejection_reason: null });
-        throw new Error((await res.json()).message);
+        throw new Error(errorData.message || 'Rejection failed');
       }
       
       toast.success("Document rejected. Student notified.");
       setRejectDoc(null);
-      
-      const updatedDoc = await res.json();
-      updateDocumentInState(docId, {
-        status: 'rejected',
-        rejection_reason: reason,
-        reviewed_at: updatedDoc.document?.reviewed_at || new Date().toISOString()
-      });
+      await fetchDocs();
       
     } catch (err) {
+      console.error('Reject error:', err);
       toast.error(err.message || "Failed to reject.");
       updateDocumentInState(docId, { status: docToReject.status, rejection_reason: null });
     } finally {
@@ -650,7 +650,7 @@ async function handleReject(docId, reason) {
     }
   }
 
-  // ── Group documents by student ──────────────────────────────────────────
+  // Group documents by student
   const studentsMap = documents.reduce((acc, doc) => {
     if (!acc[doc.student_id]) {
       acc[doc.student_id] = {
@@ -708,20 +708,15 @@ async function handleReject(docId, reason) {
 
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      
       {/* Header */}
       <div className="mb-6">
         <div className="bg-gradient-to-r from-blue-950 via-blue-900 to-teal-900 text-white rounded-3xl p-7 shadow-xl relative overflow-hidden">
           <div className="absolute -right-6 -top-6 w-40 h-40 bg-white/5 rounded-full" />
           <div className="absolute right-20 bottom-0 w-24 h-24 bg-white/5 rounded-full" />
           <div className="relative">
-            <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
-              Document Management
-            </p>
+            <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">Document Management</p>
             <h1 className="text-2xl font-bold">Student Documents</h1>
-            <p className="text-blue-200 text-sm mt-1">
-              Review and verify documents submitted by your students
-            </p>
+            <p className="text-blue-200 text-sm mt-1">Review and verify documents submitted by your students</p>
           </div>
         </div>
       </div>
@@ -755,8 +750,7 @@ async function handleReject(docId, reason) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        {/* Left Sidebar - Student Tabs */}
+        {/* Left Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100 bg-gray-50/50">
@@ -768,15 +762,7 @@ async function handleReject(docId, reason) {
             <div className="max-h-[600px] overflow-y-auto">
               {students.map(student => {
                 const counts = getStudentCounts(student.documents);
-                return (
-                  <StudentTab
-                    key={student.id}
-                    student={student}
-                    isActive={selectedStudent?.id === student.id}
-                    onClick={() => setSelectedStudent(student)}
-                    counts={counts}
-                  />
-                );
+                return <StudentTab key={student.id} student={student} isActive={selectedStudent?.id === student.id} onClick={() => setSelectedStudent(student)} counts={counts} />;
               })}
               {students.length === 0 && (
                 <div className="p-8 text-center">
@@ -788,10 +774,9 @@ async function handleReject(docId, reason) {
           </div>
         </div>
 
-        {/* Right Side - Documents Table */}
+        {/* Right Side */}
         <div className="lg:col-span-3">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            
             {/* Toolbar */}
             <div className="p-4 border-b border-gray-100 bg-gray-50/50">
               <div className="flex flex-col sm:flex-row gap-3 justify-between">
@@ -800,76 +785,37 @@ async function handleReject(docId, reason) {
                     <FileText size={16} className="text-teal-600" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-gray-800">
-                      {selectedStudent?.name}'s Documents
-                    </h2>
+                    <h2 className="font-bold text-gray-800">{selectedStudent?.name}'s Documents</h2>
                     <p className="text-xs text-gray-400">{selectedStudent?.email}</p>
                   </div>
                 </div>
-                
                 <div className="flex gap-2">
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search documents..."
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
-                      className="pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-teal-400 w-48"
-                    />
+                    <input type="text" placeholder="Search documents..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-teal-400 w-48" />
                   </div>
                   <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-                    <button
-                      onClick={() => setViewMode("table")}
-                      className={`p-1.5 px-3 text-xs font-medium transition ${viewMode === "table" ? "bg-teal-600 text-white" : "bg-white text-gray-600"}`}
-                      title="Table View"
-                    >
-                      <List size={14} />
-                    </button>
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={`p-1.5 px-3 text-xs font-medium transition ${viewMode === "grid" ? "bg-teal-600 text-white" : "bg-white text-gray-600"}`}
-                      title="Grid View"
-                    >
-                      <Grid3x3 size={14} />
-                    </button>
+                    <button onClick={() => setViewMode("table")} className={`p-1.5 px-3 text-xs font-medium transition ${viewMode === "table" ? "bg-teal-600 text-white" : "bg-white text-gray-600"}`}><List size={14} /></button>
+                    <button onClick={() => setViewMode("grid")} className={`p-1.5 px-3 text-xs font-medium transition ${viewMode === "grid" ? "bg-teal-600 text-white" : "bg-white text-gray-600"}`}><Grid3x3 size={14} /></button>
                   </div>
                 </div>
               </div>
-
-              {/* Status Filters */}
               <div className="flex gap-2 mt-3 flex-wrap">
                 {["all", "pending", "review", "verified", "rejected"].map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setFilterStatus(s)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
-                      ${filterStatus === s
-                        ? "bg-teal-600 text-white shadow-sm"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      }`}
-                  >
+                  <button key={s} onClick={() => setFilterStatus(s)} className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${filterStatus === s ? "bg-teal-600 text-white shadow-sm" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
                     {s === "all" ? "All" : STATUS[s]?.label}
-                    {s !== "all" && (
-                      <span className="ml-1.5 opacity-75">
-                        ({studentDocs.filter(d => d.status === s).length})
-                      </span>
-                    )}
+                    {s !== "all" && <span className="ml-1.5 opacity-75">({studentDocs.filter(d => d.status === s).length})</span>}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Content Area */}
+            {/* Content */}
             {loading ? (
-              <div className="flex justify-center py-20">
-                <div className="w-8 h-8 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
-              </div>
+              <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" /></div>
             ) : !selectedStudent ? (
               <div className="p-16 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Users size={28} className="text-gray-400" />
-                </div>
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><Users size={28} className="text-gray-400" /></div>
                 <p className="text-gray-500 font-semibold">Select a student</p>
                 <p className="text-gray-400 text-sm mt-1">Choose a student from the left sidebar</p>
               </div>
@@ -877,37 +823,13 @@ async function handleReject(docId, reason) {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Document</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Submitted</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Reviewed</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Rejection Reason</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Actions</th>
-                    </tr>
+                    <tr><th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Document</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Submitted</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Reviewed</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Rejection Reason</th><th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Actions</th></tr>
                   </thead>
                   <tbody>
                     {filteredDocs.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="px-4 py-12 text-center">
-                          <div className="flex flex-col items-center">
-                            <FileText size={32} className="text-gray-300 mb-2" />
-                            <p className="text-gray-400 text-sm">No documents found</p>
-                          </div>
-                        </td>
-                      </tr>
+                      <tr><td colSpan="6" className="px-4 py-12 text-center"><div className="flex flex-col items-center"><FileText size={32} className="text-gray-300 mb-2" /><p className="text-gray-400 text-sm">No documents found</p></div></td></tr>
                     ) : (
-                      filteredDocs.map(doc => (
-                        <DocumentRow
-                          key={doc.id}
-                          doc={doc}
-                          onVerify={handleVerify}
-                          onReject={setRejectDoc}
-                          onViewHistory={setSelectedDocForHistory}
-                          verifying={verifying}
-                          rejecting={rejecting}
-                        />
-                      ))
+                      filteredDocs.map(doc => <DocumentRow key={doc.id} doc={doc} onVerify={handleVerify} onReject={setRejectDoc} onViewHistory={setSelectedDocForHistory} verifying={verifying} rejecting={rejecting} />)
                     )}
                   </tbody>
                 </table>
@@ -916,22 +838,9 @@ async function handleReject(docId, reason) {
               <div className="p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto">
                   {filteredDocs.length === 0 ? (
-                    <div className="col-span-full p-12 text-center">
-                      <FileText size={32} className="mx-auto text-gray-300 mb-2" />
-                      <p className="text-gray-400 text-sm">No documents found</p>
-                    </div>
+                    <div className="col-span-full p-12 text-center"><FileText size={32} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-400 text-sm">No documents found</p></div>
                   ) : (
-                    filteredDocs.map(doc => (
-                      <DocumentGridCard
-                        key={doc.id}
-                        doc={doc}
-                        onVerify={handleVerify}
-                        onReject={setRejectDoc}
-                        onViewHistory={setSelectedDocForHistory}
-                        verifying={verifying}
-                        rejecting={rejecting}
-                      />
-                    ))
+                    filteredDocs.map(doc => <DocumentGridCard key={doc.id} doc={doc} onVerify={handleVerify} onReject={setRejectDoc} onViewHistory={setSelectedDocForHistory} verifying={verifying} rejecting={rejecting} />)
                   )}
                 </div>
               </div>
@@ -940,22 +849,9 @@ async function handleReject(docId, reason) {
         </div>
       </div>
 
-      {/* Reject modal */}
-      {rejectDoc && (
-        <RejectModal
-          doc={rejectDoc}
-          onConfirm={handleReject}
-          onCancel={() => setRejectDoc(null)}
-        />
-      )}
-
-      {/* Activity Log Modal */}
-      {selectedDocForHistory && (
-        <ActivityLogModal
-          doc={selectedDocForHistory}
-          onClose={() => setSelectedDocForHistory(null)}
-        />
-      )}
+      {/* Modals */}
+      {rejectDoc && <RejectModal doc={rejectDoc} onConfirm={handleReject} onCancel={() => setRejectDoc(null)} />}
+      {selectedDocForHistory && <ActivityLogModal doc={selectedDocForHistory} onClose={() => setSelectedDocForHistory(null)} />}
     </div>
   );
 }

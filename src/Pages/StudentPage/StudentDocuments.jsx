@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-// import { useSelector } from "react-redux";
-// import { selectUser }  from "../../redux/slices/authSlice";
 import { BASE_URL } from "../../Content/Url";
 import {
   Upload,
@@ -109,75 +107,91 @@ function getFileIcon(mime) {
 function ActivityLog({ doc, isOpen, onClose }) {
   if (!isOpen) return null;
 
-  // Build activity timeline based on document status and data
   const activities = [];
 
-  // Upload activity
-  if (doc.submitted_at) {
-    activities.push({
-      type: "upload",
-      title: "Document Uploaded",
-      description: `You uploaded ${doc.original_name}`,
-      date: doc.submitted_at,
-      icon: Upload,
-      color: "text-blue-500",
-      bg: "bg-blue-50",
+  // Build activity timeline from status_history if available
+  if (doc.status_history && doc.status_history.length > 0) {
+    doc.status_history.forEach((event) => {
+      if (event.action === "rejected") {
+        activities.push({
+          type: "rejected",
+          title: "Document Rejected",
+          description: `Reason: ${event.rejection_reason || event.note}`,
+          date: event.performed_at,
+          icon: XCircle,
+          color: "text-red-500",
+          bg: "bg-red-50",
+        });
+      } else if (event.action === "verified") {
+        activities.push({
+          type: "verified",
+          title: "Document Verified",
+          description: "Your document has been verified and approved",
+          date: event.performed_at,
+          icon: CheckCircle,
+          color: "text-emerald-500",
+          bg: "bg-emerald-50",
+        });
+      } else if (event.action === "reupload") {
+        activities.push({
+          type: "reupload",
+          title: "Document Re-uploaded",
+          description: "You re-uploaded the document after rejection",
+          date: event.performed_at,
+          icon: RefreshCw,
+          color: "text-purple-500",
+          bg: "bg-purple-50",
+        });
+      }
     });
   }
 
-  // Review activity (if document was reviewed)
-  if (doc.reviewed_at) {
-    if (doc.status === "verified") {
+  // If no history, use basic info
+  if (activities.length === 0) {
+    if (doc.submitted_at) {
       activities.push({
-        type: "verified",
-        title: "Document Verified",
-        description: "Your document has been verified and approved",
-        date: doc.reviewed_at,
-        icon: CheckCircle,
-        color: "text-emerald-500",
-        bg: "bg-emerald-50",
-      });
-    } else if (doc.status === "rejected" && doc.rejection_reason) {
-      activities.push({
-        type: "rejected",
-        title: "Document Rejected",
-        description: `Reason: ${doc.rejection_reason}`,
-        date: doc.reviewed_at,
-        icon: XCircle,
-        color: "text-red-500",
-        bg: "bg-red-50",
-      });
-    }
-  }
-
-  // Add re-upload activity if status is review (means it was re-uploaded after rejection)
-  if (doc.status === "review" && doc.submitted_at) {
-    // Check if there was a rejection before
-    if (doc.rejection_reason) {
-      activities.push({
-        type: "reupload",
-        title: "Document Re-uploaded",
-        description: "You re-uploaded the document after rejection",
+        type: "upload",
+        title: "Document Uploaded",
+        description: `You uploaded ${doc.original_name}`,
         date: doc.submitted_at,
-        icon: RefreshCw,
-        color: "text-purple-500",
-        bg: "bg-purple-50",
+        icon: Upload,
+        color: "text-blue-500",
+        bg: "bg-blue-50",
       });
+    }
+
+    if (doc.reviewed_at) {
+      if (doc.status === "verified") {
+        activities.push({
+          type: "verified",
+          title: "Document Verified",
+          description: "Your document has been verified and approved",
+          date: doc.reviewed_at,
+          icon: CheckCircle,
+          color: "text-emerald-500",
+          bg: "bg-emerald-50",
+        });
+      } else if (doc.status === "rejected" && doc.rejection_reason) {
+        activities.push({
+          type: "rejected",
+          title: "Document Rejected",
+          description: `Reason: ${doc.rejection_reason}`,
+          date: doc.reviewed_at,
+          icon: XCircle,
+          color: "text-red-500",
+          bg: "bg-red-50",
+        });
+      }
     }
   }
 
-  // Sort activities by date (oldest first)
   activities.sort((a, b) => new Date(a.date) - new Date(b.date));
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
-
-      {/* Modal */}
       <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out animate-slide-in">
         <div className="h-full flex flex-col">
-          {/* Header */}
           <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-blue-950 to-teal-900 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -201,46 +215,32 @@ function ActivityLog({ doc, isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Timeline Content */}
           <div className="flex-1 overflow-y-auto p-6">
             {activities.length === 0 ? (
               <div className="text-center py-12">
                 <Activity size={48} className="mx-auto text-gray-300 mb-3" />
                 <p className="text-gray-500 text-sm">No activity yet</p>
-                <p className="text-gray-400 text-xs mt-1">
-                  Activity log will appear here
-                </p>
               </div>
             ) : (
               <div className="relative">
-                {/* Vertical line */}
                 <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
-
-                {/* Activities */}
                 <div className="space-y-6">
                   {activities.map((activity, index) => {
                     const Icon = activity.icon;
                     return (
                       <div key={index} className="relative pl-12">
-                        {/* Timeline dot */}
                         <div
                           className={`absolute left-0 top-0 w-8 h-8 rounded-full ${activity.bg} flex items-center justify-center ring-4 ring-white`}
                         >
                           <Icon size={16} className={activity.color} />
                         </div>
-
-                        {/* Content */}
                         <div className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-semibold text-gray-800 text-sm">
-                                {activity.title}
-                              </h4>
-                              <p className="text-xs text-gray-600 mt-1">
-                                {activity.description}
-                              </p>
-                            </div>
-                          </div>
+                          <h4 className="font-semibold text-gray-800 text-sm">
+                            {activity.title}
+                          </h4>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {activity.description}
+                          </p>
                           <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
                             <Calendar size={12} />
                             <span>{formatDateTime(activity.date)}</span>
@@ -254,7 +254,6 @@ function ActivityLog({ doc, isOpen, onClose }) {
             )}
           </div>
 
-          {/* Footer with document info */}
           <div className="p-5 border-t border-gray-100 bg-gray-50">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center">
@@ -298,11 +297,22 @@ function ActivityLog({ doc, isOpen, onClose }) {
 }
 
 // ── Upload Zone Component ─────────────────────────────────────────────────────
-function UploadZone({ docType, onUpload, uploading }) {
+function UploadZone({ docType, onUpload, uploading, onClearType }) {
   const [dragOver, setDragOver] = useState(false);
   const [selected, setSelected] = useState(null);
   const [localType, setLocalType] = useState(docType || "");
   const inputRef = useRef(null);
+
+  // Update localType when docType prop changes (for re-upload)
+  useEffect(() => {
+    if (docType) {
+      setLocalType(docType);
+      // Focus on the file input after type is selected
+      setTimeout(() => {
+        inputRef.current?.click();
+      }, 100);
+    }
+  }, [docType]);
 
   function handleDrop(e) {
     e.preventDefault();
@@ -324,6 +334,8 @@ function UploadZone({ docType, onUpload, uploading }) {
     await onUpload(selected, localType);
     setSelected(null);
     if (inputRef.current) inputRef.current.value = "";
+    // Clear the type after successful upload
+    if (onClearType) onClearType();
   }
 
   return (
@@ -578,12 +590,6 @@ export default function StudentDocuments() {
     fetchDocs();
   }, [fetchDocs]);
 
-  // const updateDocumentInState = (docId, updates) => {
-  //   setDocuments(prevDocs =>
-  //     prevDocs.map(doc => doc.id === docId ? { ...doc, ...updates } : doc)
-  //   );
-  // };
-
   const addDocumentToState = (newDoc) => {
     setDocuments((prevDocs) => [newDoc, ...prevDocs]);
   };
@@ -592,9 +598,36 @@ export default function StudentDocuments() {
     setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
   };
 
-  async function handleUpload(file, docType) {
-    setUploading(true);
+// ── Main Page ── Update the handleUpload function ────────────────────────────
+async function handleUpload(file, docType) {
+  setUploading(true);
 
+  // Find if there's an existing rejected document of this type
+  const existingRejectedDoc = documents.find(
+    (doc) => doc.doc_type === docType && doc.status === "rejected"
+  );
+
+  if (existingRejectedDoc) {
+    // Update existing document optimistically
+    const updatedDoc = {
+      ...existingRejectedDoc,
+      status: "review",
+      rejection_reason: null,
+      original_name: file.name,
+      file_size: file.size,
+      file_mime: file.type,
+      submitted_at: new Date().toISOString(),
+      file_url: null, // Will be updated after upload
+    };
+    
+    // Replace the old document with updated one
+    setDocuments((prevDocs) =>
+      prevDocs.map((doc) =>
+        doc.id === existingRejectedDoc.id ? updatedDoc : doc
+      )
+    );
+  } else {
+    // Create new optimistic document
     const optimisticDoc = {
       id: `temp-${Date.now()}`,
       doc_type: docType,
@@ -607,41 +640,71 @@ export default function StudentDocuments() {
       rejection_reason: null,
       file_url: null,
     };
-
     addDocumentToState(optimisticDoc);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("doc_type", docType);
-
-      const res = await fetch(`${BASE_URL}/student/documents/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      removeDocumentFromState(optimisticDoc.id);
-      if (data.document) {
-        addDocumentToState({
-          ...data.document,
-          file_url: data.document.file_url,
-          submitted_at: data.document.submitted_at,
-        });
-      }
-
-      toast.success("Document uploaded successfully!");
-      setReuploadType("");
-    } catch (err) {
-      removeDocumentFromState(optimisticDoc.id);
-      toast.error(err.message || "Upload failed.");
-    } finally {
-      setUploading(false);
-    }
   }
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("doc_type", docType);
+
+    const res = await fetch(`${BASE_URL}/student/documents/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${getToken()}` },
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+
+    if (existingRejectedDoc && data.document) {
+      // Update the existing document with real data
+      setDocuments((prevDocs) =>
+        prevDocs.map((doc) =>
+          doc.id === existingRejectedDoc.id
+            ? {
+                ...data.document,
+                file_url: data.document.file_url,
+                submitted_at: data.document.submitted_at,
+              }
+            : doc
+        )
+      );
+    } else if (data.document) {
+      // Remove temp and add real document
+      removeDocumentFromState(optimisticDoc.id);
+      addDocumentToState({
+        ...data.document,
+        file_url: data.document.file_url,
+        submitted_at: data.document.submitted_at,
+      });
+    }
+
+    toast.success(
+      existingRejectedDoc
+        ? "Document re-uploaded successfully! Status changed to In Review."
+        : "Document uploaded successfully!"
+    );
+    setReuploadType("");
+    await fetchDocs(); // Refresh to ensure consistency
+  } catch (err) {
+    // Revert on error
+    if (existingRejectedDoc) {
+      setDocuments((prevDocs) =>
+        prevDocs.map((doc) =>
+          doc.id === existingRejectedDoc.id
+            ? { ...existingRejectedDoc }
+            : doc
+        )
+      );
+    } else {
+      removeDocumentFromState(optimisticDoc.id);
+    }
+    toast.error(err.message || "Upload failed.");
+  } finally {
+    setUploading(false);
+  }
+}
 
   async function handleDelete(doc) {
     removeDocumentFromState(doc.id);
@@ -662,9 +725,15 @@ export default function StudentDocuments() {
 
   const handleReupload = (docType) => {
     setReuploadType(docType);
-    document
-      .getElementById("upload-zone")
-      ?.scrollIntoView({ behavior: "smooth" });
+    // Scroll to upload zone
+    const uploadZone = document.getElementById("upload-zone");
+    if (uploadZone) {
+      uploadZone.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
+  const clearReuploadType = () => {
+    setReuploadType("");
   };
 
   const verified = documents.filter((d) => d.status === "verified").length;
@@ -676,8 +745,6 @@ export default function StudentDocuments() {
     filterStatus === "all"
       ? documents
       : documents.filter((d) => d.status === filterStatus);
-
-  // const uploadedTypes = new Set(documents.map(d => d.doc_type));
 
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
@@ -759,6 +826,7 @@ export default function StudentDocuments() {
               docType={reuploadType}
               onUpload={handleUpload}
               uploading={uploading}
+              onClearType={clearReuploadType}
             />
           </div>
 
