@@ -62,7 +62,8 @@ export const AddApplicationModal = ({
     if (!value) return null;
     if (hasLeadingSpaces(value)) return "Cannot start with spaces";
     if (containsLetters(value)) return "Cannot contain alphabets";
-    if (!/^\d{11}$/.test(value)) return "Phone number must be exactly 11 digits";
+    if (!/^\d{11}$/.test(value))
+      return "Phone number must be exactly 11 digits";
     return null;
   };
 
@@ -96,7 +97,8 @@ export const AddApplicationModal = ({
     if (!value) return null;
     if (hasLeadingSpaces(value)) return "Cannot start with spaces";
     if (containsLetters(value)) return "Cannot contain alphabets";
-    if (!/^\d+(\.\d+)?$/.test(value)) return "Enter a valid test score (e.g., 7.0)";
+    if (!/^\d+(\.\d+)?$/.test(value))
+      return "Enter a valid test score (e.g., 7.0)";
     return null;
   };
 
@@ -128,22 +130,22 @@ export const AddApplicationModal = ({
       case "institute":
       case "gender":
         return validateTextOnlyField(value, 3, 50);
-      
+
       case "phone":
         return validatePhone(value);
-      
+
       case "cnic":
         return validateCnic(value);
-      
+
       case "passport_number":
         return validatePassport(value);
-      
+
       case "cgpa":
         return validateCgpa(value);
-      
+
       case "test_score":
         return validateTestScore(value);
-      
+
       case "counselor_notes": {
         if (!value) return null;
         if (hasLeadingSpaces(value)) return "Cannot start with spaces";
@@ -151,17 +153,17 @@ export const AddApplicationModal = ({
         if (value.length > 250) return "Maximum 250 characters allowed";
         return null;
       }
-      
+
       case "email": {
         if (!value) return null;
         if (hasLeadingSpaces(value)) return "Cannot start with spaces";
         if (!/^\S+@\S+\.\S+$/.test(value)) return "Enter a valid email address";
         return null;
       }
-      
+
       case "age":
         return validateAge(value);
-      
+
       case "passing_year": {
         if (!value) return null;
         if (hasLeadingSpaces(value)) return "Cannot start with spaces";
@@ -173,20 +175,23 @@ export const AddApplicationModal = ({
         }
         return null;
       }
-      
+
       case "dob": {
         if (!value) return "Date of birth is required";
         const birthDate = new Date(value);
         const today = new Date();
         let age = today.getFullYear() - birthDate.getFullYear();
         const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        if (
+          monthDiff < 0 ||
+          (monthDiff === 0 && today.getDate() < birthDate.getDate())
+        ) {
           age--;
         }
         if (age < 18) return "Age must be 18 or older";
         return null;
       }
-      
+
       default:
         return null;
     }
@@ -195,30 +200,42 @@ export const AddApplicationModal = ({
   // Check if all required fields are filled and valid
   const isFormComplete = () => {
     const requiredFields = [
-      "full_name", "email", "cnic", "nationality", "gender",
-      "last_degree", "institute", "cgpa", "passing_year",
-      "target_country", "target_university", "course", "dob"
+      "full_name",
+      "email",
+      "cnic",
+      "nationality",
+      "gender",
+      "last_degree",
+      "institute",
+      "cgpa",
+      "passing_year",
+      "target_country",
+      "target_university",
+      "course",
+      "dob",
     ];
-    
+
     // Check if all required fields have values
-    const allFieldsFilled = requiredFields.every(field => {
+    const allFieldsFilled = requiredFields.every((field) => {
       const value = formData[field];
       return value && value.toString().trim() !== "";
     });
-    
+
     if (!allFieldsFilled) return false;
-    
+
     // Check if there are any validation errors
-    const hasErrors = Object.values(errors).some(error => error !== null && error !== undefined);
-    
+    const hasErrors = Object.values(errors).some(
+      (error) => error !== null && error !== undefined,
+    );
+
     return !hasErrors;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     const error = validateField(name, value);
     setErrors((prev) => ({ ...prev, [name]: error }));
 
@@ -283,32 +300,52 @@ export const AddApplicationModal = ({
   const validateForm = () => {
     const newErrors = {};
     const fieldsToValidate = [
-      "full_name", "email", "phone", "cnic", "nationality", "gender",
-      "last_degree", "institute", "cgpa", "passing_year",
-      "target_country", "target_university", "course", "dob", "age"
+      "full_name",
+      "email",
+      "phone",
+      "cnic",
+      "nationality",
+      "gender",
+      "last_degree",
+      "institute",
+      "cgpa",
+      "passing_year",
+      "target_country",
+      "target_university",
+      "course",
+      "dob",
+      "age",
     ];
-    
-    fieldsToValidate.forEach(field => {
+
+    fieldsToValidate.forEach((field) => {
       if (field === "phone" && !formData.phone) return;
       if (field === "passport_number" && !formData.passport_number) return;
       if (field === "test_score" && !formData.test_score) return;
-      
+
       const error = validateField(field, formData[field]);
       if (error) newErrors[field] = error;
     });
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const getAuthToken = () => {
+    return (
+      localStorage.getItem("token") ||
+      sessionStorage.getItem("token") ||
+      JSON.parse(localStorage.getItem("user"))?.token
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("Please fix the validation errors before submitting");
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -328,16 +365,22 @@ export const AddApplicationModal = ({
         }
       });
 
+      // Get the auth token
+      const token = getAuthToken();
+
       const response = await axios.post(
         `${BASE_URL}/addApplication`,
         submitData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
+            // Add the authorization header
+            Authorization: `Bearer ${token}`,
           },
         },
       );
 
+      // Rest of your code remains the same...
       toast.success(
         `Application created successfully! A confirmation email has been sent to ${formData.email}`,
         {
@@ -345,6 +388,7 @@ export const AddApplicationModal = ({
         },
       );
 
+      // Reset form and close modal...
       setFormData({
         full_name: "",
         email: "",
@@ -389,6 +433,95 @@ export const AddApplicationModal = ({
       setLoading(false);
     }
   };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   if (!validateForm()) {
+  //     toast.error("Please fix the validation errors before submitting");
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     const submitData = new FormData();
+
+  //     if (user && user.id) {
+  //       submitData.append("user_id", user.id);
+  //     }
+
+  //     Object.keys(formData).forEach((key) => {
+  //       if (key === "profile_picture") {
+  //         if (formData.profile_picture) {
+  //           submitData.append("profile_picture", formData.profile_picture);
+  //         }
+  //       } else if (formData[key] !== null && formData[key] !== "") {
+  //         submitData.append(key, formData[key]);
+  //       }
+  //     });
+
+  //     const response = await axios.post(
+  //       `${BASE_URL}/addApplication`,
+  //       submitData,
+  //       {
+  //         headers: {
+  //           "Content-Type": "multipart/form-data",
+  //         },
+  //       },
+  //     );
+
+  //     toast.success(
+  //       `Application created successfully! A confirmation email has been sent to ${formData.email}`,
+  //       {
+  //         autoClose: 5000,
+  //       },
+  //     );
+
+  //     setFormData({
+  //       full_name: "",
+  //       email: "",
+  //       phone: "",
+  //       dob: "",
+  //       age: "",
+  //       gender: "",
+  //       cnic: "",
+  //       passport_number: "",
+  //       nationality: "",
+  //       profile_picture: null,
+  //       last_degree: "",
+  //       institute: "",
+  //       cgpa: "",
+  //       passing_year: "",
+  //       english_test: "IELTS",
+  //       test_score: "",
+  //       target_country: "",
+  //       target_university: "",
+  //       course: "",
+  //       counselor_notes: "",
+  //       status: "inquiry",
+  //       deadline: "",
+  //       round: "",
+  //     });
+  //     setUploadedImage(null);
+  //     setImagePreview(null);
+  //     setErrors({});
+  //     setActiveTab("personal");
+
+  //     if (onApplicationAdded) {
+  //       onApplicationAdded(response.data.application);
+  //     }
+
+  //     onClose();
+  //   } catch (error) {
+  //     console.error("Error creating application:", error);
+  //     toast.error(
+  //       error.response?.data?.message || "Failed to create application",
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const TabButton = ({ id, label }) => (
     <button
@@ -515,7 +648,7 @@ export const AddApplicationModal = ({
                 {renderInput("full_name", "text", "Full Name", true)}
                 {renderInput("email", "email", "Email Address", true)}
                 {renderInput("phone", "tel", "Phone / WhatsApp", false)}
-                
+
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-gray-600">
                     Gender *
@@ -535,13 +668,20 @@ export const AddApplicationModal = ({
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
-                  {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender}</p>}
+                  {errors.gender && (
+                    <p className="text-red-500 text-xs mt-1">{errors.gender}</p>
+                  )}
                 </div>
 
                 {renderInput("dob", "date", "Date of Birth", true)}
                 {renderInput("age", "number", "Age", false)}
                 {renderInput("cnic", "text", "CNIC Number", true)}
-                {renderInput("passport_number", "text", "Passport Number", false)}
+                {renderInput(
+                  "passport_number",
+                  "text",
+                  "Passport Number",
+                  false,
+                )}
                 {renderInput("nationality", "text", "Nationality", true)}
               </div>
             </div>
@@ -549,11 +689,16 @@ export const AddApplicationModal = ({
 
           {activeTab === "academic" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {renderInput("last_degree", "text", "Last Completed Degree", true)}
+              {renderInput(
+                "last_degree",
+                "text",
+                "Last Completed Degree",
+                true,
+              )}
               {renderInput("institute", "text", "Institute/University", true)}
               {renderInput("cgpa", "text", "CGPA / Percentage", true)}
               {renderInput("passing_year", "number", "Passing Year", true)}
-              
+
               <div className="space-y-1">
                 <label className="text-sm font-semibold text-gray-600">
                   English Proficiency Test
@@ -570,7 +715,7 @@ export const AddApplicationModal = ({
                   <option value="None">None/MOI</option>
                 </select>
               </div>
-              
+
               {renderInput("test_score", "text", "Test Score (Overall)", false)}
             </div>
           )}
@@ -578,13 +723,24 @@ export const AddApplicationModal = ({
           {activeTab === "details" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {renderInput("target_country", "text", "Target Country", true)}
-              {renderInput("target_university", "text", "Target University", true)}
+              {renderInput(
+                "target_university",
+                "text",
+                "Target University",
+                true,
+              )}
               {renderInput("deadline", "text", "Application Deadline", false)}
               {renderInput("round", "text", "Round", false)}
               {renderInput("course", "text", "Proposed Course", true)}
-              
+
               <div className="md:col-span-2">
-                {renderInput("counselor_notes", "textarea", "Counselor Initial Notes", false, { rows: 3 })}
+                {renderInput(
+                  "counselor_notes",
+                  "textarea",
+                  "Counselor Initial Notes",
+                  false,
+                  { rows: 3 },
+                )}
               </div>
             </div>
           )}
@@ -602,7 +758,9 @@ export const AddApplicationModal = ({
               type="submit"
               disabled={isSubmitDisabled}
               className={`px-5 py-2 text-sm font-semibold text-white rounded-lg shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isSubmitDisabled ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+                isSubmitDisabled
+                  ? "bg-gray-400"
+                  : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {loading ? "Creating..." : "Create Application"}

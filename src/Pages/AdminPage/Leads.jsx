@@ -106,11 +106,38 @@ export default function Leads() {
   }, []);
 
   // ── Fetch Counsellors ──────────────────────────────────────────────────────
+  // const fetchCounsellors = useCallback(async () => {
+  //   try {
+  //     const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
+  //       headers: { "Content-Type": "application/json" },
+  //     });
+  //     const data = await res.json();
+  //     setCounsellors(Array.isArray(data) ? data : data.data || []);
+  //   } catch (err) {
+  //     console.error("Failed to fetch counsellors:", err);
+  //     setCounsellors([]);
+  //   }
+  // }, []);
+
   const fetchCounsellors = useCallback(async () => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found for fetching counsellors");
+        return;
+      }
+
       const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
       const data = await res.json();
       setCounsellors(Array.isArray(data) ? data : data.data || []);
     } catch (err) {
@@ -214,25 +241,31 @@ export default function Leads() {
     }
   }
 
-async function handleStage(leadId, status, note = "") {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+  async function handleStage(leadId, status, note = "") {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
-  if (drawerLead?.id === leadId) setDrawerLead(prev => ({ ...prev, status }));
+    setLeads((prev) =>
+      prev.map((l) => (l.id === leadId ? { ...l, status } : l)),
+    );
+    if (drawerLead?.id === leadId)
+      setDrawerLead((prev) => ({ ...prev, status }));
 
-  try {
-    const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/stage`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status, note }),  // ✅ send note
-    });
-    if (!res.ok) throw new Error();
-  } catch {
-    alert("Failed to update lead status");
-    fetchLeads();
+    try {
+      const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/stage`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status, note }), // ✅ send note
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      alert("Failed to update lead status");
+      fetchLeads();
+    }
   }
-}
 
   async function handleDelete(lead) {
     const token = localStorage.getItem("token");
