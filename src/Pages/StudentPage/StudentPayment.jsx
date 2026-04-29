@@ -6,7 +6,7 @@ import {
   Calendar, CheckCircle, Clock, FileText, 
   Building2, BookOpen, MapPin, Loader,
   XCircle, AlertCircle, Upload, Eye, Trash2,
-  ArrowLeft, Home
+  ArrowLeft, Home, PlusCircle
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -105,8 +105,15 @@ function MakePaymentModal({ isOpen, onClose, onSuccess, application }) {
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100 sticky top-0 bg-white">
-          <h2 className="text-xl font-bold text-gray-800">Make Payment</h2>
-          <p className="text-sm text-gray-500">{application?.target_university}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Make Payment</h2>
+              <p className="text-sm text-gray-500">{application?.target_university}</p>
+            </div>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
+              <XCircle size={20} className="text-gray-400" />
+            </button>
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -181,7 +188,7 @@ function MakePaymentModal({ isOpen, onClose, onSuccess, application }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
             <textarea 
               rows="3" 
               placeholder="Additional notes..." 
@@ -241,19 +248,23 @@ export default function StudentPayments() {
     }
   };
 
-  const fetchApplications = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/student/getApplications`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const data = await res.json();
-      setApplications(data.data || []);
-    } catch (err) {
-      console.error("Fetch applications error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchApplications = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/student/getApplications`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    const data = await res.json();
+    const apps = data.data || [];
+    
+    // DEBUG - Check what's coming from API
+    console.log('API Response:', apps);
+    console.log('First app status:', apps[0]?.status);
+    
+    setApplications(apps);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   useEffect(() => {
     fetchPayments();
@@ -383,34 +394,58 @@ export default function StudentPayments() {
         </div>
       </div>
 
-      {/* Make Payment Section - Show if there are offer letter applications */}
-      {offerLetterApplications.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-teal-50">
-            <h3 className="font-bold text-gray-800 flex items-center gap-2">
-              <DollarSign size={18} className="text-teal-600" />
-              Make a Payment
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5">You have applications ready for payment</p>
+      {/* MAKE PAYMENT SECTION - SHOW PROMINENTLY */}
+      <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl p-6 mb-6 border border-teal-100">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-teal-600 rounded-xl flex items-center justify-center">
+              <DollarSign size={28} className="text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">Make a Payment</h3>
+              <p className="text-sm text-gray-600">Pay your university fees, application fees, or consultancy charges</p>
+            </div>
           </div>
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => {
+              if (offerLetterApplications.length > 0) {
+                setSelectedApplication(offerLetterApplications[0]);
+                setShowPaymentModal(true);
+              } else {
+                toast.info("No applications with 'Offer Letter Received' status found. Please contact your counsellor.");
+              }
+            }}
+            className="px-6 py-3 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition flex items-center gap-2 shadow-lg"
+          >
+            <PlusCircle size={18} /> Make Payment Now
+          </button>
+        </div>
+        
+        {/* Show offer letter applications count */}
+        {offerLetterApplications.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-teal-100">
+            <p className="text-sm text-gray-600">
+              You have <span className="font-bold text-teal-600">{offerLetterApplications.length}</span> application(s) ready for payment:
+            </p>
+            <div className="flex flex-wrap gap-2 mt-2">
               {offerLetterApplications.map((app) => (
-                <div key={app.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition bg-white">
-                  <p className="font-semibold text-gray-800">{app.target_university}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{app.course}</p>
-                  <button
-                    onClick={() => {
-                      setSelectedApplication(app);
-                      setShowPaymentModal(true);
-                    }}
-                    className="mt-3 w-full px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 transition flex items-center justify-center gap-2"
-                  >
-                    <DollarSign size={14} /> Make Payment
-                  </button>
-                </div>
+                <span key={app.id} className="px-3 py-1 bg-white rounded-full text-xs text-gray-600 shadow-sm">
+                  {app.target_university}
+                </span>
               ))}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* If no offer letter applications, show message */}
+      {offerLetterApplications.length === 0 && (
+        <div className="bg-amber-50 rounded-2xl p-4 mb-6 border border-amber-200">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className="text-amber-600" />
+            <p className="text-sm text-amber-700">
+              No applications with "Offer Letter Received" status found. Once your application status changes to "Offer Letter Received", you'll be able to make payments here.
+            </p>
           </div>
         </div>
       )}
