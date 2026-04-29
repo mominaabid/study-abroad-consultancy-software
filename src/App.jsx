@@ -1,9 +1,13 @@
+// App.jsx
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { loadUser } from "./redux/slices/authSlice";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useSelector } from "react-redux";
+import { selectUser } from "./redux/slices/authSlice";
+import useSSE from "./redux/hooks/useSSE";
 
 import "./App.css";
 
@@ -32,6 +36,21 @@ import StudentChat from "./Pages/StudentPage/StudentChat";
 import StudentDocuments from "./Pages/StudentPage/StudentDocuments";
 import { StudentApplication } from "./Pages/StudentPage/StudentApplication";
 import StudentPayments from "./Pages/StudentPage/StudentPayment";
+
+// ⭐ Create a wrapper component to conditionally initialize SSE
+const SSEInitializer = ({ children }) => {
+  const user = useSelector(selectUser);
+  
+  // You can use user to conditionally initialize SSE or log it
+  useEffect(() => {
+    if (user) {
+      console.log(`SSE will initialize for user: ${user.role}`);
+    }
+  }, [user]);
+  
+  useSSE();
+  return children;
+};
 
 export default function App() {
   const dispatch = useDispatch();
@@ -79,7 +98,6 @@ export default function App() {
             <Route path="leads" element={<CounsellorLeads />} />
             <Route path="chats" element={<CounsellorChat />} />
             <Route path="documents" element={<CounsellorDocuments />} />
-
             <Route path="applications" element={<CounsellorApplication />} />
           </Route>
         </Route>

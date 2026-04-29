@@ -1,3 +1,4 @@
+// StudentDashboard.jsx - With SSE Integration
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -19,6 +20,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { GraduationCap } from "lucide-react";
+import useSSE from "../../redux/hooks/useSSE";
 
 import { BASE_URL } from "../../Content/Url";
 
@@ -266,30 +268,88 @@ export const StudentDashboard = () => {
   const navigate = useNavigate();
   const user = useSelector(selectUser);
 
+  // Initialize SSE connection - this will automatically connect when component mounts
+  // The hook returns the latest event data and connection status
+  const { lastEvent, isConnected, reconnect } = useSSE();
+
   const [profile, setProfile] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [applications, setApplications] = useState([]); // Added for applications
   const [loading, setLoading] = useState(true);
   const [docsLoading, setDocsLoading] = useState(true);
   const [appsLoading, setAppsLoading] = useState(true);
+  const [showNotification, setShowNotification] = useState(null);
+
+  // Handle real-time SSE events
+  useEffect(() => {
+    if (lastEvent) {
+      console.log("Received SSE event:", lastEvent);
+
+      // Show notification for real-time updates
+      setShowNotification({
+        type: lastEvent.type || "update",
+        message: lastEvent.message || "New update received!",
+        data: lastEvent.data,
+      });
+
+      // Auto-hide notification after 5 seconds
+      const timer = setTimeout(() => setShowNotification(null), 5000);
+
+      // Handle different event types
+      switch (lastEvent.type) {
+        case "document_verified":
+        case "document_rejected":
+        case "document_uploaded":
+          // Refresh documents when document status changes
+          fetchDocs();
+          break;
+
+        case "application_updated":
+        case "application_status_changed":
+          // Refresh applications when application status changes
+          fetchApplications();
+          break;
+
+        case "profile_updated":
+        case "stage_changed":
+          // Refresh profile when stage changes
+          fetchProfile();
+          break;
+
+        case "message_received":
+          // New message notification (could trigger chat refresh)
+          if (lastEvent.message) {
+            // Optional: Show chat notification badge
+            console.log("New message received:", lastEvent.message);
+          }
+          break;
+
+        default:
+          // For unknown event types, refresh all data
+          console.log("Unknown event type, refreshing all data");
+          fetchDocs();
+          fetchApplications();
+          fetchProfile();
+      }
+
+      return () => clearTimeout(timer);
+    }
+  }, [lastEvent]);
 
   // ── Fetch profile ────────────────────────────────────────────────────────
-  useEffect(() => {
-    async function fetchProfile() {
-      try {
-        const res = await fetch(`${BASE_URL}/student/profile`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        const data = await res.json();
-        setProfile(data.data || data);
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/student/profile`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      setProfile(data.data || data);
+    } catch (err) {
+      console.error("Profile fetch error:", err);
+    } finally {
+      setLoading(false);
     }
-    fetchProfile();
-  }, []);
+  };
 
   // ── Fetch documents ──────────────────────────────────────────────────────
   const fetchDocs = async () => {
@@ -323,7 +383,9 @@ export const StudentDashboard = () => {
     }
   };
 
+  // Initial data fetch
   useEffect(() => {
+    fetchProfile();
     fetchDocs();
     fetchApplications();
   }, []);
@@ -374,6 +436,68 @@ export const StudentDashboard = () => {
 
   return (
     <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
+      {/* SSE Connection Status Indicator */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-gray-200">
+          <div
+            className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
+          />
+          <span className="text-xs text-gray-600">
+            {isConnected ? "Live Updates" : "Reconnecting..."}
+          </span>
+          {!isConnected && (
+            <button
+              onClick={reconnect}
+              className="ml-1 p-1 hover:bg-gray-100 rounded-full transition"
+            >
+              <RefreshCw size={12} className="text-gray-500" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Real-time Notification Toast */}
+      {showNotification && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="bg-white rounded-xl shadow-lg border-l-4 border-teal-500 p-4 max-w-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                {showNotification.type === "document_verified" && (
+                  <CheckCircle size={20} className="text-green-500" />
+                )}
+                {showNotification.type === "document_rejected" && (
+                  <XCircle size={20} className="text-red-500" />
+                )}
+                {showNotification.type === "message_received" && (
+                  <MessageSquare size={20} className="text-blue-500" />
+                )}
+                {showNotification.type === "stage_changed" && (
+                  <Sparkles size={20} className="text-teal-500" />
+                )}
+                {!showNotification.type && (
+                  <AlertCircle size={20} className="text-teal-500" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-800">
+                  {showNotification.type?.replace(/_/g, " ").toUpperCase() ||
+                    "Update"}
+                </p>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {showNotification.message}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowNotification(null)}
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+              >
+                <XCircle size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Welcome Banner ── */}
       <div className="mb-3">
         <div className="relative bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 text-white rounded-xl p-3 shadow-xl overflow-hidden">
@@ -515,7 +639,7 @@ export const StudentDashboard = () => {
             )}
           </div>
 
-          {/* Recent Applications Section - NEW */}
+          {/* Recent Applications Section */}
           {!appsLoading && applications.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
@@ -658,47 +782,6 @@ export const StudentDashboard = () => {
 
         {/* ── Right column ── */}
         <div className="space-y-5">
-          {/* Application Info */}
-          {/* <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
-              <div className="w-2 h-2 bg-teal-500 rounded-full" />
-              Application Info
-            </h3>
-            <div className="space-y-0">
-              {[
-                {
-                  label: "Destination",
-                  value: profile?.lead?.preferred_country,
-                },
-                { label: "Study Level", value: profile?.lead?.study_level },
-                { label: "Source", value: profile?.lead?.source },
-                {
-                  label: "Applied On",
-                  value: profile?.lead?.createdAt
-                    ? formatDate(profile.lead.createdAt)
-                    : null,
-                },
-                {
-                  label: "Counsellor",
-                  value:
-                    counsellorName !== "Not Assigned" ? counsellorName : null,
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex justify-between items-center py-2.5 border-b border-gray-50 last:border-0"
-                >
-                  <span className="text-xs text-gray-400 font-medium">
-                    {item.label}
-                  </span>
-                  <span className="text-xs font-semibold text-gray-700 capitalize text-right max-w-[140px] truncate">
-                    {item.value || "—"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div> */}
-
           {/* Quick Actions */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
