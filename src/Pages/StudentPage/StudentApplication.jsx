@@ -60,6 +60,22 @@ const DOCUMENT_CONFIG = {
 // Helper to get token
 const getToken = () => localStorage.getItem("token") || "";
 
+// Helper function for authenticated axios requests
+const authAxios = {
+  get: (url) =>
+    axios.get(url, { headers: { Authorization: `Bearer ${getToken()}` } }),
+  post: (url, data) =>
+    axios.post(url, data, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    }),
+  put: (url, data) =>
+    axios.put(url, data, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    }),
+  delete: (url) =>
+    axios.delete(url, { headers: { Authorization: `Bearer ${getToken()}` } }),
+};
+
 // Three Dots Menu Component
 const ThreeDotsMenu = ({ onEdit, onDelete, onView }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -156,21 +172,28 @@ export const StudentApplication = () => {
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const appsResponse = await axios.get(`${BASE_URL}/getApplications`);
+      // ✅ Using authAxios for authenticated request
+      const appsResponse = await authAxios.get(`${BASE_URL}/getApplications`);
       setApplications(appsResponse.data);
 
       // Fetch documents as well
       await fetchDocuments();
 
       if (!reduxUser) {
-        const userResponse = await axios.get(`${BASE_URL}/user/profile`);
+        const userResponse = await authAxios.get(`${BASE_URL}/user/profile`);
         setUser(userResponse.data);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast.error("Failed to load dashboard data", {
-        toastId: "dashboard-load-error",
-      });
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please login again.");
+        // Redirect to login
+        window.location.href = "/login";
+      } else {
+        toast.error("Failed to load dashboard data", {
+          toastId: "dashboard-load-error",
+        });
+      }
       setApplications([]);
     } finally {
       setLoading(false);
@@ -316,7 +339,8 @@ export const StudentApplication = () => {
   // Handle status update from ViewApplicationModal
   const handleStatusUpdate = async (id, newStatus) => {
     try {
-      const response = await axios.put(
+      // ✅ Using authAxios for authenticated request
+      const response = await authAxios.put(
         `${BASE_URL}/updateApplicationStatus/${id}`,
         { status: newStatus },
       );
@@ -329,7 +353,11 @@ export const StudentApplication = () => {
       return response.data;
     } catch (error) {
       console.error("Error updating application status:", error);
-      toast.error("Failed to update application status");
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please login again.");
+      } else {
+        toast.error("Failed to update application status");
+      }
       throw error;
     }
   };
@@ -560,7 +588,8 @@ export const StudentApplication = () => {
               <button
                 onClick={async () => {
                   try {
-                    await axios.put(
+                    // ✅ Using authAxios for authenticated request
+                    await authAxios.put(
                       `${BASE_URL}/updateApplicationStatus/${selectedApp.id}`,
                       { status: "submitted" },
                     );
@@ -575,7 +604,11 @@ export const StudentApplication = () => {
                     setSelectedApp(null);
                   } catch (error) {
                     console.error("Error submitting application:", error);
-                    toast.error("Failed to submit application");
+                    if (error.response?.status === 401) {
+                      toast.error("Session expired. Please login again.");
+                    } else {
+                      toast.error("Failed to submit application");
+                    }
                   }
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -594,7 +627,8 @@ export const StudentApplication = () => {
         onConfirm={async () => {
           if (!applicationToDelete) return;
           try {
-            await axios.delete(
+            // ✅ Using authAxios for authenticated request
+            await authAxios.delete(
               `${BASE_URL}/deleteApplication/${applicationToDelete.id}`,
             );
             setApplications(
@@ -603,7 +637,11 @@ export const StudentApplication = () => {
             toast.success("Application deleted successfully!");
           } catch (error) {
             console.error("Error deleting application:", error);
-            toast.error("Failed to delete application");
+            if (error.response?.status === 401) {
+              toast.error("Session expired. Please login again.");
+            } else {
+              toast.error("Failed to delete application");
+            }
           } finally {
             setIsDeleteModalOpen(false);
             setApplicationToDelete(null);

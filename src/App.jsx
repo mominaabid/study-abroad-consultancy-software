@@ -19,7 +19,7 @@ import { AdminDashboard } from "./Pages/AdminPage/AdminDashboard";
 import AdminChatPage from "./Pages/AdminPage/AdminChat";
 import Leads from "./Pages/AdminPage/Leads";
 import { Counsellor } from "./Pages/AdminPage/Counsellor";
- import AdminPayments from "./Pages/AdminPage/AdminPayments";
+import AdminPayments from "./Pages/AdminPage/AdminPayments";
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
 import CounsellorChat from "./Pages/CounsellorPage/CounsellorChat";

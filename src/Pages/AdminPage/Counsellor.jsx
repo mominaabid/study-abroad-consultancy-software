@@ -24,8 +24,15 @@ export const Counsellor = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedCounsellor, setSelectedCounsellor] = useState(null);
 
+  // In Counsellor.jsx, update getAllCounsellors function:
+
   const getAllCounsellors = async () => {
-    const res = await axios.get(`${BASE_URL}/admin/getCounsellors`);
+    const token = localStorage.getItem("token");
+    const res = await axios.get(`${BASE_URL}/admin/getCounsellors`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return res.data;
   };
 
