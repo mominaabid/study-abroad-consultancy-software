@@ -21,14 +21,28 @@ function formatDate(dateStr) {
 }
 
 // ─── SET FEES MODAL ────────────────────────────────────────────────────────
+// ─── SET FEES MODAL WITH OPTIONAL SCHOLARSHIP ────────────────────────────────
 function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
-  const [totalFees, setTotalFees] = useState(student?.total_fees || "");
+  const [formData, setFormData] = useState({
+    total_fees: "",
+    scholarship: "0",
+    scholarship_type: "",
+    scholarship_remarks: "",
+  });
+  const [finalFees, setFinalFees] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Calculate final fees when total_fees or scholarship changes
+  useEffect(() => {
+    const total = parseFloat(formData.total_fees) || 0;
+    const scholarship = parseFloat(formData.scholarship) || 0;
+    setFinalFees(total - scholarship);
+  }, [formData.total_fees, formData.scholarship]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!totalFees || totalFees <= 0) {
-      toast.error("Please enter a valid amount");
+    if (!formData.total_fees || formData.total_fees <= 0) {
+      toast.error("Please enter a valid total fees amount");
       return;
     }
     setLoading(true);
@@ -41,12 +55,18 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
         },
         body: JSON.stringify({
           application_id: student.id,
-          total_fees: totalFees,
+          total_fees: formData.total_fees,
+          scholarship: formData.scholarship || 0,
+          scholarship_type: formData.scholarship_type,
+          scholarship_remarks: formData.scholarship_remarks,
+          final_fees: finalFees,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      toast.success("Total fees set successfully!");
+      toast.success(parseFloat(formData.scholarship) > 0 
+        ? `Fees set successfully! Scholarship of $${formData.scholarship} applied. Final fees: $${finalFees}` 
+        : "Total fees set successfully!");
       onSuccess();
       onClose();
     } catch (err) {
@@ -60,33 +80,133 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full mx-4">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">Set Total Fees</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Student: <span className="font-semibold">{student?.student_name}</span>
-          </p>
-          <p className="text-xs text-gray-400">{student?.university_name}</p>
+      <div className="bg-white rounded-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-5 border-b border-gray-100 sticky top-0 bg-white">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">Set Fees & Scholarship</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Student: <span className="font-semibold">{student?.student_name}</span>
+              </p>
+              <p className="text-xs text-gray-400">{student?.university_name}</p>
+            </div>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
+              <XCircle size={20} className="text-gray-400" />
+            </button>
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Total Fees */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Total Fees Amount *</label>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={totalFees}
-              onChange={(e) => setTotalFees(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-teal-400"
-              placeholder="Enter total fees"
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Total Fees *</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+              <input
+                type="number"
+                step="0.01"
+                required
+                value={formData.total_fees}
+                onChange={(e) => setFormData({ ...formData, total_fees: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl pl-7 pr-3 py-2 outline-none focus:border-teal-400"
+                placeholder="Enter total fees"
+              />
+            </div>
           </div>
+
+          {/* Optional Scholarship Section */}
+          <div className="border-t border-gray-100 pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Award size={16} className="text-teal-500" />
+              <h3 className="font-semibold text-gray-700 text-sm">Scholarship (Optional)</h3>
+              <span className="text-xs text-gray-400">- deduct from total fees</span>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Scholarship Amount</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.scholarship}
+                    onChange={(e) => setFormData({ ...formData, scholarship: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl pl-7 pr-3 py-2 outline-none focus:border-teal-400"
+                    placeholder="Enter scholarship amount (if any)"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">This amount will be deducted from total fees</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Scholarship Type</label>
+                <select
+                  value={formData.scholarship_type}
+                  onChange={(e) => setFormData({ ...formData, scholarship_type: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400"
+                >
+                  <option value="">Select type (optional)</option>
+                  <option value="Merit Scholarship">Merit Scholarship</option>
+                  <option value="Need-based Scholarship">Need-based Scholarship</option>
+                  <option value="Sports Scholarship">Sports Scholarship</option>
+                  <option value="Academic Excellence">Academic Excellence</option>
+                  <option value="Early Admission">Early Admission</option>
+                  <option value="Sibling Discount">Sibling Discount</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks (Optional)</label>
+                <textarea
+                  rows="2"
+                  value={formData.scholarship_remarks}
+                  onChange={(e) => setFormData({ ...formData, scholarship_remarks: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400 resize-none text-sm"
+                  placeholder="Additional remarks about scholarship"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Final Fees Preview */}
+          {(parseFloat(formData.scholarship) > 0 || finalFees > 0) && (
+            <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl p-4 border border-teal-200">
+              <p className="text-xs font-semibold text-teal-700 mb-2">💰 Fee Summary</p>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Fees:</span>
+                  <span className="font-semibold">${parseFloat(formData.total_fees || 0).toLocaleString()}</span>
+                </div>
+                {parseFloat(formData.scholarship) > 0 && (
+                  <>
+                    <div className="flex justify-between text-green-600">
+                      <span>Scholarship:</span>
+                      <span>- $${parseFloat(formData.scholarship).toLocaleString()}</span>
+                    </div>
+                    <div className="border-t border-teal-200 my-1"></div>
+                    <div className="flex justify-between font-bold">
+                      <span>Final Fees to Pay:</span>
+                      <span className="text-teal-700">$${finalFees.toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
+                {parseFloat(formData.scholarship) === 0 && parseFloat(formData.total_fees) > 0 && (
+                  <div className="flex justify-between font-bold">
+                    <span>Amount to Pay:</span>
+                    <span className="text-teal-700">$${finalFees.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50">
               Cancel
             </button>
             <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50">
-              {loading ? <Loader size={18} className="animate-spin mx-auto" /> : "Set Fees"}
+              {loading ? <Loader size={18} className="animate-spin mx-auto" /> : "Save Fees"}
             </button>
           </div>
         </form>

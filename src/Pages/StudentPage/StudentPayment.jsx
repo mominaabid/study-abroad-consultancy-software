@@ -1,5 +1,5 @@
 // src/components/student/StudentPayments.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../redux/slices/authSlice";
 import { BASE_URL } from "../../Content/Url";
@@ -8,7 +8,8 @@ import {
   Calendar, CheckCircle, Clock, FileText, 
   Building2, BookOpen, MapPin, Loader,
   XCircle, AlertCircle, Upload, Eye, Trash2,
-  ArrowLeft, Home, PlusCircle, TrendingDown, TrendingUp
+  ArrowLeft, Home, PlusCircle, TrendingDown, TrendingUp,
+  Award, RefreshCw
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -23,7 +24,7 @@ function formatDate(dateStr) {
 }
 
 // ─── MAKE PAYMENT MODAL ──────────────────────────────────────────────────────
-function MakePaymentModal({ isOpen, onClose, onSuccess, application, totalFees, totalPaid, remainingAmount }) {
+function MakePaymentModal({ isOpen, onClose, onSuccess, application, totalFees, totalPaid, remainingAmount, scholarshipAmount, scholarshipType, scholarshipRemarks, finalFees }) {
   const [formData, setFormData] = useState({ 
     amount: '', 
     mode: 'online', 
@@ -34,7 +35,6 @@ function MakePaymentModal({ isOpen, onClose, onSuccess, application, totalFees, 
   const [proofPreview, setProofPreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Calculate max allowed amount (can't pay more than remaining)
   const maxAmount = remainingAmount;
 
   const handleAmountChange = (e) => {
@@ -138,8 +138,23 @@ function MakePaymentModal({ isOpen, onClose, onSuccess, application, totalFees, 
           <div className="mt-3 p-3 bg-gray-50 rounded-lg">
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-600">Total Fees:</span>
-              <span className="font-semibold text-gray-800">${totalFees?.toLocaleString() || '0'}</span>
+              <span className="font-semibold">${totalFees?.toLocaleString() || '0'}</span>
             </div>
+            {scholarshipAmount > 0 && (
+              <>
+                <div className="flex justify-between text-sm mb-1 text-green-600">
+                  <span className="flex items-center gap-1"><Award size={12} /> Scholarship {scholarshipType ? `(${scholarshipType})` : ''}:</span>
+                  <span>- ${scholarshipAmount.toLocaleString()}</span>
+                </div>
+                {scholarshipRemarks && (
+                  <p className="text-xs text-gray-500 italic mt-1">{scholarshipRemarks}</p>
+                )}
+                <div className="flex justify-between text-sm mb-1 font-semibold">
+                  <span>Final Fees:</span>
+                  <span className="text-teal-600">${finalFees?.toLocaleString() || '0'}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-600">Paid Amount:</span>
               <span className="font-semibold text-green-600">${totalPaid?.toLocaleString() || '0'}</span>
@@ -258,11 +273,19 @@ export default function StudentPayments() {
   
   const [payments, setPayments] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [paymentSummary, setPaymentSummary] = useState({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
-  const [selectedAppSummary, setSelectedAppSummary] = useState({ total_paid: 0, total_fees: 0, remaining: 0 });
+  const [selectedAppSummary, setSelectedAppSummary] = useState({ 
+    total_paid: 0, 
+    total_fees: 0, 
+    remaining: 0,
+    scholarship_amount: 0,
+    scholarship_type: '',
+    scholarship_remarks: '',
+    final_fees: 0
+  });
   const [summary, setSummary] = useState({ 
     total_paid: 0, 
     total_pending: 0, 
@@ -293,60 +316,73 @@ export default function StudentPayments() {
 
   const fetchApplications = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/getApplications`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const data = await res.json();
+      setRefreshing(true);
+      
+      const [appsRes, paymentsRes] = await Promise.all([
+        fetch(`${BASE_URL}/getApplications`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        }),
+        fetch(`${BASE_URL}/student/payments`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        })
+      ]);
+      
+      const appsData = await appsRes.json();
+      const paymentsData = await paymentsRes.json();
       
       let apps = [];
-      if (Array.isArray(data)) {
-        apps = data;
-      } else if (data.data && Array.isArray(data.data)) {
-        apps = data.data;
-      } else if (data.applications && Array.isArray(data.applications)) {
-        apps = data.applications;
+      if (Array.isArray(appsData)) {
+        apps = appsData;
+      } else if (appsData.data && Array.isArray(appsData.data)) {
+        apps = appsData.data;
       }
       
-      // Fetch payment summary for each application
-      const appsWithSummary = await Promise.all(apps.map(async (app) => {
-        // Get all completed payments for this application
-        const appPayments = payments.filter(p => p.application_id === app.id && p.status === 'completed');
+      const feeInfo = paymentsData.feeInfo || {};
+      const allPayments = paymentsData.payments || [];
+      
+      // Calculate payment summary for each application
+      const appsWithSummary = apps.map((app) => {
+        const appPayments = allPayments.filter(p => p.application_id === app.id && p.status === 'completed');
         const totalPaid = appPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
         
-        // Get total fees from the first payment record or set to 0
-        const feeRecord = payments.find(p => p.application_id === app.id && p.total_fees > 0);
-        const totalFees = feeRecord?.total_fees || 0;
+        // Get fee info from the feeInfo object
+        const fees = feeInfo[app.id] || {
+          total_fees: 0,
+          scholarship_amount: 0,
+          final_fees: 0
+        };
         
-        const remaining = totalFees - totalPaid;
+        const finalFees = fees.final_fees || fees.total_fees;
+        const remaining = finalFees - totalPaid;
         
         return {
           ...app,
-          total_fees: totalFees,
+          total_fees: fees.total_fees,
+          scholarship_amount: fees.scholarship_amount,
+          scholarship_type: fees.scholarship_type,
+          scholarship_remarks: fees.scholarship_remarks,
+          final_fees: finalFees,
           total_paid: totalPaid,
-          remaining_amount: remaining,
+          remaining_amount: remaining > 0 ? remaining : 0,
           is_fully_paid: remaining <= 0
         };
-      }));
+      });
       
       setApplications(appsWithSummary);
-      
-      // Store summary in state for quick access
-      const summaryMap = {};
-      appsWithSummary.forEach(app => {
-        summaryMap[app.id] = {
-          total_fees: app.total_fees,
-          total_paid: app.total_paid,
-          remaining: app.remaining_amount,
-          is_fully_paid: app.is_fully_paid
-        };
+      setSummary(paymentsData.summary || {
+        total_paid: 0,
+        total_pending: 0,
+        completed_count: 0,
+        pending_count: 0,
+        rejected_count: 0,
       });
-      setPaymentSummary(summaryMap);
       
     } catch (err) {
       console.error("Fetch applications error:", err);
       toast.error("Failed to load applications");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -355,12 +391,27 @@ export default function StudentPayments() {
   }, []);
 
   useEffect(() => {
-    if (payments.length > 0) {
-      fetchApplications();
-    } else {
+    if (payments.length >= 0) {
       fetchApplications();
     }
   }, [payments]);
+
+  // Auto-refresh when page gets focus
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchApplications();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  const refreshAllData = () => {
+    fetchPayments();
+    fetchApplications();
+  };
 
   const getPaymentModeIcon = (mode) => {
     switch(mode) {
@@ -420,7 +471,11 @@ export default function StudentPayments() {
     setSelectedAppSummary({
       total_fees: app.total_fees,
       total_paid: app.total_paid,
-      remaining: app.remaining_amount
+      remaining: app.remaining_amount,
+      scholarship_amount: app.scholarship_amount,
+      scholarship_type: app.scholarship_type,
+      scholarship_remarks: app.scholarship_remarks,
+      final_fees: app.final_fees
     });
     setShowPaymentModal(true);
   };
@@ -430,25 +485,37 @@ export default function StudentPayments() {
       {/* Header */}
       <div className="mb-6">
         <div className="bg-gradient-to-r from-blue-950 to-teal-900 text-white rounded-3xl p-7 shadow-xl">
-          <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1 text-teal-300 hover:text-white transition text-sm">
-            <ArrowLeft size={16} /> Back
-          </button>
-          <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">Financial History</p>
-          <h1 className="text-2xl font-bold">My Payments</h1>
-          <p className="text-blue-200 text-sm mt-1">Track all your payment transactions</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <button onClick={() => navigate(-1)} className="mb-3 flex items-center gap-1 text-teal-300 hover:text-white transition text-sm">
+                <ArrowLeft size={16} /> Back
+              </button>
+              <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">Financial History</p>
+              <h1 className="text-2xl font-bold">My Payments</h1>
+              <p className="text-blue-200 text-sm mt-1">Track all your payment transactions</p>
+            </div>
+            <button 
+              onClick={refreshAllData} 
+              disabled={refreshing}
+              className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition flex items-center gap-2"
+            >
+              <RefreshCw size={18} className={refreshing ? "animate-spin" : ""} />
+              <span className="text-sm hidden md:inline">Refresh</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium">Total Paid</p>
               <p className="text-2xl font-bold text-gray-800">${summary.total_paid?.toLocaleString() || '0'}</p>
             </div>
-            <div className="w-10 h-10 bg-emerald-50 rounded-xl">
-              <DollarSign size={20} className="text-emerald-600 m-2.5" />
+            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <DollarSign size={20} className="text-emerald-600" />
             </div>
           </div>
         </div>
@@ -458,8 +525,8 @@ export default function StudentPayments() {
               <p className="text-xs text-gray-400 font-medium">Pending Verification</p>
               <p className="text-2xl font-bold text-amber-600">${summary.total_pending?.toLocaleString() || '0'}</p>
             </div>
-            <div className="w-10 h-10 bg-amber-50 rounded-xl">
-              <Clock size={20} className="text-amber-600 m-2.5" />
+            <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+              <Clock size={20} className="text-amber-600" />
             </div>
           </div>
         </div>
@@ -469,8 +536,8 @@ export default function StudentPayments() {
               <p className="text-xs text-gray-400 font-medium">Completed</p>
               <p className="text-2xl font-bold text-gray-800">{summary.completed_count || 0}</p>
             </div>
-            <div className="w-10 h-10 bg-green-50 rounded-xl">
-              <CheckCircle size={20} className="text-green-600 m-2.5" />
+            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+              <CheckCircle size={20} className="text-green-600" />
             </div>
           </div>
         </div>
@@ -480,8 +547,8 @@ export default function StudentPayments() {
               <p className="text-xs text-gray-400 font-medium">Rejected</p>
               <p className="text-2xl font-bold text-red-600">{summary.rejected_count || 0}</p>
             </div>
-            <div className="w-10 h-10 bg-red-50 rounded-xl">
-              <XCircle size={20} className="text-red-600 m-2.5" />
+            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
+              <XCircle size={20} className="text-red-600" />
             </div>
           </div>
         </div>
@@ -490,68 +557,12 @@ export default function StudentPayments() {
       {/* Applications Ready for Payment */}
       <div className="mb-6">
         <h2 className="text-lg font-bold text-gray-800 mb-3">Applications Ready for Payment</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {offerLetterApplications.map((app) => (
-            <div key={app.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-bold text-gray-800 text-lg">{app.target_university}</h3>
-                    <p className="text-sm text-gray-500">{app.course}</p>
-                  </div>
-                  {app.is_fully_paid ? (
-                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <CheckCircle size={12} /> Fully Paid
-                    </span>
-                  ) : app.remaining_amount <= 0 ? (
-                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <CheckCircle size={12} /> Paid
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
-                      Payment Required
-                    </span>
-                  )}
-                </div>
-                
-                {/* Payment Progress */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Payment Progress</span>
-                    <span className="font-semibold">
-                      ${app.total_paid?.toLocaleString() || '0'} / ${app.total_fees?.toLocaleString() || '0'}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-teal-600 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${app.total_fees > 0 ? (app.total_paid / app.total_fees) * 100 : 0}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs mt-2">
-                    <span className="text-gray-500">Paid: ${app.total_paid?.toLocaleString() || '0'}</span>
-                    <span className="text-amber-600 font-semibold">Remaining: ${app.remaining_amount?.toLocaleString() || '0'}</span>
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => handleMakePayment(app)}
-                  disabled={app.is_fully_paid || app.remaining_amount <= 0}
-                  className={`w-full py-2.5 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${
-                    app.is_fully_paid || app.remaining_amount <= 0
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-teal-600 text-white hover:bg-teal-700'
-                  }`}
-                >
-                  <PlusCircle size={18} />
-                  {app.is_fully_paid || app.remaining_amount <= 0 ? 'Fully Paid' : 'Make Payment'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {offerLetterApplications.length === 0 && !loading && (
+        {refreshing && (
+          <div className="text-center py-4">
+            <Loader size={24} className="animate-spin mx-auto text-teal-600" />
+          </div>
+        )}
+        {!refreshing && offerLetterApplications.length === 0 && (
           <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200">
             <div className="flex items-center gap-3">
               <AlertCircle size={20} className="text-amber-600" />
@@ -559,6 +570,105 @@ export default function StudentPayments() {
                 No applications with "Offer Letter Received" status found. Once your application status changes, you'll be able to make payments here.
               </p>
             </div>
+          </div>
+        )}
+        {!refreshing && offerLetterApplications.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {offerLetterApplications.map((app) => (
+              <div key={app.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-gray-800 text-lg">{app.target_university}</h3>
+                      <p className="text-sm text-gray-500">{app.course}</p>
+                    </div>
+                    {app.is_fully_paid ? (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
+                        <CheckCircle size={12} /> Fully Paid
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
+                        Payment Required
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Fee Breakdown with Scholarship */}
+                  <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                    <h4 className="font-semibold text-gray-700 text-sm mb-2 flex items-center gap-2">
+                      <DollarSign size={14} className="text-teal-500" />
+                      Fee Breakdown
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Total Fees:</span>
+                        <span className="font-semibold">${(app.total_fees || 0).toLocaleString()}</span>
+                      </div>
+                      {(app.scholarship_amount > 0) && (
+                        <>
+                          <div className="flex justify-between text-green-600">
+                            <span className="text-sm flex items-center gap-1">
+                              <Award size={12} /> Scholarship {app.scholarship_type ? `(${app.scholarship_type})` : ''}:
+                            </span>
+                            <span className="font-semibold">- ${app.scholarship_amount.toLocaleString()}</span>
+                          </div>
+                          {app.scholarship_remarks && (
+                            <p className="text-xs text-gray-500 italic pl-2">{app.scholarship_remarks}</p>
+                          )}
+                          <div className="border-t border-gray-200 my-2"></div>
+                          <div className="flex justify-between font-bold">
+                            <span className="text-sm">Final Fees to Pay:</span>
+                            <span className="text-teal-600">${(app.final_fees || 0).toLocaleString()}</span>
+                          </div>
+                          <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                            <CheckCircle size={12} /> You saved ${app.scholarship_amount.toLocaleString()} with scholarship!
+                          </p>
+                        </>
+                      )}
+                      {(!app.scholarship_amount || app.scholarship_amount === 0) && (
+                        <div className="flex justify-between font-bold pt-2">
+                          <span className="text-sm">Amount to Pay:</span>
+                          <span className="text-teal-600">${(app.total_fees || 0).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Payment Progress */}
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Payment Progress</span>
+                      <span className="font-semibold">
+                        ${(app.total_paid || 0).toLocaleString()} / ${((app.final_fees || app.total_fees) || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-teal-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${((app.final_fees || app.total_fees) || 0) > 0 ? ((app.total_paid || 0) / ((app.final_fees || app.total_fees) || 1)) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs mt-2">
+                      <span className="text-gray-500">Paid: ${(app.total_paid || 0).toLocaleString()}</span>
+                      <span className="text-amber-600 font-semibold">Remaining: ${(app.remaining_amount || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleMakePayment(app)}
+                    disabled={app.is_fully_paid || app.remaining_amount <= 0}
+                    className={`w-full py-2.5 rounded-xl font-semibold transition flex items-center justify-center gap-2 ${
+                      app.is_fully_paid || app.remaining_amount <= 0
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-teal-600 text-white hover:bg-teal-700'
+                    }`}
+                  >
+                    <PlusCircle size={18} />
+                    {app.is_fully_paid || app.remaining_amount <= 0 ? 'Fully Paid' : 'Make Payment'}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -630,13 +740,20 @@ export default function StudentPayments() {
                         <Calendar size={10} /> {formatDate(payment.paid_at)}
                       </span>
                     </div>
+                    {payment.notes && (payment.notes.includes('Scholarship') || payment.notes.includes('scholarship')) && (
+                      <div className="mt-2 p-2 bg-green-50 rounded-lg w-full">
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <Award size={12} /> {payment.notes}
+                        </p>
+                      </div>
+                    )}
                     {payment.status === 'rejected' && payment.rejection_reason && (
                       <div className="mt-2 p-2 bg-red-50 rounded-lg w-full">
                         <p className="text-xs text-red-600">Reason: {payment.rejection_reason}</p>
                       </div>
                     )}
                     {payment.payment_proof && payment.status === 'awaiting_verification' && (
-                      <a href={payment.payment_proof} target="_blank" className="text-xs text-teal-600 hover:underline flex items-center gap-1 mt-1">
+                      <a href={payment.payment_proof} target="_blank" rel="noopener noreferrer" className="text-xs text-teal-600 hover:underline flex items-center gap-1 mt-1">
                         <Eye size={10} /> View Uploaded Proof
                       </a>
                     )}
@@ -653,14 +770,17 @@ export default function StudentPayments() {
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSuccess={() => {
-          fetchPayments();
-          fetchApplications();
+          refreshAllData();
           toast.success("Payment submitted! Admin will verify it soon.");
         }}
         application={selectedApplication}
         totalFees={selectedAppSummary.total_fees}
         totalPaid={selectedAppSummary.total_paid}
         remainingAmount={selectedAppSummary.remaining}
+        scholarshipAmount={selectedAppSummary.scholarship_amount}
+        scholarshipType={selectedAppSummary.scholarship_type}
+        scholarshipRemarks={selectedAppSummary.scholarship_remarks}
+        finalFees={selectedAppSummary.final_fees}
       />
     </div>
   );
