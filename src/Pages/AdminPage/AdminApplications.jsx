@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
-import { selectUser, selectToken } from "../../redux/slices/authSlice";
 import { BASE_URL } from "../../Content/Url";
 import {
   Search,
@@ -37,6 +35,13 @@ import {
   Globe,
   Award,
   ExternalLink,
+  FileQuestion,
+  MailCheck,
+  FileWarning,
+  FileX,
+  Plane,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 
 // Helper to get token
@@ -58,39 +63,69 @@ const authAxios = {
     axios.delete(url, { headers: { Authorization: `Bearer ${getToken()}` } }),
 };
 
-// Status configuration with colors and icons
+// Updated Status configuration with new enum values
 const STATUS_CONFIG = {
-  Pending: {
-    color: "bg-amber-100 text-amber-700 border-amber-200",
-    icon: Clock,
-    label: "Pending",
+  inquiry: {
+    color: "bg-gray-100 text-gray-700 border-gray-200",
+    icon: FileQuestion,
+    label: "Inquiry",
+    order: 1,
   },
-  "In Review": {
+  evaluation: {
     color: "bg-blue-100 text-blue-700 border-blue-200",
     icon: Eye,
-    label: "In Review",
+    label: "Evaluation",
+    order: 2,
   },
-  Approved: {
-    color: "bg-green-100 text-green-700 border-green-200",
-    icon: CheckCircle,
-    label: "Approved",
-  },
-  "Visa Processing": {
-    color: "bg-purple-100 text-purple-700 border-purple-200",
+  "application submitted": {
+    color: "bg-cyan-100 text-cyan-700 border-cyan-200",
     icon: Send,
-    label: "Visa Processing",
+    label: "Application Submitted",
+    order: 3,
   },
-  Completed: {
+  "offer letter received": {
+    color: "bg-green-100 text-green-700 border-green-200",
+    icon: MailCheck,
+    label: "Offer Letter Received",
+    order: 4,
+  },
+  "offer letter not received": {
+    color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    icon: FileWarning,
+    label: "Offer Letter Not Received",
+    order: 5,
+  },
+  "visa filed": {
+    color: "bg-purple-100 text-purple-700 border-purple-200",
+    icon: Plane,
+    label: "Visa Filed",
+    order: 6,
+  },
+  approved: {
     color: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    icon: FileCheck,
-    label: "Completed",
+    icon: ThumbsUp,
+    label: "Approved",
+    order: 7,
   },
-  Rejected: {
+  reject: {
     color: "bg-red-100 text-red-700 border-red-200",
-    icon: XCircle,
-    label: "Rejected",
+    icon: ThumbsDown,
+    label: "Reject",
+    order: 8,
   },
 };
+
+// Statuses array in correct order
+const STATUSES = [
+  "inquiry",
+  "evaluation",
+  "application submitted",
+  "offer letter received",
+  "offer letter not received",
+  "visa filed",
+  "approved",
+  "reject",
+];
 
 // Document icons mapping
 const DOCUMENT_ICONS = {
@@ -110,15 +145,6 @@ const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const statuses = [
-    "Pending",
-    "In Review",
-    "Approved",
-    "Visa Processing",
-    "Completed",
-    "Rejected",
-  ];
-
   const handleStatusChange = async (newStatus) => {
     if (newStatus === currentStatus) {
       setIsOpen(false);
@@ -129,14 +155,16 @@ const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
     try {
       const response = await authAxios.put(
         `${BASE_URL}/admin/applications/${applicationId}/status`,
-        { status: newStatus }
+        { status: newStatus },
       );
       onStatusUpdate(applicationId, newStatus, response.data);
-      toast.success(`Application status updated to ${newStatus}!`);
+      toast.success(
+        `Application status updated to ${STATUS_CONFIG[newStatus]?.label || newStatus}!`,
+      );
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error(
-        error.response?.data?.message || "Failed to update application status"
+        error.response?.data?.message || "Failed to update application status",
       );
     } finally {
       setIsUpdating(false);
@@ -154,13 +182,13 @@ const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${STATUS_CONFIG[currentStatus]?.color} hover:opacity-80`}
       >
         <StatusIcon size={12} />
-        <span>{currentStatus}</span>
+        <span>{STATUS_CONFIG[currentStatus]?.label || currentStatus}</span>
         <ChevronDown size={12} className="ml-0.5" />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-          {statuses.map((status) => {
+        <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200 max-h-80 overflow-y-auto">
+          {STATUSES.map((status) => {
             const Icon = STATUS_CONFIG[status]?.icon || Clock;
             return (
               <button
@@ -173,7 +201,7 @@ const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
                 }`}
               >
                 <Icon size={12} />
-                <span>{status}</span>
+                <span>{STATUS_CONFIG[status]?.label || status}</span>
                 {status === currentStatus && (
                   <CheckCircle2 size={12} className="ml-auto text-green-500" />
                 )}
@@ -187,7 +215,21 @@ const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
 };
 
 // Three Dots Menu Component
-const ThreeDotsMenu = ({ onViewDetails, onEditStatus }) => {
+// const ThreeDotsMenu = ({ onViewDetails, onEditStatus }) => {
+//   const [isOpen, setIsOpen] = useState(false);
+//   const menuRef = React.useRef(null);
+
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (menuRef.current && !menuRef.current.contains(event.target)) {
+//         setIsOpen(false);
+//       }
+//     };
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => document.removeEventListener("mousedown", handleClickOutside);
+//   }, []);
+
+const ThreeDotsMenu = ({ onViewDetails }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = React.useRef(null);
 
@@ -221,7 +263,7 @@ const ThreeDotsMenu = ({ onViewDetails, onEditStatus }) => {
             <Eye size={14} className="text-blue-500" />
             <span>View Details</span>
           </button>
-          <button
+          {/* <button
             onClick={() => {
               onEditStatus();
               setIsOpen(false);
@@ -230,7 +272,7 @@ const ThreeDotsMenu = ({ onViewDetails, onEditStatus }) => {
           >
             <Edit size={14} className="text-amber-500" />
             <span>Edit Status</span>
-          </button>
+          </button> */}
         </div>
       )}
     </div>
@@ -260,32 +302,8 @@ const ProgressBar = ({ percentage }) => {
   );
 };
 
-// Document status indicator
-const DocumentStatus = ({ documents }) => {
-  const docList = documents ? (Array.isArray(documents) ? documents : []) : [];
-  const total = docList.length;
-  const submitted = docList.filter((d) => d && d.file_url).length;
-  const verified = docList.filter((d) => d && d.status === "verified").length;
-
-  if (total === 0) return <span className="text-xs text-gray-400">0/0</span>;
-
-  return (
-    <div className="flex items-center gap-1">
-      <span className="text-xs font-medium text-gray-700">
-        {verified}/{total}
-      </span>
-      <div className="w-12 bg-gray-200 rounded-full h-1">
-        <div
-          className="bg-green-500 h-1 rounded-full transition-all"
-          style={{ width: `${(verified / total) * 100}%` }}
-        />
-      </div>
-    </div>
-  );
-};
-
 // Main Admin Application Component
-export const AdminApplication = () => {
+export const AdminApplications = () => {
   const [applications, setApplications] = useState([]);
   const [filteredApplications, setFilteredApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -296,21 +314,20 @@ export const AdminApplication = () => {
   const [sortField, setSortField] = useState("updated");
   const [sortDirection, setSortDirection] = useState("desc");
 
-  const reduxUser = useSelector(selectUser);
-  const token = useSelector(selectToken);
-
   // Fetch all applications
   const fetchApplications = useCallback(async () => {
     setLoading(true);
     try {
       const response = await authAxios.get(`${BASE_URL}/admin/applications`);
       let appsData = response.data;
+
       if (Array.isArray(appsData)) {
-        setApplications(appsData);
-        setFilteredApplications(appsData);
-      } else if (appsData && appsData.applications) {
-        setApplications(appsData.applications);
-        setFilteredApplications(appsData.applications);
+        const normalizedApps = appsData.map((app) => ({
+          ...app,
+          status: app.status || "inquiry",
+        }));
+        setApplications(normalizedApps);
+        setFilteredApplications(normalizedApps);
       } else {
         setApplications([]);
         setFilteredApplications([]);
@@ -342,11 +359,13 @@ export const AdminApplication = () => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (app) =>
-          (app.application_id && app.application_id.toLowerCase().includes(term)) ||
+          (app.application_id &&
+            app.application_id.toLowerCase().includes(term)) ||
           (app.student_name && app.student_name.toLowerCase().includes(term)) ||
-          (app.target_university && app.target_university.toLowerCase().includes(term)) ||
+          (app.target_university &&
+            app.target_university.toLowerCase().includes(term)) ||
           (app.course && app.course.toLowerCase().includes(term)) ||
-          (app.email && app.email.toLowerCase().includes(term))
+          (app.email && app.email.toLowerCase().includes(term)),
       );
     }
 
@@ -368,8 +387,9 @@ export const AdminApplication = () => {
           bVal = b.student_name || "";
           break;
         case "status":
-          aVal = a.status || "";
-          bVal = b.status || "";
+          // Sort by status order
+          aVal = STATUS_CONFIG[a.status]?.order || 999;
+          bVal = STATUS_CONFIG[b.status]?.order || 999;
           break;
         default:
           aVal = a[sortField] || "";
@@ -388,8 +408,8 @@ export const AdminApplication = () => {
       prev.map((app) =>
         app.id === id || app.application_id === id
           ? { ...app, status: newStatus, ...updatedData }
-          : app
-      )
+          : app,
+      ),
     );
   };
 
@@ -403,20 +423,23 @@ export const AdminApplication = () => {
       "Course",
       "Status",
       "Progress",
-      "Documents",
+      // "Documents",
       "Updated Date",
     ];
 
     const rows = filteredApplications.map((app) => [
       app.application_id || app.id,
-      app.student_name || `${app.first_name || ""} ${app.last_name || ""}`.trim(),
+      app.student_name ||
+        `${app.first_name || ""} ${app.last_name || ""}`.trim(),
       app.email || "",
       app.target_university || "",
       app.course || "",
-      app.status || "",
+      STATUS_CONFIG[app.status]?.label || app.status || "",
       `${app.progress || 0}%`,
       `${app.documents?.length || 0}/${app.total_documents || 5}`,
-      new Date(app.updated_at || app.created_at || Date.now()).toLocaleDateString(),
+      new Date(
+        app.updated_at || app.created_at || Date.now(),
+      ).toLocaleDateString(),
     ]);
 
     const csvContent = [
@@ -440,15 +463,17 @@ export const AdminApplication = () => {
   const getStatusCounts = () => {
     const counts = {
       Total: applications.length,
-      Pending: 0,
-      "In Review": 0,
-      Approved: 0,
-      "Visa Processing": 0,
-      Completed: 0,
-      Rejected: 0,
+      inquiry: 0,
+      evaluation: 0,
+      "application submitted": 0,
+      "offer letter received": 0,
+      "offer letter not received": 0,
+      "visa filed": 0,
+      approved: 0,
+      reject: 0,
     };
     applications.forEach((app) => {
-      if (counts.hasOwnProperty(app.status)) {
+      if (Object.prototype.hasOwnProperty.call(counts, app.status)) {
         counts[app.status]++;
       }
     });
@@ -469,8 +494,13 @@ export const AdminApplication = () => {
 
   // Get sort icon
   const SortIcon = ({ field }) => {
-    if (sortField !== field) return <ChevronDown size={14} className="opacity-30" />;
-    return sortDirection === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+    if (sortField !== field)
+      return <ChevronDown size={14} className="opacity-30" />;
+    return sortDirection === "asc" ? (
+      <ChevronUp size={14} />
+    ) : (
+      <ChevronDown size={14} />
+    );
   };
 
   // View details modal
@@ -478,7 +508,7 @@ export const AdminApplication = () => {
     if (!application) return null;
 
     const StatusIcon = STATUS_CONFIG[application.status]?.icon || Clock;
-    const documents = application.documents || [];
+    // const documents = application.documents || [];
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -590,7 +620,10 @@ export const AdminApplication = () => {
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_CONFIG[application.status]?.color}`}
                     >
                       <StatusIcon size={12} />
-                      <span>{application.status}</span>
+                      <span>
+                        {STATUS_CONFIG[application.status]?.label ||
+                          application.status}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -600,7 +633,7 @@ export const AdminApplication = () => {
                     <Calendar size={14} className="text-gray-400" />
                     {application.submission_date ||
                       new Date(
-                        application.created_at || Date.now()
+                        application.created_at || Date.now(),
                       ).toLocaleDateString()}
                   </p>
                 </div>
@@ -608,7 +641,7 @@ export const AdminApplication = () => {
             </div>
 
             {/* Documents */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            {/* <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="font-semibold text-gray-800 flex items-center gap-2 mb-4">
                 <FileText size={18} className="text-amber-600" />
                 Documents ({documents.length})
@@ -670,7 +703,7 @@ export const AdminApplication = () => {
                   })
                 )}
               </div>
-            </div>
+            </div> */}
 
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
@@ -708,40 +741,60 @@ export const AdminApplication = () => {
   return (
     <div className="p-4 md:p-6 bg-slate-50 min-h-screen font-sans">
       {/* Header Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
         <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total</p>
-          <p className="text-2xl font-bold text-gray-800">{statusCounts.Total}</p>
+          <p className="text-2xl font-bold text-gray-800">
+            {statusCounts.Total}
+          </p>
         </div>
-        <div className="bg-amber-50 rounded-xl p-3 shadow-sm border border-amber-100">
-          <p className="text-xs text-amber-600">Pending</p>
-          <p className="text-2xl font-bold text-amber-700">{statusCounts.Pending}</p>
+        <div className="bg-gray-50 rounded-xl p-3 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-600">Inquiry</p>
+          <p className="text-2xl font-bold text-gray-700">
+            {statusCounts.inquiry}
+          </p>
         </div>
         <div className="bg-blue-50 rounded-xl p-3 shadow-sm border border-blue-100">
-          <p className="text-xs text-blue-600">In Review</p>
+          <p className="text-xs text-blue-600">Evaluation</p>
           <p className="text-2xl font-bold text-blue-700">
-            {statusCounts["In Review"]}
+            {statusCounts.evaluation}
+          </p>
+        </div>
+        <div className="bg-cyan-50 rounded-xl p-3 shadow-sm border border-cyan-100">
+          <p className="text-xs text-cyan-600">App Submitted</p>
+          <p className="text-2xl font-bold text-cyan-700">
+            {statusCounts["application submitted"]}
           </p>
         </div>
         <div className="bg-green-50 rounded-xl p-3 shadow-sm border border-green-100">
-          <p className="text-xs text-green-600">Approved</p>
-          <p className="text-2xl font-bold text-green-700">{statusCounts.Approved}</p>
+          <p className="text-xs text-green-600">Offer Received</p>
+          <p className="text-2xl font-bold text-green-700">
+            {statusCounts["offer letter received"]}
+          </p>
+        </div>
+        <div className="bg-yellow-50 rounded-xl p-3 shadow-sm border border-yellow-100">
+          <p className="text-xs text-yellow-600">Offer Not Received</p>
+          <p className="text-2xl font-bold text-yellow-700">
+            {statusCounts["offer letter not received"]}
+          </p>
         </div>
         <div className="bg-purple-50 rounded-xl p-3 shadow-sm border border-purple-100">
-          <p className="text-xs text-purple-600">Visa Processing</p>
+          <p className="text-xs text-purple-600">Visa Filed</p>
           <p className="text-2xl font-bold text-purple-700">
-            {statusCounts["Visa Processing"]}
+            {statusCounts["visa filed"]}
           </p>
         </div>
         <div className="bg-emerald-50 rounded-xl p-3 shadow-sm border border-emerald-100">
-          <p className="text-xs text-emerald-600">Completed</p>
+          <p className="text-xs text-emerald-600">Approved</p>
           <p className="text-2xl font-bold text-emerald-700">
-            {statusCounts.Completed}
+            {statusCounts.approved}
           </p>
         </div>
         <div className="bg-red-50 rounded-xl p-3 shadow-sm border border-red-100">
-          <p className="text-xs text-red-600">Rejected</p>
-          <p className="text-2xl font-bold text-red-700">{statusCounts.Rejected}</p>
+          <p className="text-xs text-red-600">Reject</p>
+          <p className="text-2xl font-bold text-red-700">
+            {statusCounts.reject}
+          </p>
         </div>
       </div>
 
@@ -769,12 +822,11 @@ export const AdminApplication = () => {
                 className="appearance-none pl-10 pr-8 py-2.5 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
               >
                 <option value="All Status">All Status</option>
-                <option value="Pending">Pending</option>
-                <option value="In Review">In Review</option>
-                <option value="Approved">Approved</option>
-                <option value="Visa Processing">Visa Processing</option>
-                <option value="Completed">Completed</option>
-                <option value="Rejected">Rejected</option>
+                {STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {STATUS_CONFIG[status]?.label || status}
+                  </option>
+                ))}
               </select>
               <Filter
                 size={16}
@@ -842,10 +894,10 @@ export const AdminApplication = () => {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   PROGRESS
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   DOCUMENTS
-                </th>
-                <th
+                </th> */}
+                {/* <th
                   className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:text-gray-800"
                   onClick={() => toggleSort("updated")}
                 >
@@ -853,7 +905,7 @@ export const AdminApplication = () => {
                     UPDATED
                     <SortIcon field="updated" />
                   </div>
-                </th>
+                </th> */}
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   ACTIONS
                 </th>
@@ -862,7 +914,10 @@ export const AdminApplication = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredApplications.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-4 py-12 text-center text-gray-500">
+                  <td
+                    colSpan="8"
+                    className="px-4 py-12 text-center text-gray-500"
+                  >
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle size={40} className="text-gray-300" />
                       <p>No applications found</p>
@@ -874,12 +929,16 @@ export const AdminApplication = () => {
                 </tr>
               ) : (
                 filteredApplications.map((app) => {
-                  const status = app.status || "Pending";
+                  const status = app.status || "inquiry";
                   const StatusIconComp = STATUS_CONFIG[status]?.icon || Clock;
                   const progress = app.progress || 0;
-                  const documentsCount = app.documents?.length || 0;
-                  const totalDocuments = app.total_documents || 8;
-                  const studentInitials = (app.student_name || app.first_name || "ST")
+                  // const documentsCount = app.documents?.length || 0;
+                  // const totalDocuments = app.total_documents || 8;
+                  const studentInitials = (
+                    app.student_name ||
+                    app.first_name ||
+                    "ST"
+                  )
                     .split(" ")
                     .map((n) => n[0])
                     .join("")
@@ -893,13 +952,61 @@ export const AdminApplication = () => {
                     >
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center font-bold text-gray-600 text-xs">
-                            {app.application_id?.slice(-4) || app.id?.slice(-4) || "APP"}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-800 text-sm">
-                              {app.application_id || app.id || "N/A"}
-                            </p>
+                          <div className="w-auto px-3 py-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center font-mono font-semibold text-blue-700 text-xs border border-blue-100">
+                            {(() => {
+                              // Format the application ID
+                              if (
+                                app.application_id &&
+                                app.application_id.startsWith("EDU-")
+                              ) {
+                                return app.application_id;
+                              }
+
+                              // Generate a formatted ID if it doesn't exist or is not in correct format
+                              const appDate =
+                                app.created_at ||
+                                app.submission_date ||
+                                new Date();
+                              const date = new Date(appDate);
+                              const year = date.getFullYear();
+                              const month = String(
+                                date.getMonth() + 1,
+                              ).padStart(2, "0");
+                              const day = String(date.getDate()).padStart(
+                                2,
+                                "0",
+                              );
+                              const dateStr = `${year}${month}${day}`;
+
+                              // Use the last 4 digits of the existing ID or create a sequence
+                              const existingId = app.application_id || app.id;
+                              let sequence = "0001";
+
+                              if (existingId && existingId !== "N/A") {
+                                // Extract last 4 digits if possible
+                                const match = existingId.match(/\d{4}$/);
+                                if (match) {
+                                  sequence = match[0];
+                                } else {
+                                  // Simple hash function for strings
+                                  const simpleHash = (str) => {
+                                    let hash = 0;
+                                    for (let i = 0; i < str.length; i++) {
+                                      const char = str.charCodeAt(i);
+                                      hash = (hash << 5) - hash + char;
+                                      hash = hash & hash; // Convert to 32-bit integer
+                                    }
+                                    return Math.abs(hash);
+                                  };
+
+                                  sequence = String(
+                                    simpleHash(existingId) % 10000,
+                                  ).padStart(4, "0");
+                                }
+                              }
+
+                              return `EDU-${dateStr}-${sequence}`;
+                            })()}
                           </div>
                         </div>
                       </td>
@@ -933,13 +1040,13 @@ export const AdminApplication = () => {
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_CONFIG[status]?.color}`}
                         >
                           <StatusIconComp size={12} />
-                          <span>{status}</span>
+                          <span>{STATUS_CONFIG[status]?.label || status}</span>
                         </div>
                       </td>
                       <td className="px-4 py-4">
                         <ProgressBar percentage={progress} />
                       </td>
-                      <td className="px-4 py-4">
+                      {/* <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium text-gray-700">
                             {documentsCount}/{totalDocuments}
@@ -953,16 +1060,16 @@ export const AdminApplication = () => {
                             />
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-4">
+                      </td> */}
+                      {/* <td className="px-4 py-4">
                         <p className="text-sm text-gray-600">
                           {app.updated_at
                             ? new Date(app.updated_at).toLocaleDateString()
                             : app.created_at
-                            ? new Date(app.created_at).toLocaleDateString()
-                            : "N/A"}
+                              ? new Date(app.created_at).toLocaleDateString()
+                              : "N/A"}
                         </p>
-                      </td>
+                      </td> */}
                       <td className="px-4 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <StatusDropdown
@@ -975,7 +1082,7 @@ export const AdminApplication = () => {
                               setSelectedApplication(app);
                               setIsDetailsModalOpen(true);
                             }}
-                            onEditStatus={() => {}}
+                            // onEditStatus={() => {}}
                           />
                         </div>
                       </td>
@@ -1001,4 +1108,3 @@ export const AdminApplication = () => {
     </div>
   );
 };
-
