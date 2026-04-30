@@ -38,7 +38,7 @@ export default function LeadModal({
         name: editLead.name || "",
         email: editLead.email || "",
         phone: editLead.phone || "",
-        source: editLead.source || "website",
+        source: editLead.source || "walkin",
         preferred_country: editLead.preferred_country || "",
         study_level: editLead.study_level || "",
         counsellor_id: editLead.counsellor_id

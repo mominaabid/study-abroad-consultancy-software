@@ -36,7 +36,7 @@ export const STUDY_LEVELS = ["Bachelor","Master","PhD","Diploma","Short Course"]
 
 export const EMPTY_FORM = {
   name: "", email: "", phone: "",
-  source: "website", preferred_country: "",
+  source: "walkin", preferred_country: "",
   study_level: "", counsellor_id: null,
 };
 

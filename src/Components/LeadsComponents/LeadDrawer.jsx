@@ -165,46 +165,103 @@ export default function LeadDrawer({
               </div>
 
               {/* STAGE */}
-              <div className="mt-4">
-                <h3 className="text-xs mb-2">Stage</h3>
+        {/* STAGE */}
+<div className="mt-5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">
+    Pipeline Stage
+  </p>
 
-                <div className="flex flex-wrap gap-2">
-                  {STAGES.map((s) => (
-                    <button
-                      key={s.key}
-                      onClick={() => {
-                        if (!canMoveStage(lead.status, s.key)) {
-                          toast.error("🚫 Follow step-by-step process!");
-                          return;
-                        }
+  {/* Stepper */}
+  <div className="flex items-start mb-5 overflow-x-auto pb-1">
+    {STAGES.map((s, i) => {
+      const currentIndex = stageOrder.indexOf(lead.status);
+      const isDone = i < currentIndex;
+      const isActive = i === currentIndex;
 
-                        if (!stageNote.trim()) {
-                          toast.error("📝 Please add a note first!");
-                          return;
-                        }
+      return (
+        <div key={s.key} className="flex flex-col items-center flex-1 min-w-[60px] relative">
+          {/* Connector line */}
+          {i < STAGES.length - 1 && (
+            <div
+              className="absolute top-4 left-1/2 right-[-50%] h-0.5 z-0"
+              style={{ background: isDone ? "#00A78E" : "#e2e8f0" }}
+            />
+          )}
 
-                        onStage(lead.id, s.key, stageNote);
-                        setStageNote("");
-                      }}
-                      className={`px-3 py-1 text-xs rounded ${
-                        lead.status === s.key ? "text-white" : "bg-gray-100"
-                      }`}
-                      style={
-                        lead.status === s.key ? { background: s.color } : {}
-                      }
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
+          {/* Dot */}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 relative border-2 transition-all duration-200"
+            style={
+              isDone
+                ? { background: "#00A78E", color: "#fff", borderColor: "#00A78E" }
+                : isActive
+                ? { background: "#fff", color: "#00A78E", borderColor: "#00A78E", boxShadow: "0 0 0 4px #00A78E22" }
+                : { background: "#f1f5f9", color: "#94a3b8", borderColor: "#e2e8f0" }
+            }
+          >
+            {isDone ? "✓" : i + 1}
+          </div>
 
-                <textarea
-                  value={stageNote}
-                  onChange={(e) => setStageNote(e.target.value)}
-                  placeholder="Write note before changing stage..."
-                  className="w-full mt-3 border p-2 text-sm rounded"
-                />
-              </div>
+          {/* Label */}
+          <span
+            className="text-[9px] font-semibold mt-1.5 text-center leading-tight"
+            style={{ color: isActive ? "#00A78E" : isDone ? "#00A78E" : "#94a3b8", opacity: isDone ? 0.7 : 1 }}
+          >
+            {s.label}
+          </span>
+        </div>
+      );
+    })}
+  </div>
+
+  {/* Pills */}
+  <div className="flex flex-wrap gap-2 mb-4">
+    {STAGES.map((s) => {
+      const isActive = lead.status === s.key;
+      return (
+        <button
+          key={s.key}
+          onClick={() => {
+            if (!canMoveStage(lead.status, s.key)) {
+              toast.error("🚫 Follow step-by-step process!");
+              return;
+            }
+            if (!stageNote.trim()) {
+              toast.error("📝 Please add a note first!");
+              return;
+            }
+            onStage(lead.id, s.key, stageNote);
+            setStageNote("");
+          }}
+          className="px-3.5 py-1.5 rounded-full text-xs font-semibold border-[1.5px] transition-all duration-150"
+          style={
+            isActive
+              ? { background: "#00A78E", color: "#fff", borderColor: "#00A78E", boxShadow: "0 0 0 3px #00A78E22" }
+              : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }
+          }
+        >
+          {s.label}
+        </button>
+      );
+    })}
+  </div>
+
+  {/* Note */}
+  <div className="relative">
+    <textarea
+      value={stageNote}
+      onChange={(e) => setStageNote(e.target.value)}
+      placeholder="Add a note before moving stage..."
+      rows={3}
+      className="w-full border-[1.5px] border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:border-[#00A78E] transition-colors bg-white"
+    />
+    {stageNote && (
+      <span className="absolute bottom-2.5 right-3 text-[10px] text-slate-400">
+        {stageNote.length} chars
+      </span>
+    )}
+  </div>
+</div>
             </>
           )}
 
