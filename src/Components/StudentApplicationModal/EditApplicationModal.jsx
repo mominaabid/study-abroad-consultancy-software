@@ -38,76 +38,56 @@ export const EditApplicationModal = ({
     course: "",
     counselor_notes: "",
     status: "inquiry",
-    deadline: "",
-    round: "",
   });
 
- 
   useEffect(() => {
-  if (application) {
-    setFormData({
-      full_name: application.full_name || "",
-      email: application.email || "",
-      phone: application.phone || "",
-      dob: application.dob || "",
-      age: application.age || "",
-      gender: application.gender || "",
-      cnic: application.cnic || "",
-      passport_number: application.passport_number || "",
-      nationality: application.nationality || "",
-      profile_picture: null,
-      last_degree: application.last_degree || "",
-      institute: application.institute || "",
-      cgpa: application.cgpa || "",
-      passing_year: application.passing_year || "",
-      english_test: application.english_test || "IELTS",
-      test_score: application.test_score || "",
-      target_country: application.target_country || "",
-      target_university: application.target_university || "",
-      course: application.course || "",
-      counselor_notes: application.counselor_notes || "",
-      status: application.status || "inquiry",
-      deadline: application.deadline || "",
-      round: application.round || "",
-    });
+    if (application) {
+      setFormData({
+        full_name: application.full_name || "",
+        email: application.email || "",
+        phone: application.phone || "",
+        dob: application.dob || "",
+        age: application.age || "",
+        gender: application.gender || "",
+        cnic: application.cnic || "",
+        passport_number: application.passport_number || "",
+        nationality: application.nationality || "",
+        profile_picture: null,
+        last_degree: application.last_degree || "",
+        institute: application.institute || "",
+        cgpa: application.cgpa || "",
+        passing_year: application.passing_year || "",
+        english_test: application.english_test || "IELTS",
+        test_score: application.test_score || "",
+        target_country: application.target_country || "",
+        target_university: application.target_university || "",
+        course: application.course || "",
+        counselor_notes: application.counselor_notes || "",
+        status: application.status || "inquiry",
+      });
 
-    // Fix: Correctly construct the image URL
-    if (application.profile_picture) {
-      let imageUrl = application.profile_picture;
-      
-      // Remove BASE_URL from the URL construction since static files are served from /uploads
-      // We just need to go directly to the uploads endpoint
-      if (imageUrl.startsWith("/uploads/")) {
-        // If it already has /uploads/, just use localhost:3001 as base
-        const fullUrl = `http://localhost:3001${imageUrl}`;
-        console.log("Loading image from URL:", fullUrl);
-        setImagePreview(fullUrl);
-      } 
-      else if (imageUrl.startsWith("http")) {
-        // If it's already a full URL, use as is
-        setImagePreview(imageUrl);
-      }
-      else if (imageUrl && !imageUrl.includes("/")) {
-        // If it's just a filename
-        const fullUrl = `http://localhost:3001/uploads/${imageUrl}`;
-        console.log("Loading image from URL:", fullUrl);
-        setImagePreview(fullUrl);
-      } 
-      else {
+      if (application.profile_picture) {
+        let imageUrl = application.profile_picture;
+        if (imageUrl.startsWith("/uploads/")) {
+          const fullUrl = `http://localhost:3001${imageUrl}`;
+          setImagePreview(fullUrl);
+        } else if (imageUrl.startsWith("http")) {
+          setImagePreview(imageUrl);
+        } else if (imageUrl && !imageUrl.includes("/")) {
+          const fullUrl = `http://localhost:3001/uploads/${imageUrl}`;
+          setImagePreview(fullUrl);
+        } else {
+          setImagePreview(null);
+        }
+      } else {
         setImagePreview(null);
       }
-    } else {
-      setImagePreview(null);
     }
-  }
-}, [application]);
+  }, [application]);
 
   if (!isOpen) return null;
 
- 
-
   const hasLeadingSpaces = (value) => {
-    // Ensure value is a string before calling .startsWith()
     if (value === null || value === undefined) return false;
     const stringValue = String(value);
     return stringValue.startsWith(" ");
@@ -193,88 +173,7 @@ export const EditApplicationModal = ({
     return null;
   };
 
-  // const validateField = (name, value) => {
-  //   switch (name) {
-  //     case "full_name":
-  //     case "nationality":
-  //     case "target_country":
-  //     case "target_university":
-  //     case "course":
-  //     case "last_degree":
-  //     case "institute":
-  //     case "gender":
-  //       return validateTextOnlyField(value, 3, 50);
-
-  //     case "phone":
-  //       return validatePhone(value);
-
-  //     case "cnic":
-  //       return validateCnic(value);
-
-  //     case "passport_number":
-  //       return validatePassport(value);
-
-  //     case "cgpa":
-  //       return validateCgpa(value);
-
-  //     case "test_score":
-  //       return validateTestScore(value);
-
-  //     case "counselor_notes": {
-  //       if (!value) return null;
-  //       if (hasLeadingSpaces(value)) return "Cannot start with spaces";
-  //       if (value.length < 3) return "Minimum 3 characters required";
-  //       if (value.length > 250) return "Maximum 250 characters allowed";
-  //       return null;
-  //     }
-
-  //     case "email": {
-  //       if (!value) return null;
-  //       if (hasLeadingSpaces(value)) return "Cannot start with spaces";
-  //       if (!/^\S+@\S+\.\S+$/.test(value)) return "Enter a valid email address";
-  //       return null;
-  //     }
-
-  //     case "age":
-  //       return validateAge(value);
-
-  //     case "passing_year": {
-  //       if (!value) return null;
-  //       if (hasLeadingSpaces(value)) return "Cannot start with spaces";
-  //       if (containsLetters(value)) return "Cannot contain alphabets";
-  //       const year = parseInt(value);
-  //       const currentYear = new Date().getFullYear();
-  //       if (year < 1950 || year > currentYear + 5) {
-  //         return `Year must be between 1950 and ${currentYear + 5}`;
-  //       }
-  //       return null;
-  //     }
-
-  //     case "dob": {
-  //       if (!value) return "Date of birth is required";
-  //       const birthDate = new Date(value);
-  //       const today = new Date();
-  //       let age = today.getFullYear() - birthDate.getFullYear();
-  //       const monthDiff = today.getMonth() - birthDate.getMonth();
-  //       if (
-  //         monthDiff < 0 ||
-  //         (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  //       ) {
-  //         age--;
-  //       }
-  //       if (age < 18) return "Age must be 18 or older";
-  //       return null;
-  //     }
-
-  //     default:
-  //       return null;
-  //   }
-  // };
-
-  // Check if all required fields are filled and valid
-
   const validateField = (name, value) => {
-    // Convert value to string for validation if needed
     const stringValue =
       value !== null && value !== undefined ? String(value) : value;
 
@@ -347,7 +246,7 @@ export const EditApplicationModal = ({
         ) {
           age--;
         }
-        if (age < 16) return "Age must be 18 or older";
+        if (age < 18) return "Age must be 18 or older";
         return null;
       }
 
@@ -373,7 +272,6 @@ export const EditApplicationModal = ({
       "dob",
     ];
 
-    // Check if all required fields have values
     const allFieldsFilled = requiredFields.every((field) => {
       const value = formData[field];
       return value && value.toString().trim() !== "";
@@ -381,7 +279,6 @@ export const EditApplicationModal = ({
 
     if (!allFieldsFilled) return false;
 
-    // Check if there are any validation errors
     const hasErrors = Object.values(errors).some(
       (error) => error !== null && error !== undefined,
     );
@@ -392,13 +289,105 @@ export const EditApplicationModal = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Prevent leading spaces
+    if (value.startsWith(" ")) return;
 
-    const error = validateField(name, value);
-    setErrors((prev) => ({ ...prev, [name]: error }));
+    let formattedValue = value;
 
-    if (name === "dob" && value) {
-      const birthDate = new Date(value);
+    switch (name) {
+      case "phone": {
+        // Only digits, max 11
+        formattedValue = value.replace(/\D/g, "");
+        if (formattedValue.length > 11) return;
+        break;
+      }
+
+      case "cnic": {
+        const nums = value.replace(/\D/g, "");
+        if (nums.length > 13) return;
+        let masked = nums;
+        if (nums.length > 5 && nums.length <= 12) {
+          masked = `${nums.slice(0, 5)}-${nums.slice(5)}`;
+        } else if (nums.length > 12) {
+          masked = `${nums.slice(0, 5)}-${nums.slice(5, 12)}-${nums.slice(12)}`;
+        }
+        formattedValue = masked;
+        break;
+      }
+
+      case "passport_number": {
+        if (value.length > 9) return;
+        break;
+      }
+
+      case "cgpa": {
+        if (!/^[\d.]*$/.test(value)) return;
+        if (value.length > 4) return;
+        break;
+      }
+
+      case "test_score": {
+        if (!/^[\d.]*$/.test(value)) return;
+        if (value.length > 4) return;
+        break;
+      }
+
+      case "passing_year": {
+        const yearNums = value.replace(/\D/g, "");
+        if (yearNums.length > 4) return;
+        formattedValue = yearNums;
+        break;
+      }
+
+      case "age": {
+        const ageNums = value.replace(/\D/g, "");
+        if (ageNums.length > 2) return;
+        formattedValue = ageNums;
+        break;
+      }
+
+      case "full_name":
+      case "nationality":
+      case "target_country":
+      case "target_university":
+      case "course":
+      case "last_degree":
+      case "institute": {
+        if (!/^[a-zA-Z\s]*$/.test(value)) return;
+        if (value.length > 50) return;
+        break;
+      }
+
+      case "gender": {
+        if (!/^[a-zA-Z]*$/.test(value)) return;
+        break;
+      }
+
+      case "email": {
+        if (!/^[a-zA-Z0-9@._-]*$/.test(value)) return;
+        if (value.length > 50) return;
+        break;
+      }
+
+      case "counselor_notes": {
+        if (value.length > 250) return;
+        break;
+      }
+
+      default:
+        break;
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: formattedValue }));
+
+    // Validate after state update
+    setTimeout(() => {
+      const error = validateField(name, formattedValue);
+      setErrors((prev) => ({ ...prev, [name]: error }));
+    }, 0);
+
+    if (name === "dob" && formattedValue) {
+      const birthDate = new Date(formattedValue);
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -425,36 +414,6 @@ export const EditApplicationModal = ({
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  // const handleImageUpload = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file) {
-  //     const allowedTypes = [
-  //       "image/jpeg",
-  //       "image/png",
-  //       "image/jpg",
-  //       "image/webp",
-  //     ];
-  //     if (!allowedTypes.includes(file.type)) {
-  //       toast.error("Please upload only JPG, PNG, WEBP images");
-  //       return;
-  //     }
-
-  //     if (file.size > 5 * 1024 * 1024) {
-  //       toast.error("Image size should be less than 5MB");
-  //       return;
-  //     }
-
-  //     setUploadedImage(file);
-  //     setFormData((prev) => ({ ...prev, profile_picture: file }));
-
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       setImagePreview(reader.result);
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // };
-
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -474,7 +433,6 @@ export const EditApplicationModal = ({
         return;
       }
 
-      // Remove this line: setUploadedImage(file);
       setFormData((prev) => ({ ...prev, profile_picture: file }));
 
       const reader = new FileReader();
@@ -485,95 +443,13 @@ export const EditApplicationModal = ({
     }
   };
 
-  // const validateForm = () => {
-  //   const newErrors = {};
-  //   const fieldsToValidate = [
-  //     "full_name",
-  //     "email",
-  //     "phone",
-  //     "cnic",
-  //     "nationality",
-  //     "gender",
-  //     "last_degree",
-  //     "institute",
-  //     "cgpa",
-  //     "passing_year",
-  //     "target_country",
-  //     "target_university",
-  //     "course",
-  //     "dob",
-  //     "age",
-  //   ];
-
-  //   fieldsToValidate.forEach((field) => {
-  //     if (field === "phone" && !formData.phone) return;
-  //     if (field === "passport_number" && !formData.passport_number) return;
-  //     if (field === "test_score" && !formData.test_score) return;
-
-  //     const error = validateField(field, formData[field]);
-  //     if (error) newErrors[field] = error;
-  //   });
-
-  //   setErrors(newErrors);
-  //   return Object.keys(newErrors).length === 0;
-  // };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   if (!validateForm()) {
-  //     toast.error("Please fix the validation errors before submitting");
-  //     return;
-  //   }
-
-  //   if (!application || !application.id) {
-  //     toast.error("Invalid application data");
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   try {
-  //     const submitData = new FormData();
-
-  //     Object.keys(formData).forEach((key) => {
-  //       if (key === "profile_picture") {
-  //         if (
-  //           formData.profile_picture &&
-  //           formData.profile_picture instanceof File
-  //         ) {
-  //           submitData.append("profile_picture", formData.profile_picture);
-  //         }
-  //       } else if (formData[key] !== null && formData[key] !== "") {
-  //         submitData.append(key, formData[key]);
-  //       }
-  //     });
-
-  //     const response = await axios.put(
-  //       `${BASE_URL}/editApplication/${application.id}`,
-  //       submitData,
-  //       {
-  //         headers: {
-  //           "Content-Type": "multipart/form-data",
-  //         },
-  //       },
-  //     );
-
-  //     toast.success("Application updated successfully!");
-
-  //     if (onApplicationUpdated) {
-  //       onApplicationUpdated(response.data);
-  //     }
-
-  //     onClose();
-  //   } catch (error) {
-  //     console.error("Error updating application:", error);
-  //     toast.error(
-  //       error.response?.data?.message || "Failed to update application",
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    setFormData((prev) => ({ ...prev, profile_picture: null }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -638,7 +514,6 @@ export const EditApplicationModal = ({
         }
       });
 
-      // Get authentication token
       const token =
         localStorage.getItem("token") || sessionStorage.getItem("token");
 
@@ -680,60 +555,6 @@ export const EditApplicationModal = ({
       setLoading(false);
     }
   };
-
-  // Add a function to remove profile picture
-  const handleRemoveImage = () => {
-    setImagePreview(null);
-    setFormData((prev) => ({ ...prev, profile_picture: null }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  // Update the image upload section in the render to include remove button:
-  // Find this div in the personal tab:
-  <div className="flex justify-center">
-    <div className="relative">
-      <div
-        className="w-32 h-32 rounded-full bg-gray-100 border-2 border-gray-300 overflow-hidden cursor-pointer hover:border-blue-400 transition-colors relative group"
-        onClick={() => fileInputRef.current?.click()}
-      >
-        {imagePreview ? (
-          <>
-            <img
-              src={imagePreview}
-              alt="Profile preview"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera size={24} className="text-white" />
-            </div>
-          </>
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-            <Camera size={32} />
-            <span className="text-xs mt-1">Upload</span>
-          </div>
-        )}
-      </div>
-      {imagePreview && (
-        <button
-          type="button"
-          onClick={handleRemoveImage}
-          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-        >
-          <X size={16} />
-        </button>
-      )}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImageUpload}
-        accept="image/jpeg,image/png,image/jpg,image/webp"
-        className="hidden"
-      />
-    </div>
-  </div>;
 
   const TabButton = ({ id, label }) => (
     <button
@@ -830,15 +651,20 @@ export const EditApplicationModal = ({
               <div className="flex justify-center">
                 <div className="relative">
                   <div
-                    className="w-32 h-32 rounded-full bg-gray-100 border-2 border-gray-300 overflow-hidden cursor-pointer hover:border-blue-400 transition-colors"
+                    className="w-32 h-32 rounded-full bg-gray-100 border-2 border-gray-300 overflow-hidden cursor-pointer hover:border-blue-400 transition-colors relative group"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {imagePreview ? (
-                      <img
-                        src={imagePreview}
-                        alt="Profile preview"
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={imagePreview}
+                          alt="Profile preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Camera size={24} className="text-white" />
+                        </div>
+                      </>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                         <Camera size={32} />
@@ -846,6 +672,15 @@ export const EditApplicationModal = ({
                       </div>
                     )}
                   </div>
+                  {imagePreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -941,8 +776,6 @@ export const EditApplicationModal = ({
                 "Target University",
                 true,
               )}
-              {renderInput("deadline", "text", "Application Deadline", false)}
-              {renderInput("round", "text", "Round", false)}
               {renderInput("course", "text", "Proposed Course", true)}
 
               <div className="md:col-span-2">
@@ -957,7 +790,7 @@ export const EditApplicationModal = ({
             </div>
           )}
 
-          <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 mt-6">
+          <div className=" py-4 border-t bg-gray-50 flex justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}

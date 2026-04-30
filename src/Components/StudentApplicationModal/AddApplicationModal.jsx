@@ -39,8 +39,6 @@ export const AddApplicationModal = ({
     course: "",
     counselor_notes: "",
     status: "inquiry",
-    deadline: "",
-    round: "",
   });
 
   if (!isOpen) return null;
@@ -234,13 +232,115 @@ export const AddApplicationModal = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Prevent leading spaces
+    if (value.startsWith(" ")) return;
 
-    const error = validateField(name, value);
-    setErrors((prev) => ({ ...prev, [name]: error }));
+    let formattedValue = value;
 
-    if (name === "dob" && value) {
-      const birthDate = new Date(value);
+    // Apply max length restrictions based on field
+    switch (name) {
+      case "phone": {
+        // Only allow digits and max 11 digits
+        formattedValue = value.replace(/\D/g, "");
+        if (formattedValue.length > 11) return;
+        break;
+      }
+
+      case "cnic": {
+        // Format CNIC and limit to 13 digits (without hyphens) / 15 characters with hyphens
+        const nums = value.replace(/\D/g, "");
+        if (nums.length > 13) return;
+        let masked = nums;
+        if (nums.length > 5 && nums.length <= 12) {
+          masked = `${nums.slice(0, 5)}-${nums.slice(5)}`;
+        } else if (nums.length > 12) {
+          masked = `${nums.slice(0, 5)}-${nums.slice(5, 12)}-${nums.slice(12)}`;
+        }
+        formattedValue = masked;
+        break;
+      }
+
+      case "passport_number": {
+        // Limit passport number to 9 characters max (as per validation)
+        if (value.length > 9) return;
+        break;
+      }
+
+      case "cgpa": {
+        // Allow only numbers and decimal point, max 4 chars (e.g., 4.00)
+        if (!/^[\d.]*$/.test(value)) return;
+        if (value.length > 4) return;
+        break;
+      }
+
+      case "test_score": {
+        // Allow only numbers and decimal point, max 4 chars (e.g., 9.0)
+        if (!/^[\d.]*$/.test(value)) return;
+        if (value.length > 4) return;
+        break;
+      }
+
+      case "passing_year": {
+        // Allow only 4 digits
+        const yearNums = value.replace(/\D/g, "");
+        if (yearNums.length > 4) return;
+        formattedValue = yearNums;
+        break;
+      }
+
+      case "age": {
+        // Allow only 2 digits max
+        const ageNums = value.replace(/\D/g, "");
+        if (ageNums.length > 2) return;
+        formattedValue = ageNums;
+        break;
+      }
+
+      case "full_name":
+      case "nationality":
+      case "target_country":
+      case "target_university":
+      case "course":
+      case "last_degree":
+      case "institute": {
+        // Allow letters and spaces only, max 50 chars
+        if (!/^[a-zA-Z\s]*$/.test(value)) return;
+        if (value.length > 50) return;
+        break;
+      }
+
+      case "gender": {
+        // Letters only
+        if (!/^[a-zA-Z]*$/.test(value)) return;
+        break;
+      }
+
+      case "email": {
+        // Only alphanumeric, @, ., _, -, max 50 chars
+        if (!/^[a-zA-Z0-9@._-]*$/.test(value)) return;
+        if (value.length > 50) return;
+        break;
+      }
+
+      case "counselor_notes": {
+        if (value.length > 250) return;
+        break;
+      }
+
+      default:
+        break;
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: formattedValue }));
+
+    // Only validate after the formatted value is set
+    setTimeout(() => {
+      const error = validateField(name, formattedValue);
+      setErrors((prev) => ({ ...prev, [name]: error }));
+    }, 0);
+
+    if (name === "dob" && formattedValue) {
+      const birthDate = new Date(formattedValue);
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -267,8 +367,6 @@ export const AddApplicationModal = ({
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-
-
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -288,9 +386,7 @@ export const AddApplicationModal = ({
         return;
       }
 
-      setUploadedImage(file); // Store in uploadedImage state
-      // Remove this line since we'll use uploadedImage instead
-      // setFormData((prev) => ({ ...prev, profile_picture: file }));
+      setUploadedImage(file);
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -333,7 +429,6 @@ export const AddApplicationModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  
   const getAuthToken = () => {
     // Try multiple sources for token
     const token =
@@ -428,7 +523,6 @@ export const AddApplicationModal = ({
     }
   };
 
-
   const resetForm = () => {
     setFormData({
       full_name: "",
@@ -452,10 +546,8 @@ export const AddApplicationModal = ({
       course: "",
       counselor_notes: "",
       status: "inquiry",
-      deadline: "",
-      round: "",
     });
-    setUploadedImage(null); // Now this will work
+    setUploadedImage(null);
     setImagePreview(null);
     setErrors({});
     setActiveTab("personal");
@@ -667,8 +759,6 @@ export const AddApplicationModal = ({
                 "Target University",
                 true,
               )}
-              {renderInput("deadline", "text", "Application Deadline", false)}
-              {renderInput("round", "text", "Round", false)}
               {renderInput("course", "text", "Proposed Course", true)}
 
               <div className="md:col-span-2">
@@ -683,7 +773,7 @@ export const AddApplicationModal = ({
             </div>
           )}
 
-          <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 mt-6">
+          <div className=" py-4 border-t bg-gray-50 flex justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}

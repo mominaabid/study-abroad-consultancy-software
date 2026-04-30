@@ -146,14 +146,14 @@ export const CounsellorApplication = () => {
     studentsData.forEach((student) => {
       student.applications?.forEach((app) => {
         const statusMap = {
-          "inquiry": "inquiry",
-          "evaluation": "evaluation",
+          inquiry: "inquiry",
+          evaluation: "evaluation",
           "application submitted": "applicationSubmitted",
           "offer letter received": "offerLetterReceived",
           "offer letter not received": "offerLetterNotReceived",
           "visa filed": "visaFiled",
-          "approved": "approved",
-          "reject": "reject",
+          approved: "approved",
+          reject: "reject",
         };
         const mappedStatus = statusMap[app.status];
         if (mappedStatus && counts[mappedStatus] !== undefined) {
@@ -189,27 +189,29 @@ export const CounsellorApplication = () => {
 
   const getStatusBadge = (status) => {
     const configs = {
-      "inquiry": "bg-gray-100 text-gray-700 border-gray-200",
-      "evaluation": "bg-amber-100 text-amber-700 border-amber-200",
+      inquiry: "bg-gray-100 text-gray-700 border-gray-200",
+      evaluation: "bg-amber-100 text-amber-700 border-amber-200",
       "application submitted": "bg-blue-100 text-blue-700 border-blue-200",
-      "offer letter received": "bg-emerald-100 text-emerald-700 border-emerald-200",
-      "offer letter not received": "bg-orange-100 text-orange-700 border-orange-200",
+      "offer letter received":
+        "bg-emerald-100 text-emerald-700 border-emerald-200",
+      "offer letter not received":
+        "bg-orange-100 text-orange-700 border-orange-200",
       "visa filed": "bg-purple-100 text-purple-700 border-purple-200",
-      "approved": "bg-green-100 text-green-700 border-green-200",
-      "reject": "bg-rose-100 text-rose-700 border-rose-200",
+      approved: "bg-green-100 text-green-700 border-green-200",
+      reject: "bg-rose-100 text-rose-700 border-rose-200",
     };
-    
+
     const displayStatus = {
-      "inquiry": "Inquiry",
-      "evaluation": "Evaluation",
+      inquiry: "Inquiry",
+      evaluation: "Evaluation",
       "application submitted": "App Submitted",
       "offer letter received": "Offer Received",
       "offer letter not received": "Offer Not Received",
       "visa filed": "Visa Filed",
-      "approved": "Approved",
-      "reject": "Rejected",
+      approved: "Approved",
+      reject: "Rejected",
     };
-    
+
     return (
       <span
         className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider ${configs[status] || "bg-gray-100"}`}
@@ -222,25 +224,47 @@ export const CounsellorApplication = () => {
   // Get next status options based on current status
   const getNextStatusOptions = (currentStatus) => {
     const statusFlow = {
-      "inquiry": [{ value: "evaluation", label: "Move to Evaluation", color: "amber" }],
-      "evaluation": [{ value: "application submitted", label: "Mark as Application Submitted", color: "blue" }],
-      "application submitted": [
-        { value: "offer letter received", label: "Offer Letter Received", color: "emerald" },
-        { value: "offer letter not received", label: "Offer Letter Not Received", color: "orange" }
+      inquiry: [
+        { value: "evaluation", label: "Move to Evaluation", color: "amber" },
       ],
-      "offer letter received": [{ value: "visa filed", label: "Visa Filed", color: "purple" }],
+      evaluation: [
+        {
+          value: "application submitted",
+          label: "Mark as Application Submitted",
+          color: "blue",
+        },
+      ],
+      "application submitted": [
+        {
+          value: "offer letter received",
+          label: "Offer Letter Received",
+          color: "emerald",
+        },
+        {
+          value: "offer letter not received",
+          label: "Offer Letter Not Received",
+          color: "orange",
+        },
+      ],
+      "offer letter received": [
+        { value: "visa filed", label: "Visa Filed", color: "purple" },
+      ],
       "offer letter not received": [
-        { value: "application submitted", label: "Resubmit Application", color: "blue" },
-        { value: "reject", label: "Reject Application", color: "rose" }
+        {
+          value: "application submitted",
+          label: "Resubmit Application",
+          color: "blue",
+        },
+        { value: "reject", label: "Reject Application", color: "rose" },
       ],
       "visa filed": [
         { value: "approved", label: "Visa Approved", color: "green" },
-        { value: "reject", label: "Visa Rejected", color: "rose" }
+        { value: "reject", label: "Visa Rejected", color: "rose" },
       ],
-      "approved": [],
-      "reject": []
+      approved: [],
+      reject: [],
     };
-    
+
     return statusFlow[currentStatus] || [];
   };
 
@@ -282,15 +306,69 @@ export const CounsellorApplication = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4 mb-3">
         {[
-          { label: "Total Students", val: stats.totalStudents, color: "text-gray-900", bg: "bg-white", icon: Users },
-          { label: "Inquiry", val: stats.inquiry, color: "text-gray-600", bg: "bg-gray-50", icon: Clock },
-          { label: "Evaluation", val: stats.evaluation, color: "text-amber-600", bg: "bg-amber-50", icon: Eye },
-          { label: "App Submitted", val: stats.applicationSubmitted, color: "text-blue-600", bg: "bg-blue-50", icon: FileText },
-          { label: "Offer Received", val: stats.offerLetterReceived, color: "text-emerald-600", bg: "bg-emerald-50", icon: CheckCircle },
-          { label: "Offer Not Received", val: stats.offerLetterNotReceived, color: "text-orange-600", bg: "bg-orange-50", icon: AlertCircle },
-          { label: "Visa Filed", val: stats.visaFiled, color: "text-purple-600", bg: "bg-purple-50", icon: FileText },
-          { label: "Approved", val: stats.approved, color: "text-green-600", bg: "bg-green-50", icon: CheckCircle },
-          { label: "Rejected", val: stats.reject, color: "text-rose-600", bg: "bg-rose-50", icon: AlertCircle },
+          {
+            label: "Total Students",
+            val: stats.totalStudents,
+            color: "text-gray-900",
+            bg: "bg-white",
+            icon: Users,
+          },
+          {
+            label: "Inquiry",
+            val: stats.inquiry,
+            color: "text-gray-600",
+            bg: "bg-gray-50",
+            icon: Clock,
+          },
+          {
+            label: "Evaluation",
+            val: stats.evaluation,
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+            icon: Eye,
+          },
+          {
+            label: "App Submitted",
+            val: stats.applicationSubmitted,
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+            icon: FileText,
+          },
+          {
+            label: "Offer Received",
+            val: stats.offerLetterReceived,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+            icon: CheckCircle,
+          },
+          {
+            label: "Offer Not Received",
+            val: stats.offerLetterNotReceived,
+            color: "text-orange-600",
+            bg: "bg-orange-50",
+            icon: AlertCircle,
+          },
+          {
+            label: "Visa Filed",
+            val: stats.visaFiled,
+            color: "text-purple-600",
+            bg: "bg-purple-50",
+            icon: FileText,
+          },
+          {
+            label: "Approved",
+            val: stats.approved,
+            color: "text-green-600",
+            bg: "bg-green-50",
+            icon: CheckCircle,
+          },
+          {
+            label: "Rejected",
+            val: stats.reject,
+            color: "text-rose-600",
+            bg: "bg-rose-50",
+            icon: AlertCircle,
+          },
         ].map((item, i) => {
           const Icon = item.icon;
           return (
@@ -462,9 +540,9 @@ export const CounsellorApplication = () => {
                     <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    {/* <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Deadline
-                    </th>
+                    </th> */}
                     <th className="text-center p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -563,7 +641,7 @@ export const CounsellorApplication = () => {
                             )}
                           </div>
                         </td>
-                        <td className="p-4">
+                        {/* <td className="p-4">
                           {app.deadline && (
                             <div className="flex items-center gap-1 text-xs text-gray-600">
                               <Calendar className="w-3 h-3" />
@@ -577,7 +655,7 @@ export const CounsellorApplication = () => {
                               Round: {app.round}
                             </div>
                           )}
-                        </td>
+                        </td> */}
                         <td className="p-4">
                           <div className="flex justify-center gap-2">
                             {nextOptions.length > 0 ? (
@@ -585,7 +663,8 @@ export const CounsellorApplication = () => {
                                 const colorClasses = {
                                   amber: "bg-amber-600 hover:bg-amber-700",
                                   blue: "bg-blue-600 hover:bg-blue-700",
-                                  emerald: "bg-emerald-600 hover:bg-emerald-700",
+                                  emerald:
+                                    "bg-emerald-600 hover:bg-emerald-700",
                                   orange: "bg-orange-600 hover:bg-orange-700",
                                   purple: "bg-purple-600 hover:bg-purple-700",
                                   green: "bg-green-600 hover:bg-green-700",
@@ -596,7 +675,9 @@ export const CounsellorApplication = () => {
                                     key={option.value}
                                     onClick={() => {
                                       if (option.value === "reject") {
-                                        const note = prompt("Reason for rejection:");
+                                        const note = prompt(
+                                          "Reason for rejection:",
+                                        );
                                         if (note)
                                           updateApplicationStatus(
                                             app.id,
@@ -604,7 +685,10 @@ export const CounsellorApplication = () => {
                                             note,
                                           );
                                       } else {
-                                        updateApplicationStatus(app.id, option.value);
+                                        updateApplicationStatus(
+                                          app.id,
+                                          option.value,
+                                        );
                                       }
                                     }}
                                     className={`${colorClasses[option.color]} text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition whitespace-nowrap`}
@@ -615,7 +699,9 @@ export const CounsellorApplication = () => {
                               })
                             ) : (
                               <div className="text-xs text-gray-400">
-                                {app.status === "approved" ? "✓ Completed" : "✗ Closed"}
+                                {app.status === "approved"
+                                  ? "✓ Completed"
+                                  : "✗ Closed"}
                               </div>
                             )}
                           </div>

@@ -545,10 +545,10 @@ export const StudentDashboard = () => {
                         <p className="text-sm font-semibold text-gray-800">
                           {app.target_university || "University Application"}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        {/* <p className="text-xs text-gray-500">
                           {app.course || "Course not specified"} • Deadline:{" "}
                           {formatDate(app.deadline) || "TBD"}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
                     <span

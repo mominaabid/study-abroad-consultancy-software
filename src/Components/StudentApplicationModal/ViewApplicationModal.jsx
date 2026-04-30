@@ -18,7 +18,6 @@ import {
   Briefcase,
   Home,
   CheckCircle2,
-  Clock as ClockIcon,
   XCircle,
   CheckCircle,
 } from "lucide-react";
@@ -226,16 +225,6 @@ export const ViewApplicationModal = ({ application, onClose }) => {
                 >
                   {application.status?.toUpperCase() || "INQUIRY"}
                 </span>
-                {application.deadline && (
-                  <span className="text-xs px-3 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
-                    Deadline: {application.deadline}
-                  </span>
-                )}
-                {application.round && (
-                  <span className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-semibold">
-                    Round {application.round}
-                  </span>
-                )}
               </div>
             </div>
             <button
@@ -339,7 +328,7 @@ export const ViewApplicationModal = ({ application, onClose }) => {
                 </div>
               </InfoSection>
 
-              {/* Application Details */}
+              {/* Application Details - Deadline and Round removed */}
               <InfoSection title="Application Details" icon={Briefcase}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <InfoRow
@@ -356,16 +345,6 @@ export const ViewApplicationModal = ({ application, onClose }) => {
                     label="Proposed Course"
                     value={application.course}
                     icon={BookOpen}
-                  />
-                  <InfoRow
-                    label="Deadline"
-                    value={application.deadline}
-                    icon={Calendar}
-                  />
-                  <InfoRow
-                    label="Round"
-                    value={application.round}
-                    icon={ClockIcon}
                   />
                 </div>
                 {application.counselor_notes && (
@@ -502,16 +481,8 @@ export const ViewApplicationModal = ({ application, onClose }) => {
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
-          <div>
-            {application.deadline && (
-              <p className="text-xs text-gray-500 flex items-center gap-1">
-                <Clock size={12} />
-                Application Deadline: {application.deadline}
-              </p>
-            )}
-          </div>
+        {/* Footer Actions - Deadline removed */}
+        <div className="px-6 py-4 border-t bg-gray-50 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"

@@ -319,22 +319,12 @@ export const StudentApplication = () => {
 
   const tasks = buildTasks();
 
-  // Calculate progress based on verified documents
   const requiredDocsCount = tasks.filter((t) => t.required).length;
   const verifiedCount = tasks.filter(
     (t) => t.status === "Verified" && t.required,
   ).length;
   const progressValue =
     requiredDocsCount > 0 ? (verifiedCount / requiredDocsCount) * 100 : 0;
-
-  // const handleAddApplication = async (newApplication) => {
-  //   // Add the new application to the beginning of the applications array
-  //   // This ensures it shows up immediately without needing a refresh
-  //   setApplications((prevApplications) => [
-  //     newApplication,
-  //     ...prevApplications,
-  //   ]);
-  // };
 
   const handleAddApplication = async (newApplication) => {
     // Add to local state immediately
@@ -388,17 +378,17 @@ export const StudentApplication = () => {
 
   return (
     <div className="p-3 bg-slate-50 min-h-screen font-sans">
-      <div className="bg-gradient-to-r from-[#e6f6f4] to-[#d1ede9] border border-[#d1ede9] rounded-2xl p-5 mb-8 flex items-center justify-between gap-3 shadow-sm">
+      <div className="bg-[#099580]  border border-[#d1ede9] rounded-2xl px-5 py-10 mb-8 flex items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="bg-white p-3 rounded-full shadow-sm flex items-center justify-center">
             <GraduationCap className="text-[#40b3a2]" size={24} />
           </div>
           <div>
-            <h2 className="font-bold text-slate-800 text-xl">
+            <h2 className="font-bold text-white text-xl">
               Welcome back,{" "}
-              <span className="text-[#40b3a2]">{user?.name || "Student"}!</span>
+              <span className="text-white">{user?.name || "Student"}!</span>
             </h2>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-white mt-1">
               {applications.length > 0
                 ? `📚 You have ${applications.length} active application${applications.length > 1 ? "s" : ""}`
                 : "✨ Start your journey by creating a new application"}
@@ -407,7 +397,7 @@ export const StudentApplication = () => {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105"
+          className="bg-white  text-[#099580] px-5 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105"
         >
           <Plus size={18} />
           New Application
@@ -434,11 +424,48 @@ export const StudentApplication = () => {
             </div>
           ) : (
             applications.map((app) => (
+              //  <div
+              //     key={app.id}
+              //     className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between i tems-center gap-3 hover:shadow-md transition-shadow"
+              //   >
+              //     <div className="flex items-center gap-3 flex-1">
+              //       <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-red-700 border">
+              //         {app.universityCode ||
+              //           app.target_university?.substring(0, 3).toUpperCase()}
+              //       </div>
+              //       <div>
+              //         <h4 className="font-bold text-slate-800 text-lg">
+              //           {app.target_university} - {app.course}
+              //         </h4>
+              //         <div className="flex flex-wrap gap-3 text-sm mt-1">
+              //           <span className="text-slate-500">
+              //             Deadline:{" "}
+              //             <span className="font-medium text-slate-700">
+              //               {app.deadline || "Dec 31, 2026"}
+              //             </span>
+              //           </span>
+              //           <span
+              //             className={`px-2 py-0.5 rounded-md text-xs font-bold uppercase ${
+              //               app.status === "In Progress"
+              //                 ? "bg-amber-100 text-amber-700"
+              //                 : "bg-green-100 text-green-700"
+              //             }`}
+              //           >
+              //             {app.status || "In Progress"}
+              //           </span>
+              //         </div>
+              //       </div>
+              //     </div>
+
               <div
                 key={app.id}
                 className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-3 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-center gap-3 flex-1">
+                {/* 👇 Make this whole block clickable */}
+                <div
+                  className="flex items-center gap-3 flex-1 cursor-pointer"
+                  onClick={() => setViewingApplication(app)}
+                >
                   <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center font-bold text-red-700 border">
                     {app.universityCode ||
                       app.target_university?.substring(0, 3).toUpperCase()}
@@ -448,12 +475,12 @@ export const StudentApplication = () => {
                       {app.target_university} - {app.course}
                     </h4>
                     <div className="flex flex-wrap gap-3 text-sm mt-1">
-                      <span className="text-slate-500">
+                      {/* <span className="text-slate-500">
                         Deadline:{" "}
                         <span className="font-medium text-slate-700">
                           {app.deadline || "Dec 31, 2026"}
                         </span>
-                      </span>
+                      </span> */}
                       <span
                         className={`px-2 py-0.5 rounded-md text-xs font-bold uppercase ${
                           app.status === "In Progress"
