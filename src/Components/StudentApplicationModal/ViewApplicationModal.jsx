@@ -301,23 +301,6 @@ export const ViewApplicationModal = ({ application, onClose }) => {
                     icon={Flag}
                   />
                 </div>
-                {application.profile_picture && (
-                  <div className="mt-3 pt-3 border-t">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">
-                        Profile Picture:
-                      </span>
-                      <a
-                        href={`${BASE_URL}${application.profile_picture}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                      >
-                        View Photo
-                      </a>
-                    </div>
-                  </div>
-                )}
               </InfoSection>
 
               {/* Academic Information */}

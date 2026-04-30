@@ -44,6 +44,7 @@ export const CounsellorDashboard = () => {
   const user = useSelector(selectUser);
 
   const [leads, setLeads] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,20 +57,54 @@ export const CounsellorDashboard = () => {
         setLeads(Array.isArray(data) ? data : data.data || []);
       } catch (err) {
         console.error("Counsellor leads fetch error:", err);
+      }
+    }
+
+    async function fetchApplications() {
+      try {
+        const res = await fetch(
+          `${BASE_URL}/counsellor/applications/students`,
+          {
+            headers: { Authorization: `Bearer ${getToken()}` },
+          },
+        );
+        const data = await res.json();
+        console.log("Applications API response:", data);
+
+        if (data.success && data.students) {
+          setStudents(data.students);
+        } else if (Array.isArray(data)) {
+          setStudents(data);
+        } else {
+          setStudents([]);
+        }
+      } catch (err) {
+        console.error("Applications fetch error:", err);
+        setStudents([]);
       } finally {
         setLoading(false);
       }
     }
+
     fetchMyLeads();
+    fetchApplications();
   }, []);
 
-  // ── Derived stats ──────────────────────────────────────────────────────────
-  const total = leads.length;
-  const active = leads.filter(
-    (l) => !["success", "rejected"].includes(l.status),
-  ).length;
-  const converted = leads.filter((l) => l.status === "success").length;
-  const pending = leads.filter((l) => l.status === "new").length;
+  // Calculate total applications from all students
+  const totalApplications = students.reduce((total, student) => {
+    return total + (student.applications?.length || 0);
+  }, 0);
+
+  // ── Derived stats based on new requirements ─────────────────────────────────
+
+  // 1) My Total Leads: leads with status "new"
+  const totalNewLeads = leads.filter((l) => l.status === "new").length;
+
+  // 2) Active Leads: leads where status is NOT "new"
+  const activeLeads = leads.filter((l) => l.status === "contacted").length;
+
+  // 3) Converted: leads where status is NOT "new" AND NOT "counselling"
+  const convertedLeads = leads.filter((l) => l.status == "counseling").length;
 
   const recentLeads = [...leads]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -88,7 +123,7 @@ export const CounsellorDashboard = () => {
     },
     {
       label: "Counseling",
-      count: leads.filter((l) => l.status === "counseling").length,
+      count: leads.filter((l) => l.status === "counselling").length,
       color: "#8b5cf6",
     },
     {
@@ -117,7 +152,8 @@ export const CounsellorDashboard = () => {
                 Welcome back, {user?.name?.split(" ")[0] || "Counsellor"} 👋
               </h1>
               <p className="mt-2 text-purple-100 text-base">
-                You have <strong>{active}</strong> active leads to manage today.
+                You have <strong>{activeLeads}</strong> active leads to manage
+                today.
               </p>
             </div>
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/20">
@@ -138,33 +174,39 @@ export const CounsellorDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
         <StatCard
           title="My Total Leads"
-          value={loading ? "..." : total}
+          value={loading ? "..." : totalNewLeads}
           icon={<Users size={22} />}
           color="from-violet-500 to-purple-600"
-          sub="All assigned to me"
+          sub="Leads with New status"
           onClick={() => navigate("/counsellor/leads")}
           clickable
         />
         <StatCard
-          title="Active Leads"
-          value={loading ? "..." : active}
+          title="Contacted Leads"
+          value={loading ? "..." : activeLeads}
           icon={<TrendingUp size={22} />}
           color="from-teal-500 to-cyan-500"
-          sub="In progress"
+          sub="Leads in progress (not New)"
+          onClick={() => navigate("/counsellor/leads")}
+          clickable
         />
         <StatCard
-          title="Converted"
-          value={loading ? "..." : converted}
+          title="Converted to Student"
+          value={loading ? "..." : convertedLeads}
           icon={<CheckCircle size={22} />}
           color="from-emerald-500 to-green-500"
-          sub="Reached success"
+          sub=" counseling stage"
+          onClick={() => navigate("/counsellor/leads")}
+          clickable
         />
         <StatCard
-          title="New Inquiries"
-          value={loading ? "..." : pending}
-          icon={<Clock size={22} />}
+          title="Total Applications"
+          value={loading ? "..." : totalApplications}
+          icon={<FileText size={22} />}
           color="from-orange-500 to-amber-500"
-          sub="Awaiting contact"
+          sub="All student applications"
+          onClick={() => navigate("/counsellor/applications")}
+          clickable
         />
       </div>
 
@@ -259,6 +301,7 @@ export const CounsellorDashboard = () => {
             </h3>
             <div className="space-y-4">
               {stageData.map((s) => {
+                const total = leads.length;
                 const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
                 return (
                   <div key={s.label}>

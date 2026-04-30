@@ -327,13 +327,24 @@ export const StudentApplication = () => {
   const progressValue =
     requiredDocsCount > 0 ? (verifiedCount / requiredDocsCount) * 100 : 0;
 
+  // const handleAddApplication = async (newApplication) => {
+  //   // Add the new application to the beginning of the applications array
+  //   // This ensures it shows up immediately without needing a refresh
+  //   setApplications((prevApplications) => [
+  //     newApplication,
+  //     ...prevApplications,
+  //   ]);
+  // };
+
   const handleAddApplication = async (newApplication) => {
-    // Add the new application to the beginning of the applications array
-    // This ensures it shows up immediately without needing a refresh
+    // Add to local state immediately
     setApplications((prevApplications) => [
       newApplication,
       ...prevApplications,
     ]);
+
+    // Optionally refresh documents if needed
+    await fetchDocuments();
   };
 
   // Handle status update from ViewApplicationModal
@@ -549,6 +560,19 @@ export const StudentApplication = () => {
 
       {/* Edit Application Modal */}
       {editingApplication && (
+        // <EditApplicationModal
+        //   isOpen={isEditModalOpen}
+        //   onClose={() => setIsEditModalOpen(false)}
+        //   application={editingApplication}
+        //   onApplicationUpdated={(updatedApp) => {
+        //     setApplications(
+        //       applications.map((app) =>
+        //         app.id === updatedApp.id ? updatedApp : app,
+        //       ),
+        //     );
+        //   }}
+        // />
+
         <EditApplicationModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
@@ -559,6 +583,8 @@ export const StudentApplication = () => {
                 app.id === updatedApp.id ? updatedApp : app,
               ),
             );
+            // Refresh documents if profile picture was updated
+            fetchDocuments();
           }}
         />
       )}

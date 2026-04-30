@@ -1,4 +1,4 @@
-// StudentDashboard.jsx - With SSE Integration
+// StudentDashboard.jsx - With SSE Integration (Updated)
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -152,72 +152,6 @@ const QuickAction = ({ icon, label, color, bgColor, onClick, badge }) => (
   </button>
 );
 
-// ── Application Timeline ──────────────────────────────────────────────────────
-function ApplicationTimeline({ currentStatus }) {
-  const currentIndex = STAGES.findIndex((s) => s.key === currentStatus);
-
-  return (
-    <div className="relative pt-2">
-      <div className="absolute top-7 left-5 right-5 h-0.5 bg-gray-100 z-0" />
-      <div
-        className="absolute top-7 left-5 h-0.5 z-0 transition-all duration-1000"
-        style={{
-          width:
-            currentIndex <= 0
-              ? "0%"
-              : `${(currentIndex / (STAGES.length - 1)) * 90}%`,
-          background: `linear-gradient(90deg, ${STAGES[0].color}, ${STAGES[currentIndex]?.color || STAGES[0].color})`,
-        }}
-      />
-      <div className="relative z-10 flex justify-between">
-        {STAGES.map((stage, i) => {
-          const done = i < currentIndex;
-          const current = i === currentIndex;
-          return (
-            <div
-              key={stage.key}
-              className="flex flex-col items-center gap-2 flex-1"
-            >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 text-xs font-bold
-                  ${current ? "scale-125 shadow-lg shadow-teal-100" : done ? "scale-100" : "scale-90 border-gray-200 bg-white text-gray-300"}`}
-                style={
-                  current
-                    ? {
-                        background: stage.color,
-                        borderColor: stage.color,
-                        color: "#fff",
-                      }
-                    : done
-                      ? {
-                          background: stage.color + "20",
-                          borderColor: stage.color,
-                          color: stage.color,
-                        }
-                      : {}
-                }
-              >
-                {done ? (
-                  <CheckCircle size={16} />
-                ) : current ? (
-                  <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
-                ) : (
-                  <div className="w-2 h-2 bg-gray-200 rounded-full" />
-                )}
-              </div>
-              <span
-                className={`text-[9px] font-semibold text-center leading-tight max-w-[52px] ${current ? "text-gray-800" : done ? "text-gray-500" : "text-gray-300"}`}
-              >
-                {stage.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ── Document Card ─────────────────────────────────────────────────────────────
 function DocCard({ doc }) {
   const s = DOC_STATUS[doc.status] || DOC_STATUS.pending;
@@ -275,7 +209,6 @@ export const StudentDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [applications, setApplications] = useState([]); // Added for applications
-  const [loading, setLoading] = useState(true);
   const [docsLoading, setDocsLoading] = useState(true);
   const [appsLoading, setAppsLoading] = useState(true);
   const [showNotification, setShowNotification] = useState(null);
@@ -346,8 +279,6 @@ export const StudentDashboard = () => {
       setProfile(data.data || data);
     } catch (err) {
       console.error("Profile fetch error:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -391,8 +322,6 @@ export const StudentDashboard = () => {
   }, []);
 
   // ── Derived calculations ──────────────────────────────────────────────────
-  const currentStatus = profile?.lead?.status || "new";
-  const currentStage = STAGES.find((s) => s.key === currentStatus);
 
   const verifiedDocs = documents.filter((d) => d.status === "verified").length;
   const pendingDocs = documents.filter((d) => d.status === "pending").length;
@@ -515,13 +444,7 @@ export const StudentDashboard = () => {
               <h1 className="text-3xl font-bold tracking-tight">
                 Hello, {user?.name?.split(" ")[0] || "Student"} 👋
               </h1>
-              <p className="mt-2 text-teal-100 text-base">
-                Your application is at{" "}
-                <span className="font-bold bg-white/20 px-2.5 py-0.5 rounded-lg text-white">
-                  {currentStage?.label || "Inquiry"}
-                </span>{" "}
-                stage.
-              </p>
+
               <div className="flex flex-wrap gap-2 mt-4">
                 {profile?.lead?.preferred_country && (
                   <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
@@ -560,15 +483,9 @@ export const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-        <StatCard
-          title="Current Stage"
-          value={currentStage?.label || "Inquiry"}
-          icon={<FileText size={20} />}
-          gradient={currentStage?.color || "#0d9488"}
-          sub="Application progress"
-        />
+      {/* ── Stats Grid (Updated - Removed Current Stage and Action Needed) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        {/* Active Applications Card */}
         <StatCard
           title="Active Applications"
           value={appsLoading ? "..." : activeApplicationsCount}
@@ -578,6 +495,7 @@ export const StudentDashboard = () => {
           onClick={() => navigate("/student/application")}
           clickable
         />
+        {/* Verified Documents Card */}
         <StatCard
           title="Verified Documents"
           value={docsLoading ? "..." : `${verifiedDocs}/${totalRequired}`}
@@ -587,58 +505,12 @@ export const StudentDashboard = () => {
           onClick={() => navigate("/student/documents")}
           clickable
         />
-        <StatCard
-          title="Action Needed"
-          value={docsLoading ? "..." : rejectedDocs}
-          icon={<Upload size={20} />}
-          gradient="linear-gradient(135deg,#ef4444,#dc2626)"
-          sub="Re-upload required"
-          onClick={
-            rejectedDocs > 0 ? () => navigate("/student/documents") : undefined
-          }
-          clickable={rejectedDocs > 0}
-          alert={
-            rejectedDocs > 0
-              ? `${rejectedDocs} doc${rejectedDocs > 1 ? "s" : ""} rejected`
-              : null
-          }
-        />
       </div>
 
       {/* ── Main Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* ── Left: Timeline + Documents + Applications ── */}
+        {/* ── Left: Documents + Applications ── */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Application Journey */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="font-bold text-gray-800 text-lg">
-                  Application Journey
-                </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Track your progress through each stage
-                </p>
-              </div>
-              <span
-                className="text-xs font-bold px-3 py-1.5 rounded-full"
-                style={{
-                  background: (currentStage?.color || "#0d9488") + "15",
-                  color: currentStage?.color || "#0d9488",
-                }}
-              >
-                {currentStage?.label || "Inquiry"}
-              </span>
-            </div>
-            {loading ? (
-              <div className="h-20 flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
-              </div>
-            ) : (
-              <ApplicationTimeline currentStatus={currentStatus} />
-            )}
-          </div>
-
           {/* Recent Applications Section */}
           {!appsLoading && applications.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

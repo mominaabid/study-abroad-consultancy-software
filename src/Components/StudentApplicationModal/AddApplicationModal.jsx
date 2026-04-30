@@ -12,7 +12,7 @@ export const AddApplicationModal = ({
 }) => {
   const [activeTab, setActiveTab] = useState("personal");
   const [loading, setLoading] = useState(false);
-  const [setUploadedImage] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
@@ -267,6 +267,8 @@ export const AddApplicationModal = ({
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
+
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -286,8 +288,9 @@ export const AddApplicationModal = ({
         return;
       }
 
-      setUploadedImage(file);
-      setFormData((prev) => ({ ...prev, profile_picture: file }));
+      setUploadedImage(file); // Store in uploadedImage state
+      // Remove this line since we'll use uploadedImage instead
+      // setFormData((prev) => ({ ...prev, profile_picture: file }));
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -330,12 +333,26 @@ export const AddApplicationModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  
   const getAuthToken = () => {
-    return (
-      localStorage.getItem("token") ||
-      sessionStorage.getItem("token") ||
-      JSON.parse(localStorage.getItem("user"))?.token
-    );
+    // Try multiple sources for token
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
+
+    // If token not found, try to get from user object in localStorage
+    if (!token) {
+      try {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          return user.token || null;
+        }
+      } catch (e) {
+        console.error("Error parsing user data:", e);
+      }
+    }
+
+    return token;
   };
 
   const handleSubmit = async (e) => {
@@ -355,18 +372,28 @@ export const AddApplicationModal = ({
         submitData.append("user_id", user.id);
       }
 
+      // Add all form data except profile_picture
       Object.keys(formData).forEach((key) => {
-        if (key === "profile_picture") {
-          if (formData.profile_picture) {
-            submitData.append("profile_picture", formData.profile_picture);
-          }
-        } else if (formData[key] !== null && formData[key] !== "") {
+        if (
+          key !== "profile_picture" &&
+          formData[key] !== null &&
+          formData[key] !== ""
+        ) {
           submitData.append(key, formData[key]);
         }
       });
 
-      // Get the auth token
+      // Add the uploaded image separately
+      if (uploadedImage && uploadedImage instanceof File) {
+        submitData.append("profile_picture", uploadedImage);
+      }
+
       const token = getAuthToken();
+
+      if (!token) {
+        toast.error("Authentication token not found. Please login again.");
+        return;
+      }
 
       const response = await axios.post(
         `${BASE_URL}/addApplication`,
@@ -374,154 +401,65 @@ export const AddApplicationModal = ({
         {
           headers: {
             "Content-Type": "multipart/form-data",
-            // Add the authorization header
             Authorization: `Bearer ${token}`,
           },
         },
       );
 
-      // Rest of your code remains the same...
       toast.success(
         `Application created successfully! A confirmation email has been sent to ${formData.email}`,
-        {
-          autoClose: 5000,
-        },
+        { autoClose: 5000 },
       );
 
-      // Reset form and close modal...
-      setFormData({
-        full_name: "",
-        email: "",
-        phone: "",
-        dob: "",
-        age: "",
-        gender: "",
-        cnic: "",
-        passport_number: "",
-        nationality: "",
-        profile_picture: null,
-        last_degree: "",
-        institute: "",
-        cgpa: "",
-        passing_year: "",
-        english_test: "IELTS",
-        test_score: "",
-        target_country: "",
-        target_university: "",
-        course: "",
-        counselor_notes: "",
-        status: "inquiry",
-        deadline: "",
-        round: "",
-      });
-      setUploadedImage(null);
-      setImagePreview(null);
-      setErrors({});
-      setActiveTab("personal");
-
-      if (onApplicationAdded) {
-        onApplicationAdded(response.data.application);
-      }
-
+      resetForm();
+      onApplicationAdded?.(response.data.application);
       onClose();
     } catch (error) {
       console.error("Error creating application:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to create application",
-      );
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please login again.");
+      } else {
+        toast.error(
+          error.response?.data?.message || "Failed to create application",
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
 
-  //   if (!validateForm()) {
-  //     toast.error("Please fix the validation errors before submitting");
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     const submitData = new FormData();
-
-  //     if (user && user.id) {
-  //       submitData.append("user_id", user.id);
-  //     }
-
-  //     Object.keys(formData).forEach((key) => {
-  //       if (key === "profile_picture") {
-  //         if (formData.profile_picture) {
-  //           submitData.append("profile_picture", formData.profile_picture);
-  //         }
-  //       } else if (formData[key] !== null && formData[key] !== "") {
-  //         submitData.append(key, formData[key]);
-  //       }
-  //     });
-
-  //     const response = await axios.post(
-  //       `${BASE_URL}/addApplication`,
-  //       submitData,
-  //       {
-  //         headers: {
-  //           "Content-Type": "multipart/form-data",
-  //         },
-  //       },
-  //     );
-
-  //     toast.success(
-  //       `Application created successfully! A confirmation email has been sent to ${formData.email}`,
-  //       {
-  //         autoClose: 5000,
-  //       },
-  //     );
-
-  //     setFormData({
-  //       full_name: "",
-  //       email: "",
-  //       phone: "",
-  //       dob: "",
-  //       age: "",
-  //       gender: "",
-  //       cnic: "",
-  //       passport_number: "",
-  //       nationality: "",
-  //       profile_picture: null,
-  //       last_degree: "",
-  //       institute: "",
-  //       cgpa: "",
-  //       passing_year: "",
-  //       english_test: "IELTS",
-  //       test_score: "",
-  //       target_country: "",
-  //       target_university: "",
-  //       course: "",
-  //       counselor_notes: "",
-  //       status: "inquiry",
-  //       deadline: "",
-  //       round: "",
-  //     });
-  //     setUploadedImage(null);
-  //     setImagePreview(null);
-  //     setErrors({});
-  //     setActiveTab("personal");
-
-  //     if (onApplicationAdded) {
-  //       onApplicationAdded(response.data.application);
-  //     }
-
-  //     onClose();
-  //   } catch (error) {
-  //     console.error("Error creating application:", error);
-  //     toast.error(
-  //       error.response?.data?.message || "Failed to create application",
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const resetForm = () => {
+    setFormData({
+      full_name: "",
+      email: "",
+      phone: "",
+      dob: "",
+      age: "",
+      gender: "",
+      cnic: "",
+      passport_number: "",
+      nationality: "",
+      profile_picture: null,
+      last_degree: "",
+      institute: "",
+      cgpa: "",
+      passing_year: "",
+      english_test: "IELTS",
+      test_score: "",
+      target_country: "",
+      target_university: "",
+      course: "",
+      counselor_notes: "",
+      status: "inquiry",
+      deadline: "",
+      round: "",
+    });
+    setUploadedImage(null); // Now this will work
+    setImagePreview(null);
+    setErrors({});
+    setActiveTab("personal");
+  };
 
   const TabButton = ({ id, label }) => (
     <button
