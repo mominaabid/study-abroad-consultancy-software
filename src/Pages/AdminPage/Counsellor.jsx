@@ -90,17 +90,37 @@ export const Counsellor = () => {
     setIsViewOpen(true);
   };
 
+  // const handleDeleteConfirm = async () => {
+  //   try {
+  //     const id = selectedCounsellor.id || selectedCounsellor._id;
+  //     await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`);
+  //     toast.success("Counsellor deleted successfully");
+  //     await fetchCounsellors(); // Refresh the list
+  //   } catch (error) {
+  //     console.error(error);
+  //     toast.error("Failed to delete counsellor");
+  //   }
+  // };
+
+
   const handleDeleteConfirm = async () => {
-    try {
-      const id = selectedCounsellor.id || selectedCounsellor._id;
-      await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`);
-      toast.success("Counsellor deleted successfully");
-      await fetchCounsellors(); // Refresh the list
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to delete counsellor");
-    }
-  };
+  try {
+    const id = selectedCounsellor.id || selectedCounsellor._id;
+    const token = localStorage.getItem("token");
+    
+    await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    toast.success("Counsellor deleted successfully");
+    await fetchCounsellors();
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to delete counsellor");
+  }
+};
 
   const handleDeleteClick = (counsellor) => {
     setSelectedCounsellor(counsellor);

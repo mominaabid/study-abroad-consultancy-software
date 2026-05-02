@@ -95,7 +95,14 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
 
     try {
       setLoading(true);
-      await axios.post(`${BASE_URL}/admin/addCounsellor`, formData);
+
+       const token = localStorage.getItem("token");
+
+      await axios.post(`${BASE_URL}/admin/addCounsellor`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       toast.success("Counsellor added successfully!");
 

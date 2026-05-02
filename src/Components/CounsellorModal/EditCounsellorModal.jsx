@@ -48,7 +48,7 @@ export const EditCounsellorModal = ({
     }
 
     if (name === "phone") {
-      formattedValue = formattedValue.replace(/\D/g, ""); 
+      formattedValue = formattedValue.replace(/\D/g, "");
       if (formattedValue.length > 11) {
         formattedValue = formattedValue.slice(0, 11);
       }
@@ -75,7 +75,6 @@ export const EditCounsellorModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    
     if (formData.name && formData.name.length < 3) {
       return toast.error("Name must be at least 3 characters");
     }
@@ -91,18 +90,25 @@ export const EditCounsellorModal = ({
     if (formData.cnic && formData.cnic.length < 15) {
       return toast.error("Please enter a valid 13-digit CNIC");
     }
-    
+
     if (formData.phone && formData.phone.length !== 11) {
       return toast.error("Phone number must be exactly 11 digits");
     }
 
     try {
       setLoading(true);
-      const res = await axios.put(
-        `${BASE_URL}/admin/updateCounsellor/${counselor.id || counselor._id}`,
-        formData,
-      );
+      const token = localStorage.getItem("token");
+      const counsellorId = counselor.id || counselor._id;
 
+      const res = await axios.put(
+        `${BASE_URL}/admin/updateCounsellor/${counsellorId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
       toast.success(res.data?.message || "Counselor updated successfully");
       onClose();
       if (onSuccess) onSuccess();
@@ -165,7 +171,7 @@ export const EditCounsellorModal = ({
             <InputField
               labelName="Phone Number *"
               name="phone"
-              type="text" 
+              type="text"
               icon={<Phone size={18} />}
               value={formData.phone || ""}
               handlerChange={handleChange}
