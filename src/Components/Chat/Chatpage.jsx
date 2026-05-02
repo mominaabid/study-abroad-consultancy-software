@@ -4,10 +4,10 @@ import { selectUser }               from '../../redux/slices/authSlice';
 import {
   setConversations, setActiveConversation,
   addMessage, setTyping, clearTyping,
-  addOnlineUser, removeOnlineUser,
+
   selectConversations, selectTotalUnread,
 } from '../../redux/slices/chatSlice';
-import { connectSocket, getSocket } from '../../services/socketService';
+import { connectAbly, subscribeToChannel, unsubscribeFromChannel } from '../../services/ablyService';
 import ConversationList             from '../../Components/Chat/ConversationList';
 import ChatWindow                   from '../../Components/Chat/ChatWindow';
 import { BASE_URL }                 from '../../Content/Url';
@@ -22,37 +22,21 @@ export default function ChatPage() {
   const [loadingConvs, setLoadingConvs] = useState(true);
 
   // ── Connect Socket.IO ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
 
-    const socket = connectSocket(token);
-
-    // Global socket listeners
-    socket.on('receive_message', (msg) => {
-      dispatch(addMessage(msg));
+  connectAbly(token).then((ably) => {
+    // Subscribe to personal notification channel
+    subscribeToChannel(`user:${user.id}`, 'new_message_notification', (data) => {
+      fetchConversations(); // refresh unread counts
     });
+  });
 
-    socket.on('user_online', ({ userId }) => {
-      dispatch(addOnlineUser(userId));
-    });
-
-    socket.on('user_offline', ({ userId }) => {
-      dispatch(removeOnlineUser(userId));
-    });
-
-    socket.on('new_message_notification', ({ conversationId, senderName, preview }) => {
-      // Refresh conversations to update unread count
-      fetchConversations();
-    });
-
-    return () => {
-      socket.off('receive_message');
-      socket.off('user_online');
-      socket.off('user_offline');
-      socket.off('new_message_notification');
-    };
-  }, []);
+  return () => {
+    unsubscribeFromChannel(`user:${user.id}`);
+  };
+}, [user?.id]);
 
   // ── Fetch conversations ────────────────────────────────────────────────────
   async function fetchConversations() {

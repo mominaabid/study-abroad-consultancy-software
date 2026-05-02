@@ -7,7 +7,7 @@ const chatSlice = createSlice({
     activeConversationId: null,
     messages:             {},     // { conversationId: [messages] }
     typingUsers:          {},     // { conversationId: { userId, userName } }
-    onlineUsers:          [],     // [userId, ...]
+    onlineUsers:          [],     // still kept (can be set via Ably presence later)
     totalUnread:          0,
   },
   reducers: {
@@ -17,50 +17,51 @@ const chatSlice = createSlice({
         return sum + (c.student_unread || 0) + (c.counsellor_unread || 0);
       }, 0);
     },
+
     setActiveConversation(state, action) {
       state.activeConversationId = action.payload;
     },
+
     setMessages(state, action) {
       const { conversationId, messages } = action.payload;
       state.messages[conversationId] = messages;
     },
-    addMessage(state, action) {
-      const msg            = action.payload;
-      const convId         = msg.conversation_id;
-      if (!state.messages[convId]) state.messages[convId] = [];
-      // Avoid duplicates
-      const exists = state.messages[convId].find(m => m._id === msg._id);
-      if (!exists) state.messages[convId].push(msg);
 
-      // Update conversation last message
-      const conv = state.conversations.find(c => c._id === convId);
-      if (conv) {
-        conv.last_message    = msg.content;
-        conv.last_message_at = msg.createdAt;
-      }
-    },
+ addMessage(state, action) {
+  const msg = action.payload;
+
+  const convId =
+    msg.conversation_id ||
+    msg.conversationId ||
+    msg.conversation;
+
+  if (!convId) return;
+
+  state.messages[convId] = state.messages[convId] || [];
+
+  const exists = state.messages[convId].find(m => m._id === msg._id);
+  if (!exists) state.messages[convId].push(msg);
+},
+
     setTyping(state, action) {
       const { conversationId, userId, userName, role } = action.payload;
       state.typingUsers[conversationId] = { userId, userName, role };
     },
+
     clearTyping(state, action) {
       const { conversationId } = action.payload;
       delete state.typingUsers[conversationId];
     },
+
+    // ✅ Keep this (you can use it with Ably presence later)
     setOnlineUsers(state, action) {
       state.onlineUsers = action.payload;
     },
-    addOnlineUser(state, action) {
-      if (!state.onlineUsers.includes(action.payload)) {
-        state.onlineUsers.push(action.payload);
-      }
-    },
-    removeOnlineUser(state, action) {
-      state.onlineUsers = state.onlineUsers.filter(id => id !== action.payload);
-    },
+
     markConversationRead(state, action) {
       const { conversationId, role } = action.payload;
       const conv = state.conversations.find(c => c._id === conversationId);
+
       if (conv) {
         if (role === 'student')    conv.student_unread    = 0;
         if (role === 'counsellor') conv.counsellor_unread = 0;
@@ -77,15 +78,13 @@ export const {
   setTyping,
   clearTyping,
   setOnlineUsers,
-  addOnlineUser,
-  removeOnlineUser,
   markConversationRead,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
 
 // ── Selectors ──────────────────────────────────────────────────────────────────
-export const selectConversations        = s => s.chat.conversations;
+export const selectConversations         = s => s.chat.conversations;
 export const selectActiveConversationId = s => s.chat.activeConversationId;
 export const selectMessages             = conversationId => s => s.chat.messages[conversationId] || [];
 export const selectTypingUser           = conversationId => s => s.chat.typingUsers[conversationId];

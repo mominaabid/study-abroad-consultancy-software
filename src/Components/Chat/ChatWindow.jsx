@@ -6,10 +6,10 @@ import {
   addMessage, setMessages, markConversationRead,
   setTyping, clearTyping, selectTypingUser, selectOnlineUsers,
 } from '../../redux/slices/chatSlice';
-import { getSocket } from '../../services/socketService';
-import { BASE_URL } from '../../Content/Url';
-import CallModal from './CallModal'; // 🔥 ADDED
 
+import { BASE_URL } from '../../Content/Url';
+
+import { subscribeToChannel, unsubscribeFromChannel } from '../../services/ablyService';
 function timeStr(date) {
   return new Date(date).toLocaleTimeString('en-US', {
     hour: '2-digit', minute: '2-digit', hour12: true
@@ -29,7 +29,7 @@ function formatDay(date) {
 export default function ChatWindow({ conversation }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
-  const socket = getSocket();
+ 
 
   const messages = useReduxSelector(
     s => s.chat.messages[conversation?._id] || []
@@ -49,7 +49,7 @@ export default function ChatWindow({ conversation }) {
   const convId = conversation?._id;
 
   // ── CALL STATE ─────────────────────────────────────────
-  const [showCall, setShowCall] = useState(false);
+
 
   // ── Get other user ─────────────────────────────────────
   const otherId =
@@ -64,32 +64,53 @@ export default function ChatWindow({ conversation }) {
 
   const isOtherOnline = onlineUsers.includes(otherId);
 
-  // ── Fetch messages ──────────────────────────────────────
-  useEffect(() => {
-    if (!convId) return;
-    setLoading(true);
+// Replace socket message listener:
+useEffect(() => {
+  if (!convId) return;
 
-    fetch(`${BASE_URL}/chat/messages/${convId}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    })
-      .then(r => r.json())
-      .then(data =>
-        dispatch(
-          setMessages({
-            conversationId: convId,
-            messages: Array.isArray(data) ? data : [],
-          })
-        )
-      )
-      .finally(() => setLoading(false));
+  // Subscribe to conversation channel
+subscribeToChannel(`conversation:${convId}`, 'new_message', (payload) => {
+  const message = payload?.message ?? payload;
 
-    socket?.emit('join_conversation', convId);
-    markRead();
+  dispatch(addMessage(message));
+  markRead();
+});
 
-    return () => {
-      socket?.emit('leave_conversation', convId);
-    };
-  }, [convId]);
+  subscribeToChannel(`conversation:${convId}`, 'typing_start', (data) => {
+    if (data.userId !== user.id) dispatch(setTyping({ conversationId: convId, ...data }));
+  });
+
+  subscribeToChannel(`conversation:${convId}`, 'typing_stop', (data) => {
+    dispatch(clearTyping({ conversationId: convId }));
+  });
+
+  return () => {
+    unsubscribeFromChannel(`conversation:${convId}`);
+  };
+}, [convId]);
+useEffect(() => {
+  if (!convId) return;
+
+  async function loadMessages() {
+    const res = await fetch(
+      `${BASE_URL}/chat/messages/${convId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+
+    dispatch(setMessages({
+      conversationId: convId,
+      messages: Array.isArray(data) ? data : []
+    }));
+  }
+
+  loadMessages();
+}, [convId]);
 
   function markRead() {
     fetch(`${BASE_URL}/chat/messages/read/${convId}`, {
@@ -100,29 +121,47 @@ export default function ChatWindow({ conversation }) {
     }).catch(() => {});
   }
 
-  // ── SEND MESSAGE ───────────────────────────────────────
-  function sendMessage() {
-    if (!input.trim() || !socket) return;
+// Replace sendMessage:
+async function sendMessage() {
+  if (!input.trim()) return;
 
-    socket.emit('send_message', {
-      conversationId: convId,
-      content: input.trim(),
-    });
+  await fetch(`${BASE_URL}/chat/messages/send`, {
+    method:  'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization:  `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify({ conversationId: convId, content: input.trim() }),
+  });
 
-    setInput('');
-    socket.emit('typing_stop', { conversationId: convId });
-  }
+  setInput('');
+}
 
-  function handleInputChange(e) {
-    setInput(e.target.value);
+// Replace typing emit:
+function handleInputChange(e) {
+  setInput(e.target.value);
 
-    socket.emit('typing_start', { conversationId: convId });
+  fetch(`${BASE_URL}/chat/typing`, {
+    method:  'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization:  `Bearer ${localStorage.getItem('token')}`,
+    },
+    body: JSON.stringify({ conversationId: convId, isTyping: true }),
+  }).catch(() => {});
 
-    clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => {
-      socket.emit('typing_stop', { conversationId: convId });
-    }, 1500);
-  }
+  clearTimeout(typingTimer.current);
+  typingTimer.current = setTimeout(() => {
+    fetch(`${BASE_URL}/chat/typing`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization:  `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify({ conversationId: convId, isTyping: false }),
+    }).catch(() => {});
+  }, 1500);
+}
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -166,13 +205,8 @@ export default function ChatWindow({ conversation }) {
           </div>
         </div>
 
-        {/* 🔥 CALL BUTTON INSIDE HEADER */}
-        <CallModal
-          conversation={conversation}
-          targetUserId={otherId}
-          targetName={otherName}
-          isOnline={isOtherOnline}
-        />
+    
+      
       </div>
 
       {/* ── MESSAGES ── */}
