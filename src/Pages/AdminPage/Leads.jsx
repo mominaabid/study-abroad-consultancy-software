@@ -336,7 +336,39 @@ export default function Leads() {
       filterStatus === "All Status" || lead.status === filterStatus;
     return matchSearch && matchCountry && matchStatus;
   });
-
+const handleAddNoteOnly = async (leadId, note) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    toast.error("Not logged in.");
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${BASE_URL}/admin/leads/${leadId}/note`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ note }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to add note");
+    }
+    
+    toast.success("Note added successfully!");
+    
+    // Refresh if needed
+    if (drawerLead?.id === leadId) {
+      fetchLeads(currentPage);
+    }
+  } catch (error) {
+    console.error("Error adding note:", error);
+    toast.error(error.message || "Failed to add note");
+  }
+};
   const leadsByStage = STAGES.reduce((acc, s) => {
     acc[s.key] = filteredLeads.filter((l) => l.status === s.key);
     return acc;
@@ -656,6 +688,7 @@ export default function Leads() {
         counsellors={counsellors}
         onAssign={handleAssign}
         onStage={handleStage}
+         onAddNoteOnly={handleAddNoteOnly} // ADD THIS LINE
       />
     </div>
   );
