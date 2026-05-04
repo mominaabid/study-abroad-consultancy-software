@@ -69,12 +69,14 @@ export const EditApplicationModal = ({
       if (application.profile_picture) {
         let imageUrl = application.profile_picture;
         if (imageUrl.startsWith("/uploads/")) {
-          const fullUrl = `http://localhost:3001${imageUrl}`;
+          // const fullUrl = `http://localhost:3001${imageUrl}`;
+            const fullUrl = `https://consultancy-backend-av89.vercel.app${imageUrl}`;
           setImagePreview(fullUrl);
         } else if (imageUrl.startsWith("http")) {
           setImagePreview(imageUrl);
         } else if (imageUrl && !imageUrl.includes("/")) {
-          const fullUrl = `http://localhost:3001/uploads/${imageUrl}`;
+          // const fullUrl = `http://localhost:3001/uploads/${imageUrl}`;
+              const fullUrl = `https://consultancy-backend-av89.vercel.app/uploads/${imageUrl}`;
           setImagePreview(fullUrl);
         } else {
           setImagePreview(null);
