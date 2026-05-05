@@ -1,8 +1,9 @@
 // hooks/useSSE.js
-import { useEffect, useRef, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addNotification } from '../../redux/slices/notificationSlice';
-import { selectUser } from '../../redux/slices/authSlice';
+import { useEffect, useRef, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { addNotification } from "../../redux/slices/notificationSlice";
+import { selectUser } from "../../redux/slices/authSlice";
+import { BASE_URL } from "../../Content/Url";
 
 const useSSE = () => {
   const dispatch = useDispatch();
@@ -13,10 +14,10 @@ const useSSE = () => {
   const connectSSERef = useRef(null);
 
   const connectSSE = useCallback(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
 
     if (!token || !user) {
-      console.log('No token or user found, skipping SSE connection');
+      console.log("No token or user found, skipping SSE connection");
       return;
     }
 
@@ -24,57 +25,57 @@ const useSSE = () => {
       eventSourceRef.current.close();
     }
 
-    // const BASE_URL = 'http://localhost:3001/api/v1';
-    const BASE_URL = 'https://consultancy-backend-av89.vercel.app/api/v1';
     const sseUrl = `${BASE_URL}/sse/events?token=${token}`;
 
-    console.log('Connecting to SSE at:', sseUrl);
+    console.log("Connecting to SSE at:", sseUrl);
 
     try {
       const eventSource = new EventSource(sseUrl);
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = () => {
-        console.log('SSE connection established for user:', user?.id);
+        console.log("SSE connection established for user:", user?.id);
       };
 
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('SSE message received:', data);
+          console.log("SSE message received:", data);
 
           switch (data.type) {
-            case 'connected':
-              console.log('SSE connected:', data.message);
+            case "connected":
+              console.log("SSE connected:", data.message);
               break;
 
-            case 'status_change':
-              dispatch(addNotification({
-                message: data.message,
-                type: 'status_change',
-                metadata: {
-                  applicationId: data.applicationId,
-                  oldStatus: data.oldStatus,
-                  newStatus: data.newStatus,
-                  university: data.university,
-                  course: data.course,
-                  oldStatusLabel: data.oldStatusLabel,
-                  newStatusLabel: data.newStatusLabel
-                }
-              }));
-              console.log('Notification dispatched to Redux');
+            case "status_change":
+              dispatch(
+                addNotification({
+                  message: data.message,
+                  type: "status_change",
+                  metadata: {
+                    applicationId: data.applicationId,
+                    oldStatus: data.oldStatus,
+                    newStatus: data.newStatus,
+                    university: data.university,
+                    course: data.course,
+                    oldStatusLabel: data.oldStatusLabel,
+                    newStatusLabel: data.newStatusLabel,
+                  },
+                }),
+              );
+              console.log("Notification dispatched to Redux");
               break;
 
             default:
-              console.log('Unknown SSE message type:', data.type);
+              console.log("Unknown SSE message type:", data.type);
           }
         } catch (err) {
-          console.error('Error parsing SSE message:', err);
+          console.error("Error parsing SSE message:", err);
         }
       };
 
       eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
+        console.error("SSE connection error:", error);
         eventSource.close();
 
         if (reconnectTimeoutRef.current) {
@@ -82,12 +83,12 @@ const useSSE = () => {
         }
 
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('Attempting to reconnect SSE...');
+          console.log("Attempting to reconnect SSE...");
           connectSSERef.current?.(); // ✅ safe + fresh
         }, 5000);
       };
     } catch (err) {
-      console.error('Error creating SSE connection:', err);
+      console.error("Error creating SSE connection:", err);
     }
   }, [dispatch, user]);
 
@@ -104,7 +105,7 @@ const useSSE = () => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
-      console.log('SSE connection closed');
+      console.log("SSE connection closed");
     }
   }, []);
 

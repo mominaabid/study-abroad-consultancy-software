@@ -66,17 +66,39 @@ export const EditApplicationModal = ({
         status: application.status || "inquiry",
       });
 
+      const BASE_ORIGIN = BASE_URL.replace("/api/v1", "");
+
+      // if (application.profile_picture) {
+      //   let imageUrl = application.profile_picture;
+      //   if (imageUrl.startsWith("/uploads/")) {
+      //     // const fullUrl = `http://localhost:3001${imageUrl}`;
+      //       const fullUrl = `https://consultancy-backend-av89.vercel.app${imageUrl}`;
+      //     setImagePreview(fullUrl);
+      //   } else if (imageUrl.startsWith("http")) {
+      //     setImagePreview(imageUrl);
+      //   } else if (imageUrl && !imageUrl.includes("/")) {
+      //     // const fullUrl = `http://localhost:3001/uploads/${imageUrl}`;
+      //         const fullUrl = `https://consultancy-backend-av89.vercel.app/uploads/${imageUrl}`;
+      //     setImagePreview(fullUrl);
+      //   } else {
+      //     setImagePreview(null);
+      //   }
+      // } else {
+      //   setImagePreview(null);
+      // }
+
       if (application.profile_picture) {
         let imageUrl = application.profile_picture;
+
+        const BASE_ORIGIN = BASE_URL.replace("/api/v1", "");
+
         if (imageUrl.startsWith("/uploads/")) {
-          // const fullUrl = `http://localhost:3001${imageUrl}`;
-            const fullUrl = `https://consultancy-backend-av89.vercel.app${imageUrl}`;
+          const fullUrl = `${BASE_ORIGIN}${imageUrl}`;
           setImagePreview(fullUrl);
         } else if (imageUrl.startsWith("http")) {
           setImagePreview(imageUrl);
         } else if (imageUrl && !imageUrl.includes("/")) {
-          // const fullUrl = `http://localhost:3001/uploads/${imageUrl}`;
-              const fullUrl = `https://consultancy-backend-av89.vercel.app/uploads/${imageUrl}`;
+          const fullUrl = `${BASE_ORIGIN}/uploads/${imageUrl}`;
           setImagePreview(fullUrl);
         } else {
           setImagePreview(null);

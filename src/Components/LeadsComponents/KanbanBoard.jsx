@@ -142,12 +142,22 @@ export function KanbanCard({
         <span className="text-[11px] text-gray-400">
           {timeAgo(lead.createdAt)}
         </span>
-        {lead.counsellor ? (
+        {/* {lead.counsellor ? (
           <span className="text-[11px] text-teal-600 font-semibold bg-teal-50 px-2 py-0.5 rounded-full">
             {lead.counsellor.name.split(" ")[0]}
           </span>
         ) : (
           <span className="text-[11px] text-gray-300">Unassigned</span>
+        )} */}
+
+        {lead.counsellor ? (
+          <span className="...">{lead.counsellor.name.split(" ")[0]}</span>
+        ) : lead.counsellor_id ? (
+          <span className="... text-gray-500">
+            Assigned (counsellor data not loaded)
+          </span>
+        ) : (
+          <span className="...">Unassigned</span>
         )}
       </div>
     </div>
