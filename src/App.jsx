@@ -24,30 +24,33 @@ import Leads from "./Pages/AdminPage/Leads";
 import { Counsellor } from "./Pages/AdminPage/Counsellor";
 import AdminPayments from "./Pages/AdminPage/AdminPayments";
 import { AdminApplications } from "./Pages/AdminPage/AdminApplications";
+import { AdminProfile } from "./Pages/AdminPage/AdminProfile";
 
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
 import CounsellorChat from "./Pages/CounsellorPage/CounsellorChat";
 import CounsellorDocuments from "./Pages/CounsellorPage/CounsellorDocuments";
 import { CounsellorApplication } from "./Pages/CounsellorPage/CounsellorApplication";
+import { CounsellorProfile } from "./Pages/CounsellorPage/CounsellorProfile";
 
 import StudentDashboard from "./Pages/StudentPage/StudentDashboard";
 import StudentChat from "./Pages/StudentPage/StudentChat";
 import StudentDocuments from "./Pages/StudentPage/StudentDocuments";
 import { StudentApplication } from "./Pages/StudentPage/StudentApplication";
 import StudentPayments from "./Pages/StudentPage/StudentPayment";
+import { StudentProfile } from "./Pages/StudentPage/StudentProfile";
 
 // ⭐ Create a wrapper component to conditionally initialize SSE
 const SSEInitializer = ({ children }) => {
   const user = useSelector(selectUser);
-  
+
   // You can use user to conditionally initialize SSE or log it
   useEffect(() => {
     if (user) {
       console.log(`SSE will initialize for user: ${user.role}`);
     }
   }, [user]);
-  
+
   useSSE();
   return children;
 };
@@ -88,6 +91,7 @@ export default function App() {
             <Route path="/admin/chats" element={<AdminChatPage />} />
             <Route path="/admin/payments" element={<AdminPayments />} />
             <Route path="/admin/applications" element={<AdminApplications />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
           </Route>
         </Route>
 
@@ -99,6 +103,7 @@ export default function App() {
             <Route path="chats" element={<CounsellorChat />} />
             <Route path="documents" element={<CounsellorDocuments />} />
             <Route path="applications" element={<CounsellorApplication />} />
+            <Route path="profile" element={<CounsellorProfile />} />
           </Route>
         </Route>
 
@@ -109,6 +114,8 @@ export default function App() {
             <Route path="application" element={<StudentApplication />} />
             <Route path="documents" element={<StudentDocuments />} />
             <Route path="chats" element={<StudentChat />} />
+            <Route path="profile" element={<StudentProfile />} />
+
             <Route path="/student/payments" element={<StudentPayments />} />
           </Route>
         </Route>

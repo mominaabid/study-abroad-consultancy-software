@@ -206,7 +206,7 @@ export const StudentDashboard = () => {
   // The hook returns the latest event data and connection status
   const { lastEvent, isConnected, reconnect } = useSSE();
 
-  const [profile, setProfile] = useState(null);
+  // const [profile, setProfile] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [applications, setApplications] = useState([]); // Added for applications
   const [docsLoading, setDocsLoading] = useState(true);
@@ -246,7 +246,7 @@ export const StudentDashboard = () => {
         case "profile_updated":
         case "stage_changed":
           // Refresh profile when stage changes
-          fetchProfile();
+          // fetchProfile();
           break;
 
         case "message_received":
@@ -262,7 +262,7 @@ export const StudentDashboard = () => {
           console.log("Unknown event type, refreshing all data");
           fetchDocs();
           fetchApplications();
-          fetchProfile();
+        // fetchProfile();
       }
 
       return () => clearTimeout(timer);
@@ -270,17 +270,17 @@ export const StudentDashboard = () => {
   }, [lastEvent]);
 
   // ── Fetch profile ────────────────────────────────────────────────────────
-  const fetchProfile = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/student/profile`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const data = await res.json();
-      setProfile(data.data || data);
-    } catch (err) {
-      console.error("Profile fetch error:", err);
-    }
-  };
+  // const fetchProfile = async () => {
+  //   try {
+  //     const res = await fetch(`${BASE_URL}/student/profile`, {
+  //       headers: { Authorization: `Bearer ${getToken()}` },
+  //     });
+  //     const data = await res.json();
+  //     setProfile(data.data || data);
+  //   } catch (err) {
+  //     console.error("Profile fetch error:", err);
+  //   }
+  // };
 
   // ── Fetch documents ──────────────────────────────────────────────────────
   const fetchDocs = async () => {
@@ -316,7 +316,7 @@ export const StudentDashboard = () => {
 
   // Initial data fetch
   useEffect(() => {
-    fetchProfile();
+    // fetchProfile();
     fetchDocs();
     fetchApplications();
   }, []);
@@ -336,8 +336,8 @@ export const StudentDashboard = () => {
   );
 
   const counsellorName =
-    profile?.lead?.counsellor?.name ||
-    profile?.counsellor?.name ||
+    // profile?.lead?.counsellor?.name ||
+    // profile?.counsellor?.name ||
     "Not Assigned";
 
   // Get recent documents (last 5)
@@ -446,7 +446,7 @@ export const StudentDashboard = () => {
               </h1>
 
               <div className="flex flex-wrap gap-2 mt-4">
-                {profile?.lead?.preferred_country && (
+                {/* {profile?.lead?.preferred_country && (
                   <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
                     <Globe size={11} /> {profile.lead.preferred_country}
                   </span>
@@ -455,7 +455,7 @@ export const StudentDashboard = () => {
                   <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
                     <BookOpen size={11} /> {profile.lead.study_level}
                   </span>
-                )}
+                )} */}
                 {counsellorName !== "Not Assigned" && (
                   <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
                     <Award size={11} /> {counsellorName}

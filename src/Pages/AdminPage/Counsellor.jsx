@@ -150,7 +150,7 @@ export const Counsellor = () => {
   const counsellorsWithLeads = useMemo(() => {
     return allCounsellors.map((c) => {
       const count = leads.filter(
-        (l) => l.counsellor_id === (c.id || c._id),
+        (l) => l.counsellor_id === (c.user_id ),
       ).length;
 
       return {

@@ -116,9 +116,15 @@ export default function LeadModal({
     label: l,
   }));
 
+  // const counsellorOptions = counsellors.map((c) => ({
+  //   id: c.id,
+  //   value: c.id,
+  //   label: c.name,
+  // }));
+
   const counsellorOptions = counsellors.map((c) => ({
-    id: c.id,
-    value: c.id,
+    id: c.user?.id, // ✅ use user_id from relation
+    value: c.user?.id,
     label: c.name,
   }));
 
