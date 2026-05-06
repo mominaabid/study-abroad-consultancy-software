@@ -1,14 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { BASE_URL } from "../../Content/Url";
 import "../AdminPage/Leads.css";
-import { FiUsers, FiTrendingUp, FiCheckCircle, FiClock } from "react-icons/fi";
+import { FiUsers, FiTrendingUp, FiCheckCircle, FiClock, FiPlus } from "react-icons/fi";
+import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { addNotification } from "../../redux/slices/notificationSlice";
 
 import { STAGES, COUNTRIES, formatDate } from "../../Components/LeadsComponents/LeadsConstants";
 import LeadDrawer        from "../../Components/LeadsComponents/LeadDrawer";
 import { KanbanColumn }  from "../../Components/LeadsComponents/KanbanBoard";
 import LeadsTable        from "../../Components/LeadsComponents/LeadsTable";
+import LeadModal         from "../../Components/LeadsComponents/LeadModal";
 
-// ─── Stat Card (same as admin) ─────────────────────────────────────────────────
+// ─── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4
@@ -30,6 +34,7 @@ function StatCard({ label, value, icon, color }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function CounsellorLeads() {
+  const dispatch = useDispatch();
   const [leads,          setLeads]          = useState([]);
   const [loading,        setLoading]        = useState(true);
   const [view,           setView]           = useState("kanban");
@@ -41,6 +46,11 @@ export default function CounsellorLeads() {
   const [draggingLeadId, setDraggingLeadId] = useState(null);
   const [drawerLead,     setDrawerLead]     = useState(null);
   const [actionMenu,     setActionMenu]     = useState(null);
+  
+  // Add Lead Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editLead, setEditLead] = useState(null);
+  const [counsellors, setCounsellors] = useState([]);
 
   // ── Fetch MY leads only ────────────────────────────────────────────────────
   const fetchLeads = useCallback(async (page = 1) => {
@@ -73,7 +83,30 @@ export default function CounsellorLeads() {
     }
   }, []);
 
-  useEffect(() => { fetchLeads(1); }, [fetchLeads]);
+  // ── Fetch Counsellors (for dropdown) ──────────────────────────────────────
+  const fetchCounsellors = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      setCounsellors(Array.isArray(data) ? data : data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch counsellors:", err);
+      setCounsellors([]);
+    }
+  }, []);
+
+  useEffect(() => { 
+    fetchLeads(1); 
+    fetchCounsellors();
+  }, [fetchLeads, fetchCounsellors]);
 
   useEffect(() => {
     const handler = () => setActionMenu(null);
@@ -81,28 +114,114 @@ export default function CounsellorLeads() {
     return () => document.removeEventListener("click", handler);
   }, []);
 
-  // ── Update stage (counsellor can change stage of their leads) ──────────────
- async function handleStage(leadId, status, note = "") {
+  // ─── Save Lead (Add/Edit) ─────────────────────────────────────────────────
+// ─── Save Lead (Add/Edit) - Auto-assign to current counsellor ──────────────
+async function handleSave(form) {
   const token = localStorage.getItem("token");
-  if (!token) return;
-
-  setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
-  if (drawerLead?.id === leadId) setDrawerLead(prev => ({ ...prev, status }));
-
+  if (!token) {
+    toast.error("Not logged in.");
+    return;
+  }
+  
+  // Get the current logged-in user from localStorage or Redux
+  const user = JSON.parse(localStorage.getItem("user") || '{}');
+  const counsellorId = user.id; // This should be the logged-in counsellor's ID
+  
+  // Prepare payload - FORCE assign to current counsellor
+  const payload = {
+    ...form,
+    counsellor_id: counsellorId, // Always set to current counsellor's ID
+  };
+  
+  // Remove any fields that might be undefined
+  Object.keys(payload).forEach(key => {
+    if (payload[key] === undefined) delete payload[key];
+  });
+  
   try {
-    const res = await fetch(`${BASE_URL}/counsellor/leads/${leadId}/stage`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status, note }),  // ✅ send note
+    const url = editLead
+      ? `${BASE_URL}/admin/leads/${editLead.id}`
+      : `${BASE_URL}/admin/leads`;
+    
+    const method = editLead ? "PUT" : "POST";
+    
+    const res = await fetch(url, {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error();
-  } catch {
-    alert("Failed to update lead status");
-    fetchLeads();
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${res.status}`);
+    }
+
+    toast.success(editLead ? "Lead updated successfully" : "Lead added successfully");
+
+    if (!editLead) {
+      dispatch(addNotification({
+        message: `New Lead added: ${form.name}`,
+      }));
+    }
+
+    setEditLead(null);
+    setModalOpen(false);
+    fetchLeads(currentPage);
+  } catch (err) {
+    console.error("Save lead error:", err);
+    toast.error("Failed to save lead: " + err.message);
   }
 }
 
-  // ── Export CSV ─────────────────────────────────────────────────────────────
+  // ─── Update stage (counsellor can change stage of their leads) ──────────────
+  async function handleStage(leadId, status, note = "") {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
+    if (drawerLead?.id === leadId) setDrawerLead(prev => ({ ...prev, status }));
+
+    try {
+      const res = await fetch(`${BASE_URL}/counsellor/leads/${leadId}/stage`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status, note }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(`Lead moved to ${status} stage`);
+    } catch {
+      toast.error("Failed to update lead status");
+      fetchLeads();
+    }
+  }
+
+  // ─── Delete Lead (counsellor can delete their leads) ────────────────────────
+  async function handleDelete(lead) {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    
+    if (!window.confirm(`Are you sure you want to delete ${lead.name}?`)) return;
+    
+    try {
+      const res = await fetch(`${BASE_URL}/admin/leads/${lead.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Lead deleted successfully");
+      fetchLeads(currentPage);
+    } catch {
+      toast.error("Failed to delete lead");
+    }
+  }
+
+  // ─── Export CSV ─────────────────────────────────────────────────────────────
   function handleExport() {
     const headers = ["Name","Email","Phone","Country","Study Level","Status","Source","Created"];
     const rows = filteredLeads.map(l => [
@@ -115,9 +234,10 @@ export default function CounsellorLeads() {
       download: "my-leads.csv",
     });
     a.click();
+    toast.info("Exporting leads...");
   }
 
-  // ── Filtered & grouped data ────────────────────────────────────────────────
+  // ─── Filtered & grouped data ────────────────────────────────────────────────
   const filteredLeads = leads.filter(lead => {
     const matchSearch =
       !search ||
@@ -269,7 +389,17 @@ export default function CounsellorLeads() {
               Export
             </button>
 
-            {/* ── NO Add Lead button for counsellor ── */}
+            {/* ── ADD LEAD BUTTON FOR COUNSELLOR ── */}
+            <button
+              onClick={() => {
+                setEditLead(null);
+                setModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 h-9 px-4 bg-purple-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-purple-700 transition shadow-md shadow-purple-200 whitespace-nowrap"
+            >
+              <FiPlus size={14} />
+              Add Lead
+            </button>
           </div>
         </div>
       </div>
@@ -300,7 +430,8 @@ export default function CounsellorLeads() {
                 leads={leadsByStage[stage.key] || []}
                 onOpen={setDrawerLead}
                 onMenuAction={(action, l) => {
-                  if (action === "edit") setDrawerLead(l); // counsellor can only view
+                  if (action === "edit") setDrawerLead(l);
+                  if (action === "delete") handleDelete(l);
                 }}
                 onDrop={async (leadId, newStatus) => {
                   setDraggingLeadId(null);
@@ -317,11 +448,11 @@ export default function CounsellorLeads() {
       {!loading && view === "table" && (
         <LeadsTable
           filteredLeads={filteredLeads}
-          counsellors={[]}           // counsellor can't reassign
+          counsellors={[]}
           onRowClick={setDrawerLead}
           onEdit={l => setDrawerLead(l)}
-          onDelete={null}            // no delete for counsellor
-          onAssign={null}            // no reassign for counsellor
+          onDelete={handleDelete}
+          onAssign={null}
           actionMenu={actionMenu}
           setActionMenu={setActionMenu}
           pagination={pagination}
@@ -330,14 +461,29 @@ export default function CounsellorLeads() {
         />
       )}
 
-      {/* ── Lead Drawer (view + stage update only) ── */}
+      {/* ── Lead Drawer ── */}
       <LeadDrawer
         lead={drawerLead}
         onClose={() => setDrawerLead(null)}
-        onEdit={null}          // no edit for counsellor
-        counsellors={[]}       // no reassign
+        onEdit={(l) => {
+          setEditLead(l);
+          setModalOpen(true);
+        }}
+        counsellors={[]}
         onAssign={null}
-        onStage={handleStage}  // counsellor CAN update stage
+        onStage={handleStage}
+      />
+
+      {/* ── Add/Edit Lead Modal ── */}
+      <LeadModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditLead(null);
+        }}
+        onSave={handleSave}
+        counsellors={counsellors}
+        editLead={editLead}
       />
     </div>
   );
