@@ -1,3 +1,4 @@
+// src/components/admin/AdminApplication.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -42,6 +43,8 @@ import {
   Plane,
   ThumbsUp,
   ThumbsDown,
+  Plus,
+  Users,
 } from "lucide-react";
 
 // Helper to get token
@@ -63,7 +66,7 @@ const authAxios = {
     axios.delete(url, { headers: { Authorization: `Bearer ${getToken()}` } }),
 };
 
-// Updated Status configuration with new enum values
+// Status configuration (same as before)
 const STATUS_CONFIG = {
   inquiry: {
     color: "bg-gray-100 text-gray-700 border-gray-200",
@@ -115,7 +118,6 @@ const STATUS_CONFIG = {
   },
 };
 
-// Statuses array in correct order
 const STATUSES = [
   "inquiry",
   "evaluation",
@@ -127,20 +129,7 @@ const STATUSES = [
   "reject",
 ];
 
-// Document icons mapping
-const DOCUMENT_ICONS = {
-  passport: User,
-  transcript: FileText,
-  sop: FileText,
-  ielts: FileText,
-  photo: User,
-  recommendation: FileText,
-  financial: FileText,
-  cv: FileText,
-  other: FileText,
-};
-
-// Status update dropdown component
+// Status dropdown component (unchanged)
 const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -214,21 +203,7 @@ const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
   );
 };
 
-// Three Dots Menu Component
-// const ThreeDotsMenu = ({ onViewDetails, onEditStatus }) => {
-//   const [isOpen, setIsOpen] = useState(false);
-//   const menuRef = React.useRef(null);
-
-//   useEffect(() => {
-//     const handleClickOutside = (event) => {
-//       if (menuRef.current && !menuRef.current.contains(event.target)) {
-//         setIsOpen(false);
-//       }
-//     };
-//     document.addEventListener("mousedown", handleClickOutside);
-//     return () => document.removeEventListener("mousedown", handleClickOutside);
-//   }, []);
-
+// Three dots menu (unchanged)
 const ThreeDotsMenu = ({ onViewDetails }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = React.useRef(null);
@@ -263,23 +238,13 @@ const ThreeDotsMenu = ({ onViewDetails }) => {
             <Eye size={14} className="text-blue-500" />
             <span>View Details</span>
           </button>
-          {/* <button
-            onClick={() => {
-              onEditStatus();
-              setIsOpen(false);
-            }}
-            className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-gray-50"
-          >
-            <Edit size={14} className="text-amber-500" />
-            <span>Edit Status</span>
-          </button> */}
         </div>
       )}
     </div>
   );
 };
 
-// Progress bar component
+// Progress bar component (unchanged)
 const ProgressBar = ({ percentage }) => {
   let colorClass = "bg-red-500";
   if (percentage >= 80) colorClass = "bg-green-500";
@@ -313,6 +278,54 @@ export const AdminApplications = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [sortField, setSortField] = useState("updated");
   const [sortDirection, setSortDirection] = useState("desc");
+
+  // State for add application modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [studentsList, setStudentsList] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [newAppForm, setNewAppForm] = useState({
+    user_id: "",
+    full_name: "",
+    email: "",
+    phone: "",
+    target_university: "",
+    course: "",
+    target_country: "",
+    deadline: "",
+    status: "inquiry",
+    last_degree: "",
+    cgpa: "",
+    english_test: "",
+    test_score: "",
+    counselor_notes: "",
+  });
+
+  // Fetch all students for dropdown
+  const fetchStudents = useCallback(async () => {
+    setLoadingStudents(true);
+    try {
+      // Adjust endpoint as per your backend: either /admin/students or /users?role=student
+      const response = await authAxios.get(`${BASE_URL}/admin/students`);
+      let studentsData = response.data;
+      if (Array.isArray(studentsData)) {
+        setStudentsList(studentsData);
+      } else if (studentsData?.data && Array.isArray(studentsData.data)) {
+        setStudentsList(studentsData.data);
+      } else {
+        setStudentsList([]);
+      }
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      // If endpoint fails, try alternative or show empty list
+      setStudentsList([]);
+      toast.warn(
+        "Could not load student list. Please refresh or check backend.",
+      );
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, []);
 
   // Fetch all applications
   const fetchApplications = useCallback(async () => {
@@ -348,13 +361,13 @@ export const AdminApplications = () => {
 
   useEffect(() => {
     fetchApplications();
-  }, [fetchApplications]);
+    fetchStudents();
+  }, [fetchApplications, fetchStudents]);
 
-  // Filter and search applications
+  // Filter and search applications (unchanged)
   useEffect(() => {
     let filtered = [...applications];
 
-    // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -369,12 +382,10 @@ export const AdminApplications = () => {
       );
     }
 
-    // Apply status filter
     if (statusFilter !== "All Status") {
       filtered = filtered.filter((app) => app.status === statusFilter);
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       let aVal, bVal;
       switch (sortField) {
@@ -387,7 +398,6 @@ export const AdminApplications = () => {
           bVal = b.student_name || "";
           break;
         case "status":
-          // Sort by status order
           aVal = STATUS_CONFIG[a.status]?.order || 999;
           bVal = STATUS_CONFIG[b.status]?.order || 999;
           break;
@@ -402,7 +412,6 @@ export const AdminApplications = () => {
     setFilteredApplications(filtered);
   }, [searchTerm, statusFilter, applications, sortField, sortDirection]);
 
-  // Handle status update from within the table
   const handleStatusUpdate = (id, newStatus, updatedData) => {
     setApplications((prev) =>
       prev.map((app) =>
@@ -413,7 +422,7 @@ export const AdminApplications = () => {
     );
   };
 
-  // Export report as CSV
+  // Export report (unchanged)
   const exportReport = () => {
     const headers = [
       "Application ID",
@@ -423,7 +432,6 @@ export const AdminApplications = () => {
       "Course",
       "Status",
       "Progress",
-      // "Documents",
       "Updated Date",
     ];
 
@@ -436,7 +444,6 @@ export const AdminApplications = () => {
       app.course || "",
       STATUS_CONFIG[app.status]?.label || app.status || "",
       `${app.progress || 0}%`,
-      `${app.documents?.length || 0}/${app.total_documents || 5}`,
       new Date(
         app.updated_at || app.created_at || Date.now(),
       ).toLocaleDateString(),
@@ -459,7 +466,7 @@ export const AdminApplications = () => {
     toast.success("Report exported successfully!");
   };
 
-  // Get status summary counts
+  // Get status summary counts (unchanged, but shortened for brevity)
   const getStatusCounts = () => {
     const counts = {
       Total: applications.length,
@@ -482,7 +489,6 @@ export const AdminApplications = () => {
 
   const statusCounts = getStatusCounts();
 
-  // Toggle sort
   const toggleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -492,7 +498,6 @@ export const AdminApplications = () => {
     }
   };
 
-  // Get sort icon
   const SortIcon = ({ field }) => {
     if (sortField !== field)
       return <ChevronDown size={14} className="opacity-30" />;
@@ -503,12 +508,109 @@ export const AdminApplications = () => {
     );
   };
 
-  // View details modal
+  // Add application change handler
+  const handleAddAppChange = (e) => {
+    const { name, value } = e.target;
+    setNewAppForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // When student is selected, pre-fill name, email, phone (optional but helpful)
+  const handleStudentSelect = (e) => {
+    const studentId = e.target.value;
+    const selectedStudent = studentsList.find(
+      (s) => (s.user_id || s.id).toString() === studentId,
+    );
+    if (selectedStudent) {
+      setNewAppForm((prev) => ({
+        ...prev,
+        user_id: studentId,
+        full_name: selectedStudent.name || selectedStudent.full_name || "",
+        email: selectedStudent.email || "",
+        phone: selectedStudent.phone || "",
+      }));
+    } else {
+      setNewAppForm((prev) => ({
+        ...prev,
+        user_id: studentId,
+        full_name: "",
+        email: "",
+        phone: "",
+      }));
+    }
+  };
+
+  // Submit add application
+  const handleAddAppSubmit = async (e) => {
+    e.preventDefault();
+    if (!newAppForm.user_id) {
+      toast.error("Please select a student");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      // Split full_name into first_name and last_name for backend compatibility
+      const fullName = newAppForm.full_name.trim();
+      let firstName = fullName;
+      let lastName = "";
+      const spaceIndex = fullName.indexOf(" ");
+      if (spaceIndex !== -1) {
+        firstName = fullName.substring(0, spaceIndex);
+        lastName = fullName.substring(spaceIndex + 1);
+      }
+
+      const payload = {
+        user_id: parseInt(newAppForm.user_id),
+        first_name: firstName,
+        last_name: lastName,
+        email: newAppForm.email,
+        phone: newAppForm.phone,
+        target_university: newAppForm.target_university,
+        course: newAppForm.course,
+        target_country: newAppForm.target_country,
+        deadline: newAppForm.deadline,
+        status: newAppForm.status,
+        last_degree: newAppForm.last_degree,
+        cgpa: newAppForm.cgpa,
+        english_test: newAppForm.english_test,
+        test_score: newAppForm.test_score,
+        counselor_notes: newAppForm.counselor_notes,
+      };
+
+      await authAxios.post(`${BASE_URL}/admin/addApplications`, payload);
+      toast.success("Application created successfully!");
+      setIsAddModalOpen(false);
+      setNewAppForm({
+        user_id: "",
+        full_name: "",
+        email: "",
+        phone: "",
+        target_university: "",
+        course: "",
+        target_country: "",
+        deadline: "",
+        status: "inquiry",
+        last_degree: "",
+        cgpa: "",
+        english_test: "",
+        test_score: "",
+        counselor_notes: "",
+      });
+      fetchApplications();
+    } catch (error) {
+      console.error("Error creating application:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to create application",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Details modal (unchanged but kept for completeness)
   const ApplicationDetailsModal = ({ application, onClose }) => {
     if (!application) return null;
 
     const StatusIcon = STATUS_CONFIG[application.status]?.icon || Clock;
-    // const documents = application.documents || [];
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -585,7 +687,10 @@ export const AdminApplications = () => {
                   <div>
                     <p className="text-sm text-gray-500">Country</p>
                     <p className="font-medium text-gray-800">
-                      {application.country || application.nationality || "N/A"}
+                      {application.country ||
+                        application.nationality ||
+                        application.target_country ||
+                        "N/A"}
                     </p>
                   </div>
                 </div>
@@ -640,71 +745,6 @@ export const AdminApplications = () => {
               </div>
             </div>
 
-            {/* Documents */}
-            {/* <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2 mb-4">
-                <FileText size={18} className="text-amber-600" />
-                Documents ({documents.length})
-              </h3>
-              <div className="space-y-2">
-                {documents.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    No documents uploaded yet
-                  </p>
-                ) : (
-                  documents.map((doc, idx) => {
-                    const DocIcon = DOCUMENT_ICONS[doc.doc_type] || FileText;
-                    let statusColor = "bg-gray-100 text-gray-600";
-                    let StatusIconComp = ClockIcon;
-                    if (doc.status === "verified") {
-                      statusColor = "bg-green-100 text-green-700";
-                      StatusIconComp = CheckCircle2;
-                    } else if (doc.status === "rejected") {
-                      statusColor = "bg-red-100 text-red-700";
-                      StatusIconComp = XCircleIcon;
-                    } else if (doc.status === "review") {
-                      statusColor = "bg-yellow-100 text-yellow-700";
-                      StatusIconComp = ClockIcon;
-                    }
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                            <DocIcon size={16} className="text-gray-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">
-                              {doc.doc_type?.toUpperCase() || "Document"}
-                            </p>
-                            {doc.file_url && (
-                              <a
-                                href={doc.file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:underline flex items-center gap-1"
-                              >
-                                <ExternalLink size={10} />
-                                View File
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                        <div
-                          className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${statusColor}`}
-                        >
-                          <StatusIconComp size={10} />
-                          <span>{doc.status || "Pending"}</span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div> */}
-
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
@@ -740,7 +780,7 @@ export const AdminApplications = () => {
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 min-h-screen font-sans">
-      {/* Header Stats Cards */}
+      {/* Header Stats Cards - unchanged */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
         <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total</p>
@@ -798,7 +838,7 @@ export const AdminApplications = () => {
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
+      {/* Search and Filter Bar - unchanged */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -851,11 +891,18 @@ export const AdminApplications = () => {
               <RefreshCw size={16} />
               Refresh
             </button>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+            >
+              <Plus size={16} />
+              Add Application
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Applications Table */}
+      {/* Applications Table - unchanged except removed comments */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -894,18 +941,6 @@ export const AdminApplications = () => {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   PROGRESS
                 </th>
-                {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  DOCUMENTS
-                </th> */}
-                {/* <th
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:text-gray-800"
-                  onClick={() => toggleSort("updated")}
-                >
-                  <div className="flex items-center gap-1">
-                    UPDATED
-                    <SortIcon field="updated" />
-                  </div>
-                </th> */}
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   ACTIONS
                 </th>
@@ -915,7 +950,7 @@ export const AdminApplications = () => {
               {filteredApplications.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="8"
+                    colSpan="6"
                     className="px-4 py-12 text-center text-gray-500"
                   >
                     <div className="flex flex-col items-center gap-2">
@@ -932,8 +967,6 @@ export const AdminApplications = () => {
                   const status = app.status || "inquiry";
                   const StatusIconComp = STATUS_CONFIG[status]?.icon || Clock;
                   const progress = app.progress || 0;
-                  // const documentsCount = app.documents?.length || 0;
-                  // const totalDocuments = app.total_documents || 8;
                   const studentInitials = (
                     app.student_name ||
                     app.first_name ||
@@ -954,15 +987,12 @@ export const AdminApplications = () => {
                         <div className="flex items-center gap-3">
                           <div className="w-auto px-3 py-1.5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center font-mono font-semibold text-blue-700 text-xs border border-blue-100">
                             {(() => {
-                              // Format the application ID
                               if (
                                 app.application_id &&
                                 app.application_id.startsWith("EDU-")
                               ) {
                                 return app.application_id;
                               }
-
-                              // Generate a formatted ID if it doesn't exist or is not in correct format
                               const appDate =
                                 app.created_at ||
                                 app.submission_date ||
@@ -977,34 +1007,27 @@ export const AdminApplications = () => {
                                 "0",
                               );
                               const dateStr = `${year}${month}${day}`;
-
-                              // Use the last 4 digits of the existing ID or create a sequence
                               const existingId = app.application_id || app.id;
                               let sequence = "0001";
-
                               if (existingId && existingId !== "N/A") {
-                                // Extract last 4 digits if possible
                                 const match = existingId.match(/\d{4}$/);
                                 if (match) {
                                   sequence = match[0];
                                 } else {
-                                  // Simple hash function for strings
                                   const simpleHash = (str) => {
                                     let hash = 0;
                                     for (let i = 0; i < str.length; i++) {
                                       const char = str.charCodeAt(i);
                                       hash = (hash << 5) - hash + char;
-                                      hash = hash & hash; // Convert to 32-bit integer
+                                      hash = hash & hash;
                                     }
                                     return Math.abs(hash);
                                   };
-
                                   sequence = String(
                                     simpleHash(existingId) % 10000,
                                   ).padStart(4, "0");
                                 }
                               }
-
                               return `EDU-${dateStr}-${sequence}`;
                             })()}
                           </div>
@@ -1046,30 +1069,6 @@ export const AdminApplications = () => {
                       <td className="px-4 py-4">
                         <ProgressBar percentage={progress} />
                       </td>
-                      {/* <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">
-                            {documentsCount}/{totalDocuments}
-                          </span>
-                          <div className="w-12 bg-gray-200 rounded-full h-1">
-                            <div
-                              className="bg-emerald-500 h-1 rounded-full"
-                              style={{
-                                width: `${(documentsCount / totalDocuments) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </td> */}
-                      {/* <td className="px-4 py-4">
-                        <p className="text-sm text-gray-600">
-                          {app.updated_at
-                            ? new Date(app.updated_at).toLocaleDateString()
-                            : app.created_at
-                              ? new Date(app.created_at).toLocaleDateString()
-                              : "N/A"}
-                        </p>
-                      </td> */}
                       <td className="px-4 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <StatusDropdown
@@ -1082,7 +1081,6 @@ export const AdminApplications = () => {
                               setSelectedApplication(app);
                               setIsDetailsModalOpen(true);
                             }}
-                            // onEditStatus={() => {}}
                           />
                         </div>
                       </td>
@@ -1094,6 +1092,277 @@ export const AdminApplications = () => {
           </table>
         </div>
       </div>
+
+      {/* ==================== ADD APPLICATION MODAL (REDESIGNED) ==================== */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                  <Plus size={20} className="text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Add New Application
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <XCircleIcon size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAppSubmit} className="p-6 space-y-6">
+              {/* Student Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Student <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={newAppForm.user_id}
+                  onChange={handleStudentSelect}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                >
+                  <option value="">Select Student</option>
+                  {studentsList.map((student) => (
+                    <option
+                      key={student.id}
+                      value={student.user_id || student.id}
+                    >
+                      {student.name || student.full_name} - {student.email}
+                    </option>
+                  ))}
+                </select>
+                {loadingStudents && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Loading students...
+                  </p>
+                )}
+              </div>
+
+              {/* Row: University & Course */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    University <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="target_university"
+                    value={newAppForm.target_university}
+                    onChange={handleAddAppChange}
+                    required
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                    placeholder="University name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Course <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="course"
+                    value={newAppForm.course}
+                    onChange={handleAddAppChange}
+                    required
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                    placeholder="Course name"
+                  />
+                </div>
+              </div>
+
+              {/* Row: Country & Deadline */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    name="target_country"
+                    value={newAppForm.target_country}
+                    onChange={handleAddAppChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                    placeholder="Country name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deadline
+                  </label>
+                  <input
+                    type="date"
+                    name="deadline"
+                    value={newAppForm.deadline}
+                    onChange={handleAddAppChange}
+                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Status Select */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  name="status"
+                  value={newAppForm.status}
+                  onChange={handleAddAppChange}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                >
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_CONFIG[s]?.label || s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Student Details Section */}
+              <div className="border-t border-gray-200 pt-4">
+                <h3 className="font-semibold text-gray-800 text-md mb-4 flex items-center gap-2">
+                  <User size={18} className="text-blue-600" />
+                  Student Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      name="full_name"
+                      value={newAppForm.full_name}
+                      onChange={handleAddAppChange}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="Full Name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={newAppForm.email}
+                      onChange={handleAddAppChange}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="student@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      name="phone"
+                      value={newAppForm.phone}
+                      onChange={handleAddAppChange}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Degree
+                    </label>
+                    <input
+                      type="text"
+                      name="last_degree"
+                      value={newAppForm.last_degree}
+                      onChange={handleAddAppChange}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="e.g., Bachelor of Science"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      CGPA
+                    </label>
+                    <input
+                      type="text"
+                      name="cgpa"
+                      value={newAppForm.cgpa}
+                      onChange={handleAddAppChange}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="3.5/4.0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      English Test (IELTS/TOEFL)
+                    </label>
+                    <input
+                      type="text"
+                      name="english_test"
+                      value={newAppForm.english_test}
+                      onChange={handleAddAppChange}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="IELTS / TOEFL"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Test Score
+                    </label>
+                    <input
+                      type="text"
+                      name="test_score"
+                      value={newAppForm.test_score}
+                      onChange={handleAddAppChange}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      placeholder="e.g., 7.5"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Counselor Notes */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Admin Notes
+                </label>
+                <textarea
+                  name="counselor_notes"
+                  rows="3"
+                  value={newAppForm.counselor_notes}
+                  onChange={handleAddAppChange}
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none"
+                  placeholder="Internal notes..."
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <RefreshCw size={16} className="animate-spin" />
+                  ) : null}
+                  {isSubmitting ? "Creating..." : "Create Application"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Details Modal */}
       {isDetailsModalOpen && selectedApplication && (
@@ -1108,3 +1377,5 @@ export const AdminApplications = () => {
     </div>
   );
 };
+
+export default AdminApplications;
