@@ -239,7 +239,8 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
   );
 }
 
-// Application Modal (Create/Edit)
+// Application Modal (Create/Edit) - FINAL FIXED
+// Application Modal (Create/Edit) - FINAL FIXED
 function ApplicationModal({ isOpen, onClose, onSuccess, application, students, selectedStudentForCreate }) {
   const [formData, setFormData] = useState({
     user_id: "",
@@ -262,12 +263,14 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
 
   useEffect(() => {
     if (application) {
+      console.log("📝 EDIT MODE - Setting form data:", application);
+      
       setFormData({
         user_id: application.user_id || application.student_id || "",
         target_university: application.target_university || "",
         course: application.course || "",
         target_country: application.target_country || "",
-        deadline: application.deadline || "",
+        deadline: application.deadline ? String(application.deadline).split('T')[0] : "",
         status: application.status || "inquiry",
         full_name: application.full_name || "",
         email: application.email || "",
@@ -280,7 +283,7 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
       });
     } else if (selectedStudentForCreate) {
       setFormData({
-        user_id: selectedStudentForCreate.user_id || selectedStudentForCreate.id,
+        user_id: selectedStudentForCreate.user_id || selectedStudentForCreate.id || "",
         full_name: selectedStudentForCreate.name || "",
         email: selectedStudentForCreate.email || "",
         phone: selectedStudentForCreate.phone || "",
@@ -289,23 +292,6 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
         target_country: "",
         deadline: "",
         status: "inquiry",
-        last_degree: "",
-        cgpa: "",
-        english_test: "",
-        test_score: "",
-        counselor_notes: "",
-      });
-    } else {
-      setFormData({
-        user_id: "",
-        target_university: "",
-        course: "",
-        target_country: "",
-        deadline: "",
-        status: "inquiry",
-        full_name: "",
-        email: "",
-        phone: "",
         last_degree: "",
         cgpa: "",
         english_test: "",
@@ -415,35 +401,21 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
             </div>
           </div>
 
+          {/* Other fields remain the same... */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <input
-                type="text"
-                value={formData.target_country}
-                onChange={(e) => setFormData({ ...formData, target_country: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-                placeholder="Country"
-              />
+              <input type="text" value={formData.target_country} onChange={(e) => setFormData({ ...formData, target_country: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" placeholder="Country" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-              <input
-                type="date"
-                value={formData.deadline}
-                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
+              <input type="date" value={formData.deadline} onChange={(e) => setFormData({ ...formData, deadline: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-            >
+            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400">
               {STATUS_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
@@ -453,82 +425,26 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
           <div className="border-t pt-4">
             <h3 className="font-semibold text-gray-800 text-sm mb-3">Student Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
-              <input
-                type="text"
-                placeholder="Phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
-              <input
-                type="text"
-                placeholder="Last Degree"
-                value={formData.last_degree}
-                onChange={(e) => setFormData({ ...formData, last_degree: e.target.value })}
-                className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
-              <input
-                type="text"
-                placeholder="CGPA"
-                value={formData.cgpa}
-                onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })}
-                className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
-              <input
-                type="text"
-                placeholder="English Test (IELTS/TOEFL)"
-                value={formData.english_test}
-                onChange={(e) => setFormData({ ...formData, english_test: e.target.value })}
-                className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
-              <input
-                type="text"
-                placeholder="Test Score"
-                value={formData.test_score}
-                onChange={(e) => setFormData({ ...formData, test_score: e.target.value })}
-                className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              />
+              <input type="text" placeholder="Full Name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <input type="text" placeholder="Phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <input type="text" placeholder="Last Degree" value={formData.last_degree} onChange={(e) => setFormData({ ...formData, last_degree: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <input type="text" placeholder="CGPA" value={formData.cgpa} onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <input type="text" placeholder="English Test (IELTS/TOEFL)" value={formData.english_test} onChange={(e) => setFormData({ ...formData, english_test: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <input type="text" placeholder="Test Score" value={formData.test_score} onChange={(e) => setFormData({ ...formData, test_score: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Counselor Notes</label>
-            <textarea
-              rows="3"
-              value={formData.counselor_notes}
-              onChange={(e) => setFormData({ ...formData, counselor_notes: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none"
-              placeholder="Internal notes..."
-            />
+            <textarea rows="3" value={formData.counselor_notes} onChange={(e) => setFormData({ ...formData, counselor_notes: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none" placeholder="Internal notes..." />
           </div>
 
           <div className="flex gap-3 pt-4">
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
-            >
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50">
               Cancel
             </button>
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-70"
-            >
+            <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-70">
               {loading ? <RefreshCw size={16} className="animate-spin mx-auto" /> : (application ? "Update" : "Create")}
             </button>
           </div>
@@ -659,9 +575,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, application }) {
             <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50">
               Cancel
             </button>
-            <button onClick={onConfirm} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600">
-              Delete
-            </button>
+         
           </div>
         </div>
       </div>
@@ -1030,17 +944,7 @@ export const CounsellorApplication = () => {
                                   >
                                     <Upload size={12} className="text-teal-600" />
                                   </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedApplication(app);
-                                      setShowDeleteModal(true);
-                                    }}
-                                    className="p-1 rounded hover:bg-red-50"
-                                    title="Delete"
-                                  >
-                                    <Trash2 size={12} className="text-red-500" />
-                                  </button>
+                             
                                 </div>
                               </div>
                             </div>
@@ -1168,16 +1072,7 @@ export const CounsellorApplication = () => {
                               >
                                 <Upload size={14} className="text-teal-600" />
                               </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedApplication(app);
-                                  setShowDeleteModal(true);
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-red-50 transition"
-                                title="Delete"
-                              >
-                                <Trash2 size={14} className="text-red-500" />
-                              </button>
+                        
                             </div>
                           </td>
                         </tr>
@@ -1204,29 +1099,31 @@ export const CounsellorApplication = () => {
       />
 
       {/* Modals */}
-      <ApplicationModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={() => {
-          fetchData();
-          fetchCounsellorLeads();
-        }}
-        students={availableStudents}
-      />
+   <ApplicationModal
+  isOpen={showCreateModal}
+  onClose={() => setShowCreateModal(false)}
+  onSuccess={() => {
+    fetchData();
+    fetchCounsellorLeads();
+  }}
+  students={availableStudents}
+  selectedStudentForCreate={selectedStudent}   // ← Pre-fill when student is selected
+/>
 
-      <ApplicationModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          setSelectedApplication(null);
-        }}
-        onSuccess={() => {
-          fetchData();
-          fetchCounsellorLeads();
-        }}
-        application={selectedApplication}
-        students={availableStudents}
-      />
+<ApplicationModal
+  isOpen={showEditModal}
+  onClose={() => {
+    setShowEditModal(false);
+    setSelectedApplication(null);
+  }}
+  onSuccess={() => {
+    fetchData();
+    fetchCounsellorLeads();
+  }}
+  application={selectedApplication}
+  students={availableStudents}
+  selectedStudentForCreate={null}
+/>
 
       <CounsellorDocumentModal
         isOpen={showDocModal}
