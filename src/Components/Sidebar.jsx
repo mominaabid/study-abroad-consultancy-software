@@ -21,15 +21,18 @@ import { logout, selectRole } from "../redux/slices/authSlice";
 const ADMIN_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/admin/dashboard" },
   { name: "Leads", icon: <BarChart size={20} />, path: "/admin/leads" },
-  { name: "Counselors", icon: <User size={20} />, path: "/admin/counsellors" },
-  {
+    {
     name: "Applications",
     icon: <Settings size={20} />,
     path: "/admin/applications",
   },
+  
+ 
+
   { name: "Payments", icon: <DollarSign size={20} />, path: "/admin/payments" },
+   { name: "Profile", icon: <User size={20} />, path: "/admin/profile" },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/admin/chats" },
-  { name: "Profile", icon: <User size={20} />, path: "/admin/profile" },
+ { name: "Counselors", icon: <User size={20} />, path: "/admin/counsellors" },
 
   // { name: "Notifications",icon: <Bell size={20} />,         path: "/admin/notifications" },
 ];
@@ -40,12 +43,17 @@ const COUNSELLOR_MENU = [
     icon: <Home size={20} />,
     path: "/counsellor/dashboard",
   },
-  { name: "My Leads", icon: <BarChart size={20} />, path: "/counsellor/leads" },
-  {
-    name: "Documents",
-    icon: <FileText size={20} />,
-    path: "/counsellor/documents",
+    {
+    name: "Profile",
+    icon: <User size={20} />,
+    path: "/counsellor/profile",
   },
+  { name: "My Leads", icon: <BarChart size={20} />, path: "/counsellor/leads" },
+  // {
+  //   name: "Documents",
+  //   icon: <FileText size={20} />,
+  //   path: "/counsellor/documents",
+  // },
   {
     name: "Applications",
     icon: <FileText size={20} />,
@@ -56,36 +64,33 @@ const COUNSELLOR_MENU = [
     icon: <MessageSquare size={20} />,
     path: "/counsellor/chats",
   },
-  {
-    name: "Profile",
-    icon: <User size={20} />,
-    path: "/counsellor/profile",
-  },
+
 ];
 
 const STUDENT_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/student/dashboard" },
+    {
+    name: "Profile",
+    icon: <User size={20} />,
+    path: "/student/profile",
+  },
   {
     name: "Application",
     icon: <FileText size={20} />,
     path: "/student/application",
   },
-  {
-    name: "Documents",
-    icon: <GraduationCap size={20} />,
-    path: "/student/documents",
-  },
+  // {
+  //   name: "Documents",
+  //   icon: <GraduationCap size={20} />,
+  //   path: "/student/documents",
+  // },
   {
     name: "Payments",
     icon: <DollarSign size={20} />,
     path: "/student/payments",
   },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/student/chats" },
-  {
-    name: "Profile",
-    icon: <User size={20} />,
-    path: "/student/profile",
-  },
+
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────
