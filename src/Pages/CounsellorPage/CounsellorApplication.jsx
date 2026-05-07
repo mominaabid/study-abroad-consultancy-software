@@ -48,9 +48,21 @@ const authAxios = {
 const STATUS_OPTIONS = [
   { value: "inquiry", label: "Inquiry", color: "gray" },
   { value: "evaluation", label: "Evaluation", color: "amber" },
-  { value: "application submitted", label: "Application Submitted", color: "blue" },
-  { value: "offer letter received", label: "Offer Letter Received", color: "emerald" },
-  { value: "offer letter not received", label: "Offer Letter Not Received", color: "orange" },
+  {
+    value: "application submitted",
+    label: "Application Submitted",
+    color: "blue",
+  },
+  {
+    value: "offer letter received",
+    label: "Offer Letter Received",
+    color: "emerald",
+  },
+  {
+    value: "offer letter not received",
+    label: "Offer Letter Not Received",
+    color: "orange",
+  },
   { value: "visa filed", label: "Visa Filed", color: "purple" },
   { value: "approved", label: "Approved", color: "green" },
   { value: "reject", label: "Reject", color: "rose" },
@@ -58,11 +70,11 @@ const STATUS_OPTIONS = [
 // Allowed lead statuses for creating new applications
 const ALLOWED_LEAD_STATUSES = [
   "new",
-  "contacted", 
+  "contacted",
   "counselling",
   "inquiry",
   "follow_up",
-  "pending"
+  "pending",
 ];
 // Document types for counsellor upload
 const DOC_TYPES = [
@@ -77,7 +89,13 @@ const DOC_TYPES = [
 ];
 
 // Document Preview Modal - FIXED
-function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }) {
+function DocumentPreviewModal({
+  isOpen,
+  onClose,
+  documents,
+  onVerify,
+  onReject,
+}) {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -101,17 +119,43 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
   };
 
   const getStatusBadge = (status) => {
-    switch(status) {
-      case 'verified': return { bg: 'bg-green-100', text: 'text-green-700', icon: CheckCircle, label: 'Verified' };
-      case 'rejected': return { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle, label: 'Rejected' };
-      case 'review': return { bg: 'bg-blue-100', text: 'text-blue-700', icon: Clock, label: 'In Review' };
-      default: return { bg: 'bg-amber-100', text: 'text-amber-700', icon: Clock, label: 'Pending' };
+    switch (status) {
+      case "verified":
+        return {
+          bg: "bg-green-100",
+          text: "text-green-700",
+          icon: CheckCircle,
+          label: "Verified",
+        };
+      case "rejected":
+        return {
+          bg: "bg-red-100",
+          text: "text-red-700",
+          icon: XCircle,
+          label: "Rejected",
+        };
+      case "review":
+        return {
+          bg: "bg-blue-100",
+          text: "text-blue-700",
+          icon: Clock,
+          label: "In Review",
+        };
+      default:
+        return {
+          bg: "bg-amber-100",
+          text: "text-amber-700",
+          icon: Clock,
+          label: "Pending",
+        };
     }
   };
 
-  const pendingDocs = documents.filter(d => d.status === 'pending' || d.status === 'review');
-  const verifiedDocs = documents.filter(d => d.status === 'verified');
-  const rejectedDocs = documents.filter(d => d.status === 'rejected');
+  const pendingDocs = documents.filter(
+    (d) => d.status === "pending" || d.status === "review",
+  );
+  const verifiedDocs = documents.filter((d) => d.status === "verified");
+  const rejectedDocs = documents.filter((d) => d.status === "rejected");
 
   // Helper to get file URL
   const getFileUrl = (doc) => {
@@ -126,10 +170,14 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
             <div>
               <h2 className="text-lg font-bold text-gray-800">Documents</h2>
               <p className="text-sm text-gray-500">
-                {pendingDocs.length} pending, {verifiedDocs.length} verified, {rejectedDocs.length} rejected
+                {pendingDocs.length} pending, {verifiedDocs.length} verified,{" "}
+                {rejectedDocs.length} rejected
               </p>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-gray-100 rounded-lg"
+            >
               <XCircle size={20} className="text-gray-400" />
             </button>
           </div>
@@ -146,29 +194,49 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
                   const status = getStatusBadge(doc.status);
                   const StatusIcon = status.icon;
                   const fileUrl = getFileUrl(doc);
-                  const fileName = doc.original_name || (fileUrl ? fileUrl.split('/').pop() : 'document');
-                  
+                  const fileName =
+                    doc.original_name ||
+                    (fileUrl ? fileUrl.split("/").pop() : "document");
+
                   return (
-                    <div key={doc.id} className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition">
+                    <div
+                      key={doc.id}
+                      className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition"
+                    >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <FileText size={18} className="text-teal-600" />
-                            <span className="font-medium text-gray-800 capitalize">{doc.doc_type?.replace(/_/g, ' ')}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${status.bg} ${status.text} flex items-center gap-1`}>
+                            <span className="font-medium text-gray-800 capitalize">
+                              {doc.doc_type?.replace(/_/g, " ")}
+                            </span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${status.bg} ${status.text} flex items-center gap-1`}
+                            >
                               <StatusIcon size={10} /> {status.label}
                             </span>
-                            {doc.uploaded_by === 'counsellor' && (
-                              <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">Shared by you</span>
+                            {doc.uploaded_by === "counsellor" && (
+                              <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+                                Shared by you
+                              </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600">File: {fileName}</p>
-                          <p className="text-xs text-gray-400">Submitted: {new Date(doc.submitted_at).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-600">
+                            File: {fileName}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Submitted:{" "}
+                            {new Date(doc.submitted_at).toLocaleDateString()}
+                          </p>
                           {doc.rejection_reason && (
-                            <p className="text-xs text-red-600 mt-2">Rejection reason: {doc.rejection_reason}</p>
+                            <p className="text-xs text-red-600 mt-2">
+                              Rejection reason: {doc.rejection_reason}
+                            </p>
                           )}
                           {doc.notes && (
-                            <p className="text-xs text-gray-500 mt-1">Notes: {doc.notes}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Notes: {doc.notes}
+                            </p>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -183,14 +251,18 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
                               <Eye size={16} className="text-gray-500" />
                             </a>
                           )}
-                          {(doc.status === 'pending' || doc.status === 'review') && (
+                          {(doc.status === "pending" ||
+                            doc.status === "review") && (
                             <>
                               <button
                                 onClick={() => handleVerify(doc.id)}
                                 className="p-2 rounded-lg hover:bg-green-50 transition"
                                 title="Verify"
                               >
-                                <CheckCircle size={16} className="text-green-600" />
+                                <CheckCircle
+                                  size={16}
+                                  className="text-green-600"
+                                />
                               </button>
                               <button
                                 onClick={() => {
@@ -220,8 +292,12 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-5 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-800">Reject Document</h2>
-              <p className="text-sm text-gray-500">Document: {selectedDoc?.doc_type?.replace(/_/g, ' ')}</p>
+              <h2 className="text-lg font-bold text-gray-800">
+                Reject Document
+              </h2>
+              <p className="text-sm text-gray-500">
+                Document: {selectedDoc?.doc_type?.replace(/_/g, " ")}
+              </p>
             </div>
             <div className="p-5 space-y-4">
               <textarea
@@ -232,10 +308,16 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none resize-none"
               />
               <div className="flex gap-3">
-                <button onClick={() => setShowRejectModal(false)} className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50">
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+                >
                   Cancel
                 </button>
-                <button onClick={handleReject} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600">
+                <button
+                  onClick={handleReject}
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600"
+                >
                   Reject
                 </button>
               </div>
@@ -247,9 +329,15 @@ function DocumentPreviewModal({ isOpen, onClose, documents, onVerify, onReject }
   );
 }
 
-// Application Modal (Create/Edit) - FINAL FIXED
-// Application Modal (Create/Edit) - FINAL FIXED
-function ApplicationModal({ isOpen, onClose, onSuccess, application, students, selectedStudentForCreate }) {
+// ===================== APPLICATION MODAL WITH VALIDATIONS =====================
+function ApplicationModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  application,
+  students,
+  selectedStudentForCreate,
+}) {
   const [formData, setFormData] = useState({
     user_id: "",
     target_university: "",
@@ -267,18 +355,19 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
     counselor_notes: "",
   });
 
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (application) {
-      console.log("📝 EDIT MODE - Setting form data:", application);
-      
       setFormData({
         user_id: application.user_id || application.student_id || "",
         target_university: application.target_university || "",
         course: application.course || "",
         target_country: application.target_country || "",
-        deadline: application.deadline ? String(application.deadline).split('T')[0] : "",
+        deadline: application.deadline
+          ? String(application.deadline).split("T")[0]
+          : "",
         status: application.status || "inquiry",
         full_name: application.full_name || "",
         email: application.email || "",
@@ -291,7 +380,8 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
       });
     } else if (selectedStudentForCreate) {
       setFormData({
-        user_id: selectedStudentForCreate.user_id || selectedStudentForCreate.id || "",
+        user_id:
+          selectedStudentForCreate.user_id || selectedStudentForCreate.id || "",
         full_name: selectedStudentForCreate.name || "",
         email: selectedStudentForCreate.email || "",
         phone: selectedStudentForCreate.phone || "",
@@ -307,12 +397,101 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
         counselor_notes: "",
       });
     }
+    setErrors({});
   }, [application, selectedStudentForCreate, isOpen]);
+
+  const validate = () => {
+    const newErrors = {};
+
+    // Required fields
+    if (!formData.user_id) newErrors.user_id = "Student is required";
+    if (!formData.target_university?.trim())
+      newErrors.target_university = "University name is required";
+    if (!formData.course?.trim()) newErrors.course = "Course name is required";
+
+    // Email validation (if provided, but it's recommended to have email)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    // Phone validation (optional, but if provided must be exactly 11 digits)
+    if (formData.phone && !/^\d{11}$/.test(formData.phone)) {
+      newErrors.phone = "Phone number must be exactly 11 digits";
+    }
+
+    // CGPA validation (optional, if entered must be number between 0-10)
+    if (formData.cgpa && formData.cgpa.trim() !== "") {
+      const cgpaNum = parseFloat(formData.cgpa);
+      if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
+        newErrors.cgpa = "CGPA must be a number between 0 and 10";
+      } else if (
+        formData.cgpa.includes(".") &&
+        formData.cgpa.split(".")[1]?.length > 2
+      ) {
+        newErrors.cgpa = "CGPA can have at most 2 decimal places";
+      }
+    }
+
+    // Test score validation (optional, if entered must be positive number)
+    if (formData.test_score && formData.test_score.trim() !== "") {
+      const scoreNum = parseFloat(formData.test_score);
+      if (isNaN(scoreNum) || scoreNum < 0) {
+        newErrors.test_score = "Test score must be a positive number";
+      } else if (
+        formData.test_score.includes(".") &&
+        formData.test_score.split(".")[1]?.length > 1
+      ) {
+        newErrors.test_score = "Score can have at most 1 decimal place";
+      }
+    }
+
+    // Deadline validation (optional, if provided must be a valid date)
+    if (formData.deadline && isNaN(new Date(formData.deadline).getTime())) {
+      newErrors.deadline = "Invalid date format";
+    }
+
+    return newErrors;
+  };
+
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
+    // Prevent leading spaces
+    if (value.startsWith(" ")) return;
+
+    // Specific field restrictions
+    if (
+      (name === "target_university" ||
+        name === "course" ||
+        name === "target_country" ||
+        name === "full_name") &&
+      /\d/.test(value)
+    )
+      return;
+    if (name === "cgpa") {
+      // Allow only numbers and one decimal point
+      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
+    }
+    if (name === "test_score") {
+      if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field if any
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrs = { ...prev };
+        delete newErrs[name];
+        return newErrs;
+      });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.user_id) {
-      toast.error("Please select a student");
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      toast.error("Please fix the validation errors");
       return;
     }
 
@@ -334,16 +513,26 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
         test_score: formData.test_score,
         counselor_notes: formData.counselor_notes,
       };
-      
+
       let res;
       if (application) {
-        res = await authAxios.put(`${BASE_URL}/counsellor/applications/${application.id}`, payload);
+        res = await authAxios.put(
+          `${BASE_URL}/counsellor/applications/${application.id}`,
+          payload,
+        );
       } else {
-        res = await authAxios.post(`${BASE_URL}/counsellor/applications`, payload);
+        res = await authAxios.post(
+          `${BASE_URL}/counsellor/applications`,
+          payload,
+        );
       }
 
       if (res.data.success) {
-        toast.success(application ? "Application updated successfully" : "Application created successfully");
+        toast.success(
+          application
+            ? "Application updated successfully"
+            : "Application created successfully",
+        );
         onSuccess();
         onClose();
       }
@@ -367,93 +556,244 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Student Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Student *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Student *
+            </label>
             <select
               required
               value={formData.user_id}
-              onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+              onChange={handleFieldChange}
+              name="user_id"
+              className={`w-full border ${errors.user_id ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
             >
               <option value="">Select Student</option>
-              {students.map(s => (
+              {students.map((s) => (
                 <option key={s.id} value={s.user_id || s.id}>
                   {s.name} - {s.email}
                 </option>
               ))}
             </select>
+            {errors.user_id && (
+              <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">University *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                University *
+              </label>
               <input
                 type="text"
                 required
+                name="target_university"
                 value={formData.target_university}
-                onChange={(e) => setFormData({ ...formData, target_university: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                onChange={handleFieldChange}
+                className={`w-full border ${errors.target_university ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
                 placeholder="University name"
               />
+              {errors.target_university && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.target_university}
+                </p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Course *
+              </label>
               <input
                 type="text"
                 required
+                name="course"
                 value={formData.course}
-                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                onChange={handleFieldChange}
+                className={`w-full border ${errors.course ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
                 placeholder="Course name"
               />
+              {errors.course && (
+                <p className="text-red-500 text-xs mt-1">{errors.course}</p>
+              )}
             </div>
           </div>
 
-          {/* Other fields remain the same... */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-              <input type="text" value={formData.target_country} onChange={(e) => setFormData({ ...formData, target_country: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" placeholder="Country" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Country
+              </label>
+              <input
+                type="text"
+                name="target_country"
+                value={formData.target_country}
+                onChange={handleFieldChange}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                placeholder="Country"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-              <input type="date" value={formData.deadline} onChange={(e) => setFormData({ ...formData, deadline: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Deadline
+              </label>
+              <input
+                type="date"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleFieldChange}
+                className={`w-full border ${errors.deadline ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+              />
+              {errors.deadline && (
+                <p className="text-red-500 text-xs mt-1">{errors.deadline}</p>
+              )}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400">
-              {STATUS_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleFieldChange}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="border-t pt-4">
-            <h3 className="font-semibold text-gray-800 text-sm mb-3">Student Details</h3>
+            <h3 className="font-semibold text-gray-800 text-sm mb-3">
+              Student Details
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="Full Name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
-              <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
-              <input type="text" placeholder="Phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
-              <input type="text" placeholder="Last Degree" value={formData.last_degree} onChange={(e) => setFormData({ ...formData, last_degree: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
-              <input type="text" placeholder="CGPA" value={formData.cgpa} onChange={(e) => setFormData({ ...formData, cgpa: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
-              <input type="text" placeholder="English Test (IELTS/TOEFL)" value={formData.english_test} onChange={(e) => setFormData({ ...formData, english_test: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
-              <input type="text" placeholder="Test Score" value={formData.test_score} onChange={(e) => setFormData({ ...formData, test_score: e.target.value })} className="border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400" />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Full Name"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleFieldChange}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                />
+              </div>
+              <div>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleFieldChange}
+                  className={`w-full border ${errors.email ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                )}
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Phone (11 digits)"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleFieldChange}
+                  className={`w-full border ${errors.phone ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                />
+                {errors.phone && (
+                  <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                )}
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Last Degree"
+                  name="last_degree"
+                  value={formData.last_degree}
+                  onChange={handleFieldChange}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="CGPA (0-10)"
+                  name="cgpa"
+                  value={formData.cgpa}
+                  onChange={handleFieldChange}
+                  className={`w-full border ${errors.cgpa ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                />
+                {errors.cgpa && (
+                  <p className="text-red-500 text-xs mt-1">{errors.cgpa}</p>
+                )}
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="English Test (IELTS/TOEFL)"
+                  name="english_test"
+                  value={formData.english_test}
+                  onChange={handleFieldChange}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Test Score"
+                  name="test_score"
+                  value={formData.test_score}
+                  onChange={handleFieldChange}
+                  className={`w-full border ${errors.test_score ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                />
+                {errors.test_score && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.test_score}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Counselor Notes</label>
-            <textarea rows="3" value={formData.counselor_notes} onChange={(e) => setFormData({ ...formData, counselor_notes: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none" placeholder="Internal notes..." />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Counselor Notes
+            </label>
+            <textarea
+              rows="3"
+              name="counselor_notes"
+              value={formData.counselor_notes}
+              onChange={handleFieldChange}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none"
+              placeholder="Internal notes..."
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+            >
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-70">
-              {loading ? <RefreshCw size={16} className="animate-spin mx-auto" /> : (application ? "Update" : "Create")}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-70"
+            >
+              {loading ? (
+                <RefreshCw size={16} className="animate-spin mx-auto" />
+              ) : application ? (
+                "Update"
+              ) : (
+                "Create"
+              )}
             </button>
           </div>
         </form>
@@ -462,43 +802,92 @@ function ApplicationModal({ isOpen, onClose, onSuccess, application, students, s
   );
 }
 
-// Document Upload Modal for Counsellor
-function CounsellorDocumentModal({ isOpen, onClose, onSuccess, student, application }) {
+// ===================== DOCUMENT UPLOAD MODAL WITH VALIDATIONS =====================
+function CounsellorDocumentModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  student,
+  application,
+}) {
   const [formData, setFormData] = useState({
     doc_type: "offer_letter",
     notes: "",
   });
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.doc_type) newErrors.doc_type = "Document type is required";
+    if (!file) {
+      newErrors.file = "Please select a file";
+    } else {
+      const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "image/jpeg",
+        "image/png",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        newErrors.file = "Only PDF, DOC, DOCX, JPG, PNG files are allowed";
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        newErrors.file = "File size must be less than 5MB";
+      }
+    }
+    return newErrors;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) {
-      toast.error("Please select a file");
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      toast.error("Please fix the errors");
       return;
     }
+
     setLoading(true);
     const formDataObj = new FormData();
-    formDataObj.append('student_email', student.email);
-    formDataObj.append('application_id', application.id);
-    formDataObj.append('doc_type', formData.doc_type);
-    formDataObj.append('notes', formData.notes);
-    formDataObj.append('file', file);
+    formDataObj.append("student_email", student.email);
+    formDataObj.append("application_id", application.id);
+    formDataObj.append("doc_type", formData.doc_type);
+    formDataObj.append("notes", formData.notes);
+    formDataObj.append("file", file);
 
     try {
-      const res = await authAxios.post(`${BASE_URL}/counsellor/documents/upload-for-student`, formDataObj);
+      const res = await authAxios.post(
+        `${BASE_URL}/counsellor/documents/upload-for-student`,
+        formDataObj,
+      );
       if (res.data.success) {
         toast.success("Document shared with student successfully!");
         onSuccess();
         onClose();
         setFile(null);
         setFormData({ doc_type: "offer_letter", notes: "" });
+        setErrors({});
       }
     } catch (err) {
       console.error("Upload error:", err);
       toast.error(err.response?.data?.message || "Upload failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    if (errors.file) {
+      setErrors((prev) => {
+        const newErrs = { ...prev };
+        delete newErrs.file;
+        return newErrs;
+      });
     }
   };
 
@@ -510,51 +899,83 @@ function CounsellorDocumentModal({ isOpen, onClose, onSuccess, student, applicat
         <div className="p-5 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">Share Document</h2>
           <p className="text-sm text-gray-500">Student: {student?.name}</p>
-          <p className="text-xs text-gray-400">{application?.target_university}</p>
+          <p className="text-xs text-gray-400">
+            {application?.target_university}
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Document Type *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document Type *
+            </label>
             <select
               required
               value={formData.doc_type}
-              onChange={(e) => setFormData({ ...formData, doc_type: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+              onChange={(e) =>
+                setFormData({ ...formData, doc_type: e.target.value })
+              }
+              className={`w-full border ${errors.doc_type ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
             >
-              {DOC_TYPES.map(type => (
-                <option key={type.key} value={type.key}>{type.label}</option>
+              {DOC_TYPES.map((type) => (
+                <option key={type.key} value={type.key}>
+                  {type.label}
+                </option>
               ))}
             </select>
+            {errors.doc_type && (
+              <p className="text-red-500 text-xs mt-1">{errors.doc_type}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Document File *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document File *
+            </label>
             <input
               type="file"
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+              onChange={handleFileChange}
+              className={`w-full border ${errors.file ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
               required
             />
+            {errors.file && (
+              <p className="text-red-500 text-xs mt-1">{errors.file}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes (Optional)
+            </label>
             <textarea
               rows="2"
               value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none"
               placeholder="Add notes for the student..."
             />
           </div>
 
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+            >
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700">
-              {loading ? <RefreshCw size={16} className="animate-spin mx-auto" /> : "Share Document"}
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700"
+            >
+              {loading ? (
+                <RefreshCw size={16} className="animate-spin mx-auto" />
+              ) : (
+                "Share Document"
+              )}
             </button>
           </div>
         </form>
@@ -574,16 +995,27 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, application }) {
           <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <Trash2 size={24} className="text-red-500" />
           </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Application</h3>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">
+            Delete Application
+          </h3>
           <p className="text-sm text-gray-500 mb-4">
-            Are you sure you want to delete the application for <strong>{application?.target_university}</strong>?
-            This action cannot be undone.
+            Are you sure you want to delete the application for{" "}
+            <strong>{application?.target_university}</strong>? This action
+            cannot be undone.
           </p>
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+            >
               Cancel
             </button>
-         
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
@@ -591,7 +1023,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, application }) {
   );
 }
 
-// Main CounsellorApplication Component
+// ===================== MAIN COUNSELLOR APPLICATION COMPONENT =====================
 export const CounsellorApplication = () => {
   const [students, setStudents] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -615,7 +1047,7 @@ export const CounsellorApplication = () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      
+
       const res = await fetch(`${BASE_URL}/counsellor/leads`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -627,40 +1059,41 @@ export const CounsellorApplication = () => {
     }
   }, []);
 
- const availableStudents = useMemo(() => {
-  // Filter only eligible leads for new application creation
-  const eligibleLeads = counsellorLeads
-    .filter(lead => {
-      const status = (lead.status || "").toLowerCase().trim();
-      return ALLOWED_LEAD_STATUSES.includes(status) && !lead.is_deleted;
-    })
-    .map(lead => ({
-      id: lead.id,
-      user_id: lead.user_id || lead.id,
-      name: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-      status: lead.status,
+  const availableStudents = useMemo(() => {
+    // Filter only eligible leads for new application creation
+    const eligibleLeads = counsellorLeads
+      .filter((lead) => {
+        const status = (lead.status || "").toLowerCase().trim();
+        return ALLOWED_LEAD_STATUSES.includes(status) && !lead.is_deleted;
+      })
+      .map((lead) => ({
+        id: lead.id,
+        user_id: lead.user_id || lead.id,
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+        status: lead.status,
+      }));
+
+    // Keep students who already have applications
+    const existingStudents = students.map((s) => ({
+      id: s.id,
+      user_id: s.user_id || s.id,
+      name: s.name,
+      email: s.email,
+      status: s.status,
     }));
 
-  // Keep students who already have applications
-  const existingStudents = students.map(s => ({
-    id: s.id,
-    user_id: s.user_id || s.id,
-    name: s.name,
-    email: s.email,
-    status: s.status,
-  }));
+    const combined = [...eligibleLeads, ...existingStudents];
 
-  const combined = [...eligibleLeads, ...existingStudents];
+    // Remove duplicates
+    const unique = combined.filter(
+      (student, index, self) =>
+        index === self.findIndex((s) => s.id === student.id),
+    );
 
-  // Remove duplicates
-  const unique = combined.filter((student, index, self) => 
-    index === self.findIndex(s => s.id === student.id)
-  );
-
-  return unique;
-}, [counsellorLeads, students]);
+    return unique;
+  }, [counsellorLeads, students]);
 
   // Fetch all documents for counsellor
   const fetchDocuments = useCallback(async () => {
@@ -681,22 +1114,24 @@ export const CounsellorApplication = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await authAxios.get(`${BASE_URL}/counsellor/applications/students`);
-      
+      const res = await authAxios.get(
+        `${BASE_URL}/counsellor/applications/students`,
+      );
+
       if (res.data.success) {
         const studentsData = res.data.students || [];
         setStudents(studentsData);
-        
+
         const allApps = [];
         const allDocs = [];
-        
-        studentsData.forEach(student => {
+
+        studentsData.forEach((student) => {
           const applicationsList = student.applications || [];
-          
-          applicationsList.forEach(app => {
+
+          applicationsList.forEach((app) => {
             const appDocuments = app.documents || [];
-            
-            appDocuments.forEach(doc => {
+
+            appDocuments.forEach((doc) => {
               allDocs.push({
                 ...doc,
                 application_id: app.id,
@@ -705,7 +1140,7 @@ export const CounsellorApplication = () => {
                 student_email: student.email,
               });
             });
-            
+
             allApps.push({
               id: app.id || app._id,
               target_university: app.target_university,
@@ -720,7 +1155,7 @@ export const CounsellorApplication = () => {
             });
           });
         });
-        
+
         setApplications(allApps);
         setDocuments(allDocs);
       }
@@ -740,12 +1175,18 @@ export const CounsellorApplication = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    Promise.all([fetchData(), fetchDocuments(), fetchCounsellorLeads()]).finally(() => setRefreshing(false));
+    Promise.all([
+      fetchData(),
+      fetchDocuments(),
+      fetchCounsellorLeads(),
+    ]).finally(() => setRefreshing(false));
   };
 
   const handleVerifyDocument = async (docId) => {
     try {
-      const res = await authAxios.put(`${BASE_URL}/counsellor/documents/${docId}/verify`);
+      const res = await authAxios.put(
+        `${BASE_URL}/counsellor/documents/${docId}/verify`,
+      );
       if (res.data.message) {
         toast.success("Document verified successfully");
         await fetchData();
@@ -757,7 +1198,10 @@ export const CounsellorApplication = () => {
 
   const handleRejectDocument = async (docId, reason) => {
     try {
-      const res = await authAxios.put(`${BASE_URL}/counsellor/documents/${docId}/reject`, { reason });
+      const res = await authAxios.put(
+        `${BASE_URL}/counsellor/documents/${docId}/reject`,
+        { reason },
+      );
       if (res.data.message) {
         toast.success("Document rejected");
         await fetchData();
@@ -770,7 +1214,9 @@ export const CounsellorApplication = () => {
   const handleDelete = async () => {
     if (!selectedApplication) return;
     try {
-      await authAxios.delete(`${BASE_URL}/counsellor/applications/${selectedApplication.id}`);
+      await authAxios.delete(
+        `${BASE_URL}/counsellor/applications/${selectedApplication.id}`,
+      );
       toast.success("Application deleted successfully");
       setShowDeleteModal(false);
       fetchData();
@@ -780,7 +1226,7 @@ export const CounsellorApplication = () => {
   };
 
   const handleViewDocuments = (application) => {
-    const latestApp = applications.find(a => a.id === application.id);
+    const latestApp = applications.find((a) => a.id === application.id);
     const appDocs = latestApp?.documents || application.documents || [];
     setCurrentAppDocuments(appDocs);
     setSelectedApplication(latestApp || application);
@@ -789,35 +1235,36 @@ export const CounsellorApplication = () => {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'inquiry': 'bg-gray-100 text-gray-700',
-      'evaluation': 'bg-amber-100 text-amber-700',
-      'application submitted': 'bg-blue-100 text-blue-700',
-      'offer letter received': 'bg-emerald-100 text-emerald-700',
-      'offer letter not received': 'bg-orange-100 text-orange-700',
-      'visa filed': 'bg-purple-100 text-purple-700',
-      'approved': 'bg-green-100 text-green-700',
-      'reject': 'bg-rose-100 text-rose-700',
+      inquiry: "bg-gray-100 text-gray-700",
+      evaluation: "bg-amber-100 text-amber-700",
+      "application submitted": "bg-blue-100 text-blue-700",
+      "offer letter received": "bg-emerald-100 text-emerald-700",
+      "offer letter not received": "bg-orange-100 text-orange-700",
+      "visa filed": "bg-purple-100 text-purple-700",
+      approved: "bg-green-100 text-green-700",
+      reject: "bg-rose-100 text-rose-700",
     };
-    return statusMap[status] || 'bg-gray-100 text-gray-700';
+    return statusMap[status] || "bg-gray-100 text-gray-700";
   };
 
   const getStatusLabel = (status) => {
     const labelMap = {
-      'inquiry': 'Inquiry',
-      'evaluation': 'Evaluation',
-      'application submitted': 'App Submitted',
-      'offer letter received': 'Offer Received',
-      'offer letter not received': 'Offer Not Received',
-      'visa filed': 'Visa Filed',
-      'approved': 'Approved',
-      'reject': 'Rejected',
+      inquiry: "Inquiry",
+      evaluation: "Evaluation",
+      "application submitted": "App Submitted",
+      "offer letter received": "Offer Received",
+      "offer letter not received": "Offer Not Received",
+      "visa filed": "Visa Filed",
+      approved: "Approved",
+      reject: "Rejected",
     };
     return labelMap[status] || status;
   };
 
-  const filteredStudents = availableStudents.filter(s =>
-    s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStudents = availableStudents.filter(
+    (s) =>
+      s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.email?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -827,9 +1274,13 @@ export const CounsellorApplication = () => {
         <div className="bg-gradient-to-r from-blue-950 to-teal-900 text-white rounded-2xl p-6 shadow-xl">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
-              <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">Counsellor Portal</p>
+              <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
+                Counsellor Portal
+              </p>
               <h1 className="text-2xl font-bold">Student Applications</h1>
-              <p className="text-blue-200 text-sm mt-1">Manage student applications, documents, and share files</p>
+              <p className="text-blue-200 text-sm mt-1">
+                Manage student applications, documents, and share files
+              </p>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
@@ -844,7 +1295,10 @@ export const CounsellorApplication = () => {
       {/* Search Bar */}
       <div className="mb-4">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="text"
             placeholder="Search students by name or email..."
@@ -868,16 +1322,28 @@ export const CounsellorApplication = () => {
             </div>
             <div className="max-h-[500px] overflow-y-auto">
               {filteredStudents.map((student) => {
-                const studentApps = applications.filter(a => a.student_id === student.id);
-                const allStudentDocs = studentApps.flatMap(app => app.documents || []);
-                const pendingDocsCount = allStudentDocs.filter(d => d.status === 'pending' || d.status === 'review').length;
-                
+                const studentApps = applications.filter(
+                  (a) => a.student_id === student.id,
+                );
+                const allStudentDocs = studentApps.flatMap(
+                  (app) => app.documents || [],
+                );
+                const pendingDocsCount = allStudentDocs.filter(
+                  (d) => d.status === "pending" || d.status === "review",
+                ).length;
+
                 return (
                   <div
                     key={student.id}
-                    onClick={() => setSelectedStudent(selectedStudent?.id === student.id ? null : student)}
+                    onClick={() =>
+                      setSelectedStudent(
+                        selectedStudent?.id === student.id ? null : student,
+                      )
+                    }
                     className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                      selectedStudent?.id === student.id ? 'bg-teal-50 border-l-4 border-l-teal-500' : ''
+                      selectedStudent?.id === student.id
+                        ? "bg-teal-50 border-l-4 border-l-teal-500"
+                        : ""
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -885,7 +1351,9 @@ export const CounsellorApplication = () => {
                         <User size={16} className="text-teal-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-800">{student.name}</p>
+                        <p className="font-semibold text-gray-800">
+                          {student.name}
+                        </p>
                         <p className="text-xs text-gray-500">{student.email}</p>
                       </div>
                       <div className="flex gap-1">
@@ -903,17 +1371,31 @@ export const CounsellorApplication = () => {
                       <div className="mt-3 pl-12 space-y-2">
                         {studentApps.map((app) => {
                           const appDocs = app.documents || [];
-                          const pendingDocs = appDocs.filter(d => d.status === 'pending' || d.status === 'review').length;
-                          const verifiedDocs = appDocs.filter(d => d.status === 'verified').length;
-                          
+                          const pendingDocs = appDocs.filter(
+                            (d) =>
+                              d.status === "pending" || d.status === "review",
+                          ).length;
+                          const verifiedDocs = appDocs.filter(
+                            (d) => d.status === "verified",
+                          ).length;
+
                           return (
-                            <div key={app.id} className="p-2 bg-white rounded-lg border border-gray-100 text-sm">
+                            <div
+                              key={app.id}
+                              className="p-2 bg-white rounded-lg border border-gray-100 text-sm"
+                            >
                               <div className="flex justify-between items-start">
                                 <div>
-                                  <p className="font-medium text-gray-800">{app.target_university}</p>
-                                  <p className="text-xs text-gray-500">{app.course}</p>
+                                  <p className="font-medium text-gray-800">
+                                    {app.target_university}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {app.course}
+                                  </p>
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(app.status)}`}>
+                                    <span
+                                      className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(app.status)}`}
+                                    >
                                       {getStatusLabel(app.status)}
                                     </span>
                                     {pendingDocs > 0 && (
@@ -937,7 +1419,10 @@ export const CounsellorApplication = () => {
                                     className="p-1 rounded hover:bg-blue-50"
                                     title="View Documents"
                                   >
-                                    <FileText size={12} className="text-blue-600" />
+                                    <FileText
+                                      size={12}
+                                      className="text-blue-600"
+                                    />
                                   </button>
                                   <button
                                     onClick={(e) => {
@@ -948,7 +1433,10 @@ export const CounsellorApplication = () => {
                                     className="p-1 rounded hover:bg-amber-50"
                                     title="Edit"
                                   >
-                                    <Edit size={12} className="text-amber-600" />
+                                    <Edit
+                                      size={12}
+                                      className="text-amber-600"
+                                    />
                                   </button>
                                   <button
                                     onClick={(e) => {
@@ -960,9 +1448,11 @@ export const CounsellorApplication = () => {
                                     className="p-1 rounded hover:bg-teal-50"
                                     title="Share Document"
                                   >
-                                    <Upload size={12} className="text-teal-600" />
+                                    <Upload
+                                      size={12}
+                                      className="text-teal-600"
+                                    />
                                   </button>
-                             
                                 </div>
                               </div>
                             </div>
@@ -973,14 +1463,15 @@ export const CounsellorApplication = () => {
                   </div>
                 );
               })}
-        {filteredStudents.length === 0 && (
-  <div className="text-center py-8 text-gray-400">
-    <p>No eligible students for new application</p>
-    <p className="text-xs mt-1">
-      Only leads with status: New, Contacted, Counselling, Inquiry can create applications
-    </p>
-  </div>
-)}
+              {filteredStudents.length === 0 && (
+                <div className="text-center py-8 text-gray-400">
+                  <p>No eligible students for new application</p>
+                  <p className="text-xs mt-1">
+                    Only leads with status: New, Contacted, Counselling, Inquiry
+                    can create applications
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -991,52 +1482,100 @@ export const CounsellorApplication = () => {
             <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
               <div>
                 <h2 className="font-bold text-gray-800">All Applications</h2>
-                <p className="text-xs text-gray-400">{applications.length} total applications</p>
+                <p className="text-xs text-gray-400">
+                  {applications.length} total applications
+                </p>
               </div>
-              <button onClick={handleRefresh} disabled={refreshing} className="p-1.5 rounded-lg hover:bg-gray-200 transition">
-                <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-1.5 rounded-lg hover:bg-gray-200 transition"
+              >
+                <RefreshCw
+                  size={16}
+                  className={refreshing ? "animate-spin" : ""}
+                />
               </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Student</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">University</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Course</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Documents</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                      Student
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                      University
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                      Course
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                      Documents
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {loading ? (
-                    <tr><td colSpan="6" className="text-center py-8"><RefreshCw size={20} className="animate-spin mx-auto" /></td></tr>
+                    <tr>
+                      <td colSpan="6" className="text-center py-8">
+                        <RefreshCw size={20} className="animate-spin mx-auto" />
+                      </td>
+                    </tr>
                   ) : applications.length === 0 ? (
-                    <tr><td colSpan="6" className="text-center py-8">
-                      <div className="text-center">
-                        <FileText size={40} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-gray-500">No applications found</p>
-                        <p className="text-xs text-gray-400 mt-1">Click "New Application" to create one</p>
-                      </div>
-                    </td>
-                  </tr>
+                    <tr>
+                      <td colSpan="6" className="text-center py-8">
+                        <div className="text-center">
+                          <FileText
+                            size={40}
+                            className="mx-auto text-gray-300 mb-2"
+                          />
+                          <p className="text-gray-500">No applications found</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Click "New Application" to create one
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
                   ) : (
                     applications.map((app) => {
                       const appDocs = app.documents || [];
-                      const pendingDocs = appDocs.filter(d => d.status === 'pending' || d.status === 'review').length;
-                      const verifiedDocs = appDocs.filter(d => d.status === 'verified').length;
-                      
+                      const pendingDocs = appDocs.filter(
+                        (d) => d.status === "pending" || d.status === "review",
+                      ).length;
+                      const verifiedDocs = appDocs.filter(
+                        (d) => d.status === "verified",
+                      ).length;
+
                       return (
-                        <tr key={app.id} className="hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={app.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
                           <td className="px-4 py-3">
-                            <p className="font-medium text-gray-800">{app.student_name || 'Unknown'}</p>
-                            <p className="text-xs text-gray-500">{app.student_email || 'No email'}</p>
+                            <p className="font-medium text-gray-800">
+                              {app.student_name || "Unknown"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {app.student_email || "No email"}
+                            </p>
                           </td>
-                          <td className="px-4 py-3 text-sm">{app.target_university || '—'}</td>
-                          <td className="px-4 py-3 text-sm">{app.course || '—'}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {app.target_university || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {app.course || "—"}{" "}
+                          </td>
                           <td className="px-4 py-3">
-                            <span className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(app.status)}`}>
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(app.status)}`}
+                            >
                               {getStatusLabel(app.status)}
                             </span>
                           </td>
@@ -1053,7 +1592,9 @@ export const CounsellorApplication = () => {
                                 </span>
                               )}
                               {appDocs.length === 0 && (
-                                <span className="text-xs text-gray-400">No docs</span>
+                                <span className="text-xs text-gray-400">
+                                  No docs
+                                </span>
                               )}
                             </div>
                           </td>
@@ -1079,11 +1620,11 @@ export const CounsellorApplication = () => {
                               <button
                                 onClick={() => {
                                   setSelectedAppForDoc(app);
-                                  setSelectedStudent({ 
-                                    id: app.student_id, 
+                                  setSelectedStudent({
+                                    id: app.student_id,
                                     name: app.student_name,
                                     email: app.student_email,
-                                    user_id: app.user_id
+                                    user_id: app.user_id,
                                   });
                                   setShowDocModal(true);
                                 }}
@@ -1092,7 +1633,6 @@ export const CounsellorApplication = () => {
                               >
                                 <Upload size={14} className="text-teal-600" />
                               </button>
-                        
                             </div>
                           </td>
                         </tr>
@@ -1119,31 +1659,31 @@ export const CounsellorApplication = () => {
       />
 
       {/* Modals */}
-   <ApplicationModal
-  isOpen={showCreateModal}
-  onClose={() => setShowCreateModal(false)}
-  onSuccess={() => {
-    fetchData();
-    fetchCounsellorLeads();
-  }}
-  students={availableStudents}
-  selectedStudentForCreate={selectedStudent}   // ← Pre-fill when student is selected
-/>
+      <ApplicationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          fetchData();
+          fetchCounsellorLeads();
+        }}
+        students={availableStudents}
+        selectedStudentForCreate={selectedStudent}
+      />
 
-<ApplicationModal
-  isOpen={showEditModal}
-  onClose={() => {
-    setShowEditModal(false);
-    setSelectedApplication(null);
-  }}
-  onSuccess={() => {
-    fetchData();
-    fetchCounsellorLeads();
-  }}
-  application={selectedApplication}
-  students={availableStudents}
-  selectedStudentForCreate={null}
-/>
+      <ApplicationModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedApplication(null);
+        }}
+        onSuccess={() => {
+          fetchData();
+          fetchCounsellorLeads();
+        }}
+        application={selectedApplication}
+        students={availableStudents}
+        selectedStudentForCreate={null}
+      />
 
       <CounsellorDocumentModal
         isOpen={showDocModal}

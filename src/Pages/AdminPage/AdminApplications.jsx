@@ -66,7 +66,7 @@ const authAxios = {
     axios.delete(url, { headers: { Authorization: `Bearer ${getToken()}` } }),
 };
 
-// Status configuration (same as before)
+// Status configuration
 const STATUS_CONFIG = {
   inquiry: {
     color: "bg-gray-100 text-gray-700 border-gray-200",
@@ -203,7 +203,7 @@ const StatusDropdown = ({ currentStatus, applicationId, onStatusUpdate }) => {
   );
 };
 
-// Three dots menu (unchanged)
+// Three dots menu
 const ThreeDotsMenu = ({ onViewDetails }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = React.useRef(null);
@@ -244,7 +244,7 @@ const ThreeDotsMenu = ({ onViewDetails }) => {
   );
 };
 
-// Progress bar component (unchanged)
+// Progress bar component
 const ProgressBar = ({ percentage }) => {
   let colorClass = "bg-red-500";
   if (percentage >= 80) colorClass = "bg-green-500";
@@ -300,12 +300,12 @@ export const AdminApplications = () => {
     test_score: "",
     counselor_notes: "",
   });
+  const [formErrors, setFormErrors] = useState({}); // validation errors
 
   // Fetch all students for dropdown
   const fetchStudents = useCallback(async () => {
     setLoadingStudents(true);
     try {
-      // Adjust endpoint as per your backend: either /admin/students or /users?role=student
       const response = await authAxios.get(`${BASE_URL}/admin/students`);
       let studentsData = response.data;
       if (Array.isArray(studentsData)) {
@@ -317,7 +317,6 @@ export const AdminApplications = () => {
       }
     } catch (error) {
       console.error("Error fetching students:", error);
-      // If endpoint fails, try alternative or show empty list
       setStudentsList([]);
       toast.warn(
         "Could not load student list. Please refresh or check backend.",
@@ -364,7 +363,7 @@ export const AdminApplications = () => {
     fetchStudents();
   }, [fetchApplications, fetchStudents]);
 
-  // Filter and search applications (unchanged)
+  // Filter and search applications
   useEffect(() => {
     let filtered = [...applications];
 
@@ -422,7 +421,7 @@ export const AdminApplications = () => {
     );
   };
 
-  // Export report (unchanged)
+  // Export report
   const exportReport = () => {
     const headers = [
       "Application ID",
@@ -466,7 +465,7 @@ export const AdminApplications = () => {
     toast.success("Report exported successfully!");
   };
 
-  // Get status summary counts (unchanged, but shortened for brevity)
+  // Get status summary counts
   const getStatusCounts = () => {
     const counts = {
       Total: applications.length,
@@ -508,13 +507,106 @@ export const AdminApplications = () => {
     );
   };
 
-  // Add application change handler
-  const handleAddAppChange = (e) => {
-    const { name, value } = e.target;
-    setNewAppForm((prev) => ({ ...prev, [name]: value }));
+  // ======================= ADD APPLICATION VALIDATION =======================
+  const validateAddAppForm = () => {
+    const errors = {};
+
+    // Student selection
+    if (!newAppForm.user_id) errors.user_id = "Please select a student";
+
+    // Full name (required by backend)
+    if (!newAppForm.full_name?.trim())
+      errors.full_name = "Full name is required";
+
+    // Email (required by backend)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newAppForm.email?.trim()) errors.email = "Email is required";
+    else if (!emailRegex.test(newAppForm.email))
+      errors.email = "Invalid email format";
+
+    // Phone is optional but must contain only digits if provided
+    if (newAppForm.phone && !/^\d+$/.test(newAppForm.phone))
+      errors.phone = "Phone must contain only numbers";
+
+    // University (required, alphabets & spaces only, no leading spaces)
+    if (!newAppForm.target_university?.trim())
+      errors.target_university = "University is required";
+    else if (!/^[A-Za-z\s]+$/.test(newAppForm.target_university.trim()))
+      errors.target_university =
+        "University must contain only letters and spaces";
+    else if (newAppForm.target_university.startsWith(" "))
+      errors.target_university = "Leading spaces are not allowed";
+
+    // Course (required, alphabets & spaces only, no leading spaces)
+    if (!newAppForm.course?.trim()) errors.course = "Course is required";
+    else if (!/^[A-Za-z\s]+$/.test(newAppForm.course.trim()))
+      errors.course = "Course must contain only letters and spaces";
+    else if (newAppForm.course.startsWith(" "))
+      errors.course = "Leading spaces are not allowed";
+
+    // Country / target_country (required, alphabets & spaces only, no leading spaces)
+    if (!newAppForm.target_country?.trim())
+      errors.target_country = "Country is required";
+    else if (!/^[A-Za-z\s]+$/.test(newAppForm.target_country.trim()))
+      errors.target_country = "Country must contain only letters and spaces";
+    else if (newAppForm.target_country.startsWith(" "))
+      errors.target_country = "Leading spaces are not allowed";
+
+    // Last degree (required, only alphabets & spaces, no numbers)
+    if (!newAppForm.last_degree?.trim())
+      errors.last_degree = "Last degree is required";
+    else if (!/^[A-Za-z\s]+$/.test(newAppForm.last_degree.trim()))
+      errors.last_degree = "Last degree must contain only letters and spaces";
+    else if (newAppForm.last_degree.startsWith(" "))
+      errors.last_degree = "Leading spaces are not allowed";
+
+    // CGPA (required, only numbers, allow decimal)
+    if (!newAppForm.cgpa?.trim()) errors.cgpa = "CGPA is required";
+    else if (!/^\d+(\.\d+)?$/.test(newAppForm.cgpa.trim()))
+      errors.cgpa = "CGPA must contain only numbers (e.g., 3.5)";
+
+    // Test score (required, only numbers, allow decimal)
+    if (!newAppForm.test_score?.trim())
+      errors.test_score = "Test score is required";
+    else if (!/^\d+(\.\d+)?$/.test(newAppForm.test_score.trim()))
+      errors.test_score = "Test score must contain only numbers (e.g., 7.5)";
+
+    return errors;
   };
 
-  // When student is selected, pre-fill name, email, phone (optional but helpful)
+  // Replace the handleAddAppChange function:
+  const handleAddAppChange = (e) => {
+    const { name, value } = e.target;
+
+    // No leading spaces for any field
+    if (value.startsWith(" ")) return;
+
+    // Only alphabets (no numbers) for these fields
+    const alphaOnlyFields = [
+      "target_university",
+      "course",
+      "target_country",
+      "last_degree",
+    ];
+    if (alphaOnlyFields.includes(name) && /\d/.test(value)) return;
+
+    // Only numbers (and decimal point) for these fields
+    const numericOnlyFields = ["cgpa", "test_score"];
+    if (numericOnlyFields.includes(name) && /[^0-9.]/.test(value)) return;
+
+    setNewAppForm((prev) => ({ ...prev, [name]: value }));
+
+    // Clear error on change
+    if (formErrors[name]) {
+      setFormErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
+  };
+
+  // When student is selected, pre-fill name, email, phone
   const handleStudentSelect = (e) => {
     const studentId = e.target.value;
     const selectedStudent = studentsList.find(
@@ -537,18 +629,30 @@ export const AdminApplications = () => {
         phone: "",
       }));
     }
+    // Clear user_id error if any
+    if (formErrors.user_id) {
+      setFormErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.user_id;
+        return newErrors;
+      });
+    }
   };
 
-  // Submit add application
+  // Submit add application with validation
   const handleAddAppSubmit = async (e) => {
     e.preventDefault();
-    if (!newAppForm.user_id) {
-      toast.error("Please select a student");
+
+    const validationErrors = validateAddAppForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      toast.error("Please fix the highlighted errors before submitting.");
       return;
     }
+
     setIsSubmitting(true);
     try {
-      // Split full_name into first_name and last_name for backend compatibility
+      // Split full_name into first_name and last_name
       const fullName = newAppForm.full_name.trim();
       let firstName = fullName;
       let lastName = "";
@@ -562,17 +666,17 @@ export const AdminApplications = () => {
         user_id: parseInt(newAppForm.user_id),
         first_name: firstName,
         last_name: lastName,
-        email: newAppForm.email,
-        phone: newAppForm.phone,
-        target_university: newAppForm.target_university,
-        course: newAppForm.course,
-        target_country: newAppForm.target_country,
+        email: newAppForm.email.trim(),
+        phone: newAppForm.phone.trim(),
+        target_university: newAppForm.target_university.trim(),
+        course: newAppForm.course.trim(),
+        target_country: newAppForm.target_country.trim(),
         deadline: newAppForm.deadline,
         status: newAppForm.status,
-        last_degree: newAppForm.last_degree,
-        cgpa: newAppForm.cgpa,
+        last_degree: newAppForm.last_degree.trim(),
+        cgpa: newAppForm.cgpa.trim(),
         english_test: newAppForm.english_test,
-        test_score: newAppForm.test_score,
+        test_score: newAppForm.test_score.trim(),
         counselor_notes: newAppForm.counselor_notes,
       };
 
@@ -595,6 +699,7 @@ export const AdminApplications = () => {
         test_score: "",
         counselor_notes: "",
       });
+      setFormErrors({});
       fetchApplications();
     } catch (error) {
       console.error("Error creating application:", error);
@@ -606,7 +711,7 @@ export const AdminApplications = () => {
     }
   };
 
-  // Details modal (unchanged but kept for completeness)
+  // Application Details Modal (unchanged, but kept for completeness)
   const ApplicationDetailsModal = ({ application, onClose }) => {
     if (!application) return null;
 
@@ -780,7 +885,7 @@ export const AdminApplications = () => {
 
   return (
     <div className="p-4 md:p-6 bg-slate-50 min-h-screen font-sans">
-      {/* Header Stats Cards - unchanged */}
+      {/* Header Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
         <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
           <p className="text-xs text-gray-500">Total</p>
@@ -838,7 +943,7 @@ export const AdminApplications = () => {
         </div>
       </div>
 
-      {/* Search and Filter Bar - unchanged */}
+      {/* Search and Filter Bar */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -902,7 +1007,7 @@ export const AdminApplications = () => {
         </div>
       </div>
 
-      {/* Applications Table - unchanged except removed comments */}
+      {/* Applications Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -1093,7 +1198,7 @@ export const AdminApplications = () => {
         </div>
       </div>
 
-      {/* ==================== ADD APPLICATION MODAL (REDESIGNED) ==================== */}
+      {/* ==================== ADD APPLICATION MODAL (WITH VALIDATION) ==================== */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl animate-in zoom-in-95 duration-200">
@@ -1124,7 +1229,7 @@ export const AdminApplications = () => {
                   required
                   value={newAppForm.user_id}
                   onChange={handleStudentSelect}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                  className={`w-full border ${formErrors.user_id ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition`}
                 >
                   <option value="">Select Student</option>
                   {studentsList.map((student) => (
@@ -1136,6 +1241,11 @@ export const AdminApplications = () => {
                     </option>
                   ))}
                 </select>
+                {formErrors.user_id && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {formErrors.user_id}
+                  </p>
+                )}
                 {loadingStudents && (
                   <p className="text-xs text-gray-400 mt-1">
                     Loading students...
@@ -1155,9 +1265,14 @@ export const AdminApplications = () => {
                     value={newAppForm.target_university}
                     onChange={handleAddAppChange}
                     required
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                    className={`w-full border ${formErrors.target_university ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                     placeholder="University name"
                   />
+                  {formErrors.target_university && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.target_university}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1169,9 +1284,14 @@ export const AdminApplications = () => {
                     value={newAppForm.course}
                     onChange={handleAddAppChange}
                     required
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                    className={`w-full border ${formErrors.course ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                     placeholder="Course name"
                   />
+                  {formErrors.course && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.course}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1179,16 +1299,22 @@ export const AdminApplications = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Country
+                    Country <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="target_country"
                     value={newAppForm.target_country}
                     onChange={handleAddAppChange}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                    required
+                    className={`w-full border ${formErrors.target_country ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                     placeholder="Country name"
                   />
+                  {formErrors.target_country && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formErrors.target_country}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1232,29 +1358,39 @@ export const AdminApplications = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name
+                      Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="full_name"
                       value={newAppForm.full_name}
                       onChange={handleAddAppChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      className={`w-full border ${formErrors.full_name ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                       placeholder="Full Name"
                     />
+                    {formErrors.full_name && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.full_name}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       name="email"
                       value={newAppForm.email}
                       onChange={handleAddAppChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      className={`w-full border ${formErrors.email ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                       placeholder="student@example.com"
                     />
+                    {formErrors.email && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.email}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1265,35 +1401,50 @@ export const AdminApplications = () => {
                       name="phone"
                       value={newAppForm.phone}
                       onChange={handleAddAppChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      className={`w-full border ${formErrors.phone ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                       placeholder="Phone number"
                     />
+                    {formErrors.phone && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.phone}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Degree
+                      Last Degree <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="last_degree"
                       value={newAppForm.last_degree}
                       onChange={handleAddAppChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      className={`w-full border ${formErrors.last_degree ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                       placeholder="e.g., Bachelor of Science"
                     />
+                    {formErrors.last_degree && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.last_degree}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      CGPA
+                      CGPA <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="cgpa"
                       value={newAppForm.cgpa}
                       onChange={handleAddAppChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      className={`w-full border ${formErrors.cgpa ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                       placeholder="3.5/4.0"
                     />
+                    {formErrors.cgpa && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.cgpa}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1310,16 +1461,21 @@ export const AdminApplications = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Test Score
+                      Test Score <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       name="test_score"
                       value={newAppForm.test_score}
                       onChange={handleAddAppChange}
-                      className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                      className={`w-full border ${formErrors.test_score ? "border-red-500" : "border-gray-300"} rounded-xl px-4 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none`}
                       placeholder="e.g., 7.5"
                     />
+                    {formErrors.test_score && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {formErrors.test_score}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
