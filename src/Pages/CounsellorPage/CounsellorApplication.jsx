@@ -55,7 +55,15 @@ const STATUS_OPTIONS = [
   { value: "approved", label: "Approved", color: "green" },
   { value: "reject", label: "Reject", color: "rose" },
 ];
-
+// Allowed lead statuses for creating new applications
+const ALLOWED_LEAD_STATUSES = [
+  "new",
+  "contacted", 
+  "counselling",
+  "inquiry",
+  "follow_up",
+  "pending"
+];
 // Document types for counsellor upload
 const DOC_TYPES = [
   { key: "offer_letter", label: "Offer Letter" },
@@ -619,30 +627,40 @@ export const CounsellorApplication = () => {
     }
   }, []);
 
-  const availableStudents = useMemo(() => {
-    const assignedLeads = counsellorLeads.map(lead => ({
+ const availableStudents = useMemo(() => {
+  // Filter only eligible leads for new application creation
+  const eligibleLeads = counsellorLeads
+    .filter(lead => {
+      const status = (lead.status || "").toLowerCase().trim();
+      return ALLOWED_LEAD_STATUSES.includes(status) && !lead.is_deleted;
+    })
+    .map(lead => ({
       id: lead.id,
       user_id: lead.user_id || lead.id,
       name: lead.name,
       email: lead.email,
+      phone: lead.phone,
       status: lead.status,
     }));
-    
-    const existingStudents = students.map(s => ({
-      id: s.id,
-      user_id: s.user_id || s.id,
-      name: s.name,
-      email: s.email,
-      status: s.status,
-    }));
-    
-    const combined = [...assignedLeads, ...existingStudents];
-    const unique = combined.filter((student, index, self) => 
-      index === self.findIndex(s => s.id === student.id)
-    );
-    
-    return unique;
-  }, [counsellorLeads, students]);
+
+  // Keep students who already have applications
+  const existingStudents = students.map(s => ({
+    id: s.id,
+    user_id: s.user_id || s.id,
+    name: s.name,
+    email: s.email,
+    status: s.status,
+  }));
+
+  const combined = [...eligibleLeads, ...existingStudents];
+
+  // Remove duplicates
+  const unique = combined.filter((student, index, self) => 
+    index === self.findIndex(s => s.id === student.id)
+  );
+
+  return unique;
+}, [counsellorLeads, students]);
 
   // Fetch all documents for counsellor
   const fetchDocuments = useCallback(async () => {
@@ -955,12 +973,14 @@ export const CounsellorApplication = () => {
                   </div>
                 );
               })}
-              {filteredStudents.length === 0 && (
-                <div className="text-center py-8 text-gray-400">
-                  <p>No students assigned to you</p>
-                  <p className="text-xs mt-1">Students will appear here once assigned</p>
-                </div>
-              )}
+        {filteredStudents.length === 0 && (
+  <div className="text-center py-8 text-gray-400">
+    <p>No eligible students for new application</p>
+    <p className="text-xs mt-1">
+      Only leads with status: New, Contacted, Counselling, Inquiry can create applications
+    </p>
+  </div>
+)}
             </div>
           </div>
         </div>
