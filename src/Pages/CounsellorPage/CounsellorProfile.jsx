@@ -132,10 +132,7 @@ export const CounsellorProfile = () => {
       toast.error("CNIC must be exactly 13 digits (format: #####-#######-#)");
       return false;
     }
-    if (!formData.email.match(/^\S+@\S+\.\S+$/)) {
-      toast.error("Please enter a valid email address");
-      return false;
-    }
+
     return true;
   };
 
@@ -150,7 +147,6 @@ export const CounsellorProfile = () => {
       const payload = {
         name: formData.name,
         father_name: formData.father_name,
-        email: formData.email,
         phone: formData.phone,
         cnic: formData.cnic,
         address: formData.address,
@@ -437,14 +433,9 @@ export const CounsellorProfile = () => {
                         type="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition ${
-                          editMode
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-100 text-gray-600"
-                        }`}
-                        placeholder="email@example.com"
+                        disabled
+                        readOnly
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-600 cursor-not-allowed"
                       />
                     </div>
                   </div>

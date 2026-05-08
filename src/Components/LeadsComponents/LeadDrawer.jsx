@@ -4,13 +4,14 @@ import { BASE_URL } from "../../Content/Url";
 import { toast } from "react-toastify";
 
 import {
-  FaTimes,
   FaEnvelope,
   FaPhone,
   FaGlobe,
   FaHashtag,
   FaCalendarAlt,
 } from "react-icons/fa";
+
+import { XCircleIcon } from "lucide-react";
 
 // ── Activity Log Constants ──
 const LOG_COLORS = {
@@ -56,12 +57,7 @@ function formatDateTime(date) {
   });
 }
 
-export default function LeadDrawer({
-  lead,
-  onClose,
-  onStage,
-  onAddNoteOnly,
-}) {
+export default function LeadDrawer({ lead, onClose, onStage, onAddNoteOnly }) {
   const [stageNote, setStageNote] = useState("");
   const [activeTab, setActiveTab] = useState("details");
   const [logs, setLogs] = useState([]);
@@ -91,17 +87,26 @@ export default function LeadDrawer({
         const data = await response.json();
         // Group notes by stage
         const notesByStage = {};
-        data.forEach(log => {
-          if (log.action_type === "note_added" || log.action_type === "stage_changed") {
-            let stage = log.metadata?.stage || log.from_value || log.to_value || lead.status;
+        data.forEach((log) => {
+          if (
+            log.action_type === "note_added" ||
+            log.action_type === "stage_changed"
+          ) {
+            let stage =
+              log.metadata?.stage ||
+              log.from_value ||
+              log.to_value ||
+              lead.status;
             if (!notesByStage[stage]) {
               notesByStage[stage] = [];
             }
             notesByStage[stage].push({
-              content: log.note || `Stage changed from ${log.from_value} to ${log.to_value}`,
+              content:
+                log.note ||
+                `Stage changed from ${log.from_value} to ${log.to_value}`,
               author: log.performed_by_name,
               createdAt: log.created_at,
-              type: log.action_type
+              type: log.action_type,
             });
           }
         });
@@ -132,7 +137,7 @@ export default function LeadDrawer({
         )
         .finally(() => setLogsLoading(false));
     }
-    
+
     // Fetch historical notes when component mounts
     if (lead?.id) {
       fetchHistoricalNotes();
@@ -141,13 +146,18 @@ export default function LeadDrawer({
 
   const handleAddHistoricalNote = async (stageKey) => {
     if (!historicalNote.trim()) return;
-    
+
     if (onAddNoteOnly) {
-      await onAddNoteOnly(lead.id, `[${STAGES.find(s => s.key === stageKey)?.label}] ${historicalNote}`);
+      await onAddNoteOnly(
+        lead.id,
+        `[${STAGES.find((s) => s.key === stageKey)?.label}] ${historicalNote}`,
+      );
       setHistoricalNote("");
       setSelectedHistoryStage(null);
       fetchHistoricalNotes(); // Refresh notes
-      toast.success(`Note added to ${STAGES.find(s => s.key === stageKey)?.label} stage`);
+      toast.success(
+        `Note added to ${STAGES.find((s) => s.key === stageKey)?.label} stage`,
+      );
     }
   };
 
@@ -171,8 +181,11 @@ export default function LeadDrawer({
         {/* HEADER */}
         <div className="flex justify-between items-center p-4 bg-[#00A78E] text-white">
           <h2 className="font-bold">{lead.name}</h2>
-          <button onClick={onClose}>
-            <FaTimes />
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <XCircleIcon size={20} className="text-gray-500" />
           </button>
         </div>
 
@@ -223,11 +236,16 @@ export default function LeadDrawer({
                     const isActive = i === currentIndex;
 
                     return (
-                      <div key={s.key} className="flex flex-col items-center flex-1 min-w-[60px] relative">
+                      <div
+                        key={s.key}
+                        className="flex flex-col items-center flex-1 min-w-[60px] relative"
+                      >
                         {i < STAGES.length - 1 && (
                           <div
                             className="absolute top-4 left-1/2 right-[-50%] h-0.5 z-0"
-                            style={{ background: isDone ? "#00A78E" : "#e2e8f0" }}
+                            style={{
+                              background: isDone ? "#00A78E" : "#e2e8f0",
+                            }}
                           />
                         )}
 
@@ -235,10 +253,23 @@ export default function LeadDrawer({
                           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 relative border-2 transition-all duration-200"
                           style={
                             isDone
-                              ? { background: "#00A78E", color: "#fff", borderColor: "#00A78E" }
+                              ? {
+                                  background: "#00A78E",
+                                  color: "#fff",
+                                  borderColor: "#00A78E",
+                                }
                               : isActive
-                              ? { background: "#fff", color: "#00A78E", borderColor: "#00A78E", boxShadow: "0 0 0 4px #00A78E22" }
-                              : { background: "#f1f5f9", color: "#94a3b8", borderColor: "#e2e8f0" }
+                                ? {
+                                    background: "#fff",
+                                    color: "#00A78E",
+                                    borderColor: "#00A78E",
+                                    boxShadow: "0 0 0 4px #00A78E22",
+                                  }
+                                : {
+                                    background: "#f1f5f9",
+                                    color: "#94a3b8",
+                                    borderColor: "#e2e8f0",
+                                  }
                           }
                         >
                           {isDone ? "✓" : i + 1}
@@ -246,7 +277,14 @@ export default function LeadDrawer({
 
                         <span
                           className="text-[9px] font-semibold mt-1.5 text-center leading-tight"
-                          style={{ color: isActive ? "#00A78E" : isDone ? "#00A78E" : "#94a3b8", opacity: isDone ? 0.7 : 1 }}
+                          style={{
+                            color: isActive
+                              ? "#00A78E"
+                              : isDone
+                                ? "#00A78E"
+                                : "#94a3b8",
+                            opacity: isDone ? 0.7 : 1,
+                          }}
                         >
                           {s.label}
                         </span>
@@ -262,7 +300,7 @@ export default function LeadDrawer({
                     const targetIndex = stageOrder.indexOf(s.key);
                     const isBackward = targetIndex < currentIndex;
                     const isSameStage = lead.status === s.key;
-                    
+
                     return (
                       <button
                         key={s.key}
@@ -271,7 +309,7 @@ export default function LeadDrawer({
                             toast.error("📝 Please add a note first!");
                             return;
                           }
-                          
+
                           if (isBackward || isSameStage) {
                             // Moving backward or same stage - add note only
                             if (onAddNoteOnly) {
@@ -279,7 +317,9 @@ export default function LeadDrawer({
                               toast.success("📝 Note added successfully!");
                               setStageNote("");
                             } else {
-                              toast.error("Cannot add note. Please contact support.");
+                              toast.error(
+                                "Cannot add note. Please contact support.",
+                              );
                             }
                           } else {
                             // Moving forward - change stage
@@ -290,8 +330,17 @@ export default function LeadDrawer({
                         className="px-3.5 py-1.5 rounded-full text-xs font-semibold border-[1.5px] transition-all duration-150"
                         style={
                           isSameStage
-                            ? { background: "#00A78E", color: "#fff", borderColor: "#00A78E", boxShadow: "0 0 0 3px #00A78E22" }
-                            : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }
+                            ? {
+                                background: "#00A78E",
+                                color: "#fff",
+                                borderColor: "#00A78E",
+                                boxShadow: "0 0 0 3px #00A78E22",
+                              }
+                            : {
+                                background: "transparent",
+                                color: "#64748b",
+                                borderColor: "#e2e8f0",
+                              }
                         }
                       >
                         {s.label}
@@ -322,7 +371,10 @@ export default function LeadDrawer({
                     <div className="w-full border-t border-slate-200"></div>
                   </div>
                   <div className="relative flex justify-center text-xs">
-                    <span className="px-2 bg-slate-50 text-slate-400"> Notes</span>
+                    <span className="px-2 bg-slate-50 text-slate-400">
+                      {" "}
+                      Notes
+                    </span>
                   </div>
                 </div>
 
@@ -331,30 +383,49 @@ export default function LeadDrawer({
                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
                     Add Notes to Previous Stages
                   </p>
-                  
+
                   <div className="space-y-3">
                     {STAGES.map((stage) => {
                       const notes = stageNotes[stage.key] || [];
                       const isCurrentStage = lead.status === stage.key;
-                      const isPastStage = stageOrder.indexOf(stage.key) < stageOrder.indexOf(lead.status);
-                      
+                      const isPastStage =
+                        stageOrder.indexOf(stage.key) <
+                        stageOrder.indexOf(lead.status);
+
                       // Only show past stages and current stage
                       if (!isPastStage && !isCurrentStage) return null;
-                      
+
                       return (
-                        <div key={stage.key} className="border rounded-lg overflow-hidden">
-                          <div 
+                        <div
+                          key={stage.key}
+                          className="border rounded-lg overflow-hidden"
+                        >
+                          <div
                             className={`px-3 py-2 flex justify-between items-center cursor-pointer transition-colors ${
-                              isCurrentStage ? 'bg-teal-50 border-l-4 border-teal-500' : 
-                              isPastStage ? 'bg-amber-50 border-l-4 border-amber-400' : 'bg-gray-50'
+                              isCurrentStage
+                                ? "bg-teal-50 border-l-4 border-teal-500"
+                                : isPastStage
+                                  ? "bg-amber-50 border-l-4 border-amber-400"
+                                  : "bg-gray-50"
                             }`}
-                            onClick={() => setSelectedHistoryStage(selectedHistoryStage === stage.key ? null : stage.key)}
+                            onClick={() =>
+                              setSelectedHistoryStage(
+                                selectedHistoryStage === stage.key
+                                  ? null
+                                  : stage.key,
+                              )
+                            }
                           >
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs font-semibold ${
-                                isCurrentStage ? 'text-teal-700' : 
-                                isPastStage ? 'text-amber-700' : 'text-gray-600'
-                              }`}>
+                              <span
+                                className={`text-xs font-semibold ${
+                                  isCurrentStage
+                                    ? "text-teal-700"
+                                    : isPastStage
+                                      ? "text-amber-700"
+                                      : "text-gray-600"
+                                }`}
+                              >
                                 {stage.label}
                               </span>
                               {isCurrentStage && (
@@ -371,44 +442,67 @@ export default function LeadDrawer({
                                 ({notes.length} notes)
                               </span>
                             </div>
-                            <svg 
-                              className={`w-4 h-4 transition-transform ${selectedHistoryStage === stage.key ? 'rotate-180' : ''}`}
-                              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            <svg
+                              className={`w-4 h-4 transition-transform ${selectedHistoryStage === stage.key ? "rotate-180" : ""}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
                             </svg>
                           </div>
-                          
+
                           {selectedHistoryStage === stage.key && (
                             <div className="p-3 bg-white">
                               {/* Existing Notes */}
                               <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
                                 {notes.length === 0 ? (
-                                  <p className="text-xs text-gray-400 italic p-2 text-center">No notes for this stage</p>
+                                  <p className="text-xs text-gray-400 italic p-2 text-center">
+                                    No notes for this stage
+                                  </p>
                                 ) : (
                                   notes.map((note, idx) => (
-                                    <div key={idx} className="bg-gray-50 p-2 rounded text-xs">
-                                      <p className="text-gray-700">{note.content}</p>
+                                    <div
+                                      key={idx}
+                                      className="bg-gray-50 p-2 rounded text-xs"
+                                    >
+                                      <p className="text-gray-700">
+                                        {note.content}
+                                      </p>
                                       <p className="text-gray-400 text-[10px] mt-1">
-                                        {note.author} • {formatDateTime(note.createdAt)}
+                                        {note.author} •{" "}
+                                        {formatDateTime(note.createdAt)}
                                       </p>
                                     </div>
                                   ))
                                 )}
                               </div>
-                              
+
                               {/* Add Note Input */}
                               <div className="mt-2">
                                 <textarea
-                                  value={selectedHistoryStage === stage.key ? historicalNote : ""}
-                                  onChange={(e) => setHistoricalNote(e.target.value)}
+                                  value={
+                                    selectedHistoryStage === stage.key
+                                      ? historicalNote
+                                      : ""
+                                  }
+                                  onChange={(e) =>
+                                    setHistoricalNote(e.target.value)
+                                  }
                                   placeholder={`Add a note to ${stage.label} stage...`}
                                   rows="2"
                                   className="w-full text-xs border rounded-lg p-2 resize-none focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
                                 />
                                 <div className="flex justify-end mt-2">
                                   <button
-                                    onClick={() => handleAddHistoricalNote(stage.key)}
+                                    onClick={() =>
+                                      handleAddHistoricalNote(stage.key)
+                                    }
                                     disabled={!historicalNote.trim()}
                                     className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                   >

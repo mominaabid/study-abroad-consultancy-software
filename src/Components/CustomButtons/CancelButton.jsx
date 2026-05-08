@@ -1,20 +1,19 @@
-import { X } from "lucide-react";
-
 export const CancelButton = ({ handleCancel }) => {
   return (
-    <div
+    <button
+      type="button"
       onClick={handleCancel}
       className="
-        flex items-center justify-center
-        bg-red-100
-        p-0.5 py-0.5 px-1
-        rounded-lg
-        hover:cursor-pointer
-        active:scale-95
+        px-5 py-2.5 
+        bg-gray-200 text-black
+        rounded-xl 
+        hover:bg-red-200 
+        hover:cursor-pointer 
+        active:scale-95 
         transition-all duration-300
       "
     >
-      <X size={15} className="text-red-500" title="Cancel" />
-    </div>
+      Cancel
+    </button>
   );
 };

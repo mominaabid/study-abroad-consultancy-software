@@ -10,7 +10,14 @@ import { OptionField } from "../InputFields/OptionField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
-import { User, Mail, Phone, MapPin, CreditCard } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  CreditCard,
+  XCircleIcon,
+} from "lucide-react";
 
 const INITIAL_STATE = {
   name: "",
@@ -96,7 +103,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       setLoading(true);
 
-       const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       await axios.post(`${BASE_URL}/admin/addCounsellor`, formData, {
         headers: {
@@ -134,7 +141,13 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               Fill in the details to create a new account.
             </p>
           </div>
-          <CancelButton handleCancel={onClose} />
+
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <XCircleIcon size={20} className="text-gray-500" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-4">

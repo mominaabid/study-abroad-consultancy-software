@@ -93,14 +93,7 @@ export const AdminProfile = () => {
       toast.error("Name is required");
       return false;
     }
-    if (!formData.email.trim()) {
-      toast.error("Email is required");
-      return false;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      toast.error("Invalid email format");
-      return false;
-    }
+
     return true;
   };
 
@@ -116,7 +109,6 @@ export const AdminProfile = () => {
         `${BASE_URL}/admin/profile`,
         {
           name: formData.name,
-          email: formData.email,
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -414,14 +406,9 @@ export const AdminProfile = () => {
                         type="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition ${
-                          editMode
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-100 text-gray-600"
-                        }`}
-                        placeholder="admin@example.com"
+                        readOnly
+                        disabled
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-600 cursor-not-allowed"
                       />
                     </div>
                   </div>

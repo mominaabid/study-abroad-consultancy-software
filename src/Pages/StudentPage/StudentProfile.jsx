@@ -111,10 +111,7 @@ export const StudentProfile = () => {
       toast.error("Name must be at least 2 characters");
       return false;
     }
-    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) {
-      toast.error("Please enter a valid email address");
-      return false;
-    }
+
     if (!formData.phone.trim() || !/^\d{10,15}$/.test(formData.phone)) {
       toast.error("Phone number must be 10–15 digits");
       return false;
@@ -140,7 +137,6 @@ export const StudentProfile = () => {
       const token = localStorage.getItem("token");
       const payload = {
         name: formData.name,
-        email: formData.email,
         phone: formData.phone,
         preferred_country: formData.preferred_country,
         study_level: formData.study_level,
@@ -399,14 +395,9 @@ export const StudentProfile = () => {
                         type="email"
                         name="email"
                         value={formData.email}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition ${
-                          editMode
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-100 text-gray-600"
-                        }`}
-                        placeholder="email@example.com"
+                        disabled
+                        readOnly
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-600 cursor-not-allowed"
                       />
                     </div>
                   </div>

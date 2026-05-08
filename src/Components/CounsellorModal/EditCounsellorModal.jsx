@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
-import { User, Mail, Phone, IdCard, MapPin, Users } from "lucide-react";
+import { User, Mail, Phone, IdCard, MapPin, Users , XCircleIcon } from "lucide-react";
 
 import { InputField } from "../InputFields/InputField";
 import { TextareaField } from "../InputFields/TextareaField";
@@ -134,7 +134,12 @@ export const EditCounsellorModal = ({
               Modify the details for this counselor account.
             </p>
           </div>
-          <CancelButton handleCancel={onClose} />
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <XCircleIcon size={20} className="text-gray-500" />
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-4">

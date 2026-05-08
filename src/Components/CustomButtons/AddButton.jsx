@@ -22,7 +22,7 @@ export const AddButton = ({
         {loading ? (
           <div className="flex items-center justify-center gap-2">
             <span>{label}</span>
-            <ClipLoader size={18} color="#009E99" />
+            <ClipLoader size={18} color="#ffffff" />
           </div>
         ) : (
           label

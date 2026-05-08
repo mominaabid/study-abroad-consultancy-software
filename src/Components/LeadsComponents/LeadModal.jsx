@@ -4,7 +4,15 @@ import { InputField } from "../InputFields/InputField";
 import { OptionField } from "../InputFields/OptionField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
-import { User, Phone, Mail, Globe, BookOpen, UserCheck } from "lucide-react";
+import {
+  User,
+  Phone,
+  Mail,
+  Globe,
+  BookOpen,
+  UserCheck,
+  XCircleIcon,
+} from "lucide-react";
 
 // Mapping sources to emojis for dropdown visibility
 const SOURCE_ICONS = {
@@ -26,7 +34,12 @@ export default function LeadModal({
   counsellors,
   editLead,
 }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState({
+    ...EMPTY_FORM,
+    source: "walkin",
+    study_level: "",
+  });
+
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -46,8 +59,13 @@ export default function LeadModal({
           : "",
       });
     } else {
-      setForm({ ...EMPTY_FORM });
+      setForm({
+        ...EMPTY_FORM,
+        source: "walkin",
+        study_level: "",
+      });
     }
+
     setErrors({});
   }, [open, editLead]);
 
@@ -55,24 +73,53 @@ export default function LeadModal({
 
   const validate = () => {
     const e = {};
-    if (!form.name?.trim()) e.name = "Name is required";
-    if (!form.preferred_country?.trim())
-      e.preferred_country = "Preferred country is required";
-    if (!form.phone || form.phone.length !== 11)
+
+    if (!form.name?.trim()) {
+      e.name = "Name is required";
+    }
+
+    if (!form.phone?.trim()) {
+      e.phone = "Phone number is required";
+    } else if (form.phone.length !== 11) {
       e.phone = "Phone number must be exactly 11 digits";
-    if (!form.email?.trim()) e.email = "Email is required";
+    }
+
+    if (!form.email?.trim()) {
+      e.email = "Email is required";
+    }
+
+    if (!form.source?.trim()) {
+      e.source = "Source is required";
+    }
+
+    if (!form.preferred_country?.trim()) {
+      e.preferred_country = "Preferred country is required";
+    }
+
+    if (!form.study_level?.trim()) {
+      e.study_level = "Study level is required";
+    }
+
+    // only required in edit mode
+    if (editLead && !form.counsellor_id) {
+      e.counsellor_id = "Counsellor is required";
+    }
+
     return e;
   };
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
+
     const validationErrors = validate();
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
     setSaving(true);
+
     try {
       await onSave(form);
       onClose();
@@ -85,12 +132,19 @@ export default function LeadModal({
 
   const handleCustomChange = (e) => {
     const { name, value } = e.target;
+
     if (value.startsWith(" ")) return;
+
     if ((name === "name" || name === "preferred_country") && /\d/.test(value))
       return;
+
     if (name === "phone" && (/[^0-9]/.test(value) || value.length > 11)) return;
 
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
     if (errors[name]) {
       setErrors((prev) => {
         const newErrs = { ...prev };
@@ -100,13 +154,16 @@ export default function LeadModal({
     }
   };
 
-  // Modified sourceOptions to include iconss
+  // Source options with icons
   const sourceOptions = SOURCES.map((s) => {
     const icon = SOURCE_ICONS[s.toLowerCase()] || "📍";
+
     return {
       id: s,
       value: s,
-      label: `${icon} ${s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ")}`,
+      label: `${
+        icon
+      } ${s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ")}`,
     };
   });
 
@@ -116,14 +173,8 @@ export default function LeadModal({
     label: l,
   }));
 
-  // const counsellorOptions = counsellors.map((c) => ({
-  //   id: c.id,
-  //   value: c.id,
-  //   label: c.name,
-  // }));
-
   const counsellorOptions = counsellors.map((c) => ({
-    id: c.user?.id, // ✅ use user_id from relation
+    id: c.user?.id,
     value: c.user?.id,
     label: c.name,
   }));
@@ -139,17 +190,25 @@ export default function LeadModal({
             <h2 className="text-2xl font-bold text-slate-800">
               {editLead ? "Edit Lead" : "Add New Lead"}
             </h2>
+
             <p className="text-slate-500 text-sm mt-1">
               {editLead
                 ? "Update lead information"
                 : "Fill in the details below"}
             </p>
           </div>
-          <CancelButton handleCancel={onClose} />
+
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <XCircleIcon size={20} className="text-gray-500" />
+          </button>
         </div>
 
         <form className="p-8 pt-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
+            {/* NAME */}
             <div className="space-y-1">
               <InputField
                 labelName="Full Name *"
@@ -160,11 +219,13 @@ export default function LeadModal({
                 maxLength={50}
                 minLength={3}
               />
+
               {errors.name && (
                 <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>
               )}
             </div>
 
+            {/* PHONE */}
             <div className="space-y-1">
               <InputField
                 labelName="Phone (11 digits) *"
@@ -173,6 +234,7 @@ export default function LeadModal({
                 handlerChange={handleCustomChange}
                 icon={<Phone size={16} />}
               />
+
               {errors.phone && (
                 <p className="text-red-500 text-[10px] ml-1">{errors.phone}</p>
               )}
@@ -180,6 +242,7 @@ export default function LeadModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* EMAIL */}
             <div className="space-y-1">
               <InputField
                 labelName="Email *"
@@ -189,53 +252,90 @@ export default function LeadModal({
                 handlerChange={handleCustomChange}
                 icon={<Mail size={16} />}
               />
+
               {errors.email && (
                 <p className="text-red-500 text-[10px] ml-1">{errors.email}</p>
               )}
             </div>
 
-            <OptionField
-              labelName="Source *"
-              name="source"
-              value={form.source}
-              handlerChange={handleCustomChange}
-              optionData={sourceOptions}
-              inital="Select Source"
-            />
+            {/* SOURCE */}
+            <div className="space-y-1">
+              <OptionField
+                labelName="Source *"
+                name="source"
+                value={form.source}
+                handlerChange={handleCustomChange}
+                optionData={sourceOptions}
+                inital="Select Source"
+              />
+
+              {errors.source && (
+                <p className="text-red-500 text-[10px] ml-1">{errors.source}</p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <InputField
-              labelName="Preferred Country *"
-              name="preferred_country"
-              value={form.preferred_country}
-              handlerChange={handleCustomChange}
-              icon={<Globe size={16} />}
-              maxLength={50}
-              minLength={3}
-            />
+            {/* PREFERRED COUNTRY */}
+            <div className="space-y-1">
+              <InputField
+                labelName="Preferred Country *"
+                name="preferred_country"
+                value={form.preferred_country}
+                handlerChange={handleCustomChange}
+                icon={<Globe size={16} />}
+                maxLength={50}
+                minLength={3}
+              />
 
-            <OptionField
-              labelName="Study Level *"
-              name="study_level"
-              value={form.study_level}
-              handlerChange={handleCustomChange}
-              optionData={studyLevelOptions}
-              inital="Select level"
-              icon={<BookOpen size={16} />}
-            />
+              {errors.preferred_country && (
+                <p className="text-red-500 text-[10px] ml-1">
+                  {errors.preferred_country}
+                </p>
+              )}
+            </div>
+
+            {/* STUDY LEVEL */}
+            <div className="space-y-1">
+              <OptionField
+                labelName="Study Level *"
+                name="study_level"
+                value={form.study_level}
+                handlerChange={handleCustomChange}
+                optionData={studyLevelOptions}
+                inital="Select level"
+                icon={<BookOpen size={16} />}
+              />
+
+              {errors.study_level && (
+                <p className="text-red-500 text-[10px] ml-1">
+                  {errors.study_level}
+                </p>
+              )}
+            </div>
           </div>
+
+          {/* COUNSELLOR */}
           {editLead && (
-            <OptionField
-              labelName="Assign Counsellor *"
-              name="counsellor_id"
-              value={form.counsellor_id}
-              handlerChange={handleCustomChange}
-              optionData={counsellorOptions}
-              inital="Select Counsellor"
-              icon={<UserCheck size={16} />}
-            />
+            <div className="space-y-1">
+              <OptionField
+                labelName="Assign Counsellor *"
+                name="counsellor_id"
+                value={form.counsellor_id}
+                handlerChange={handleCustomChange}
+                optionData={counsellorOptions}
+                inital="Select Counsellor"
+                icon={<UserCheck size={16} />}
+              />
+
+              {errors.counsellor_id && (
+                <p className="text-red-500 text-[10px] ml-1">
+                  {errors.counsellor_id}
+                </p>
+              )}
+            </div>
           )}
+
           <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
@@ -244,6 +344,7 @@ export default function LeadModal({
             >
               Close
             </button>
+
             <AddButton
               label={editLead ? "Update Lead" : "Save Lead"}
               loading={saving}
