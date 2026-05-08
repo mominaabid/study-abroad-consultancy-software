@@ -4,15 +4,8 @@ import { InputField } from "../InputFields/InputField";
 import { OptionField } from "../InputFields/OptionField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
-import {
-  User,
-  Phone,
-  Mail,
-  Globe,
-  BookOpen,
-  UserCheck,
-  XCircleIcon,
-} from "lucide-react";
+import { Title } from "../Title"; // Import the Title component
+import { User, Phone, Mail, Globe, BookOpen, UserCheck } from "lucide-react";
 
 // Mapping sources to emojis for dropdown visibility
 const SOURCE_ICONS = {
@@ -185,28 +178,12 @@ export default function LeadModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-8 pt-8 pb-4 flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">
-              {editLead ? "Edit Lead" : "Add New Lead"}
-            </h2>
+        {/* Use Title component for header */}
+        <Title setModal={onClose}>
+          {editLead ? "Edit Lead" : "Add New Lead"}
+        </Title>
 
-            <p className="text-slate-500 text-sm mt-1">
-              {editLead
-                ? "Update lead information"
-                : "Fill in the details below"}
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <XCircleIcon size={20} className="text-gray-500" />
-          </button>
-        </div>
-
-        <form className="p-8 pt-4 space-y-4">
+        <form className="p-6 pt-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {/* NAME */}
             <div className="space-y-1">

@@ -2,12 +2,21 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
-import { User, Mail, Phone, IdCard, MapPin, Users , XCircleIcon } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  IdCard,
+  MapPin,
+  Users,
+  XCircleIcon,
+} from "lucide-react";
 
 import { InputField } from "../InputFields/InputField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
+import { Title } from "../Title";
 
 export const EditCounsellorModal = ({
   isOpen,
@@ -125,22 +134,7 @@ export const EditCounsellorModal = ({
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-8 pt-8 pb-4 flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">
-              Edit Counselor
-            </h2>
-            <p className="text-slate-500 text-sm mt-1">
-              Modify the details for this counselor account.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <XCircleIcon size={20} className="text-gray-500" />
-          </button>
-        </div>
+        <Title setModal={onClose}>Edit Counselor</Title>
 
         <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

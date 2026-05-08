@@ -48,7 +48,8 @@ import {
   Users,
 } from "lucide-react";
 import { AddAdminApplicationModal } from "../../Components/AddAdminApplicationModal";
-
+import { Pagination } from "../../Components/Pagination";
+import { ShowDataNumber } from "../../Components/ShowDataNumber";
 
 // Helper to get token
 const getToken = () => localStorage.getItem("token") || "";
@@ -282,10 +283,12 @@ export const AdminApplications = () => {
   const [sortField, setSortField] = useState("updated");
   const [sortDirection, setSortDirection] = useState("desc");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5); // items per page
+
   // State for add application modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  // Fetch all students for dropdown
 
   // Fetch all applications
   const fetchApplications = useCallback(async () => {
@@ -369,6 +372,8 @@ export const AdminApplications = () => {
     });
 
     setFilteredApplications(filtered);
+    // Reset to first page whenever filters change
+    setCurrentPage(1);
   }, [searchTerm, statusFilter, applications, sortField, sortDirection]);
 
   const handleStatusUpdate = (id, newStatus, updatedData) => {
@@ -467,15 +472,24 @@ export const AdminApplications = () => {
     );
   };
 
-  // ======================= ADD APPLICATION VALIDATION =======================
+  // Pagination helpers
+  const handlePageClick = (page) => {
+    setCurrentPage(page);
+  };
 
-  // Replace the handleAddAppChange function:
+  // Compute paginated data
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedApplications = filteredApplications.slice(
+    startIndex,
+    endIndex,
+  );
 
-  // When student is selected, pre-fill name, email, phone
+  // ShowDataNumber props
+  const dataStart = filteredApplications.length === 0 ? 0 : startIndex + 1;
+  const dataEnd = Math.min(endIndex, filteredApplications.length);
+  const totalItems = filteredApplications.length;
 
-  // Submit add application with validation
-
-  // Application Details Modal (unchanged, but kept for completeness)
   const ApplicationDetailsModal = ({ application, onClose }) => {
     if (!application) return null;
 
@@ -708,8 +722,10 @@ export const AdminApplications = () => {
       </div>
 
       {/* Search and Filter Bar */}
+      {/* Search and Filter Bar */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col xl:flex-row gap-4">
+          {/* Search Input Container */}
           <div className="flex-1 relative">
             <Search
               size={18}
@@ -717,18 +733,26 @@ export const AdminApplications = () => {
             />
             <input
               type="text"
-              placeholder="Search applications by ID, student name, university..."
+              placeholder="Search by ID, name, university..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              onChange={(e) => {
+                // Prevent leading spaces
+                const value = e.target.value;
+                if (value.startsWith(" ")) return;
+                setSearchTerm(value);
+              }}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
             />
           </div>
-          <div className="flex gap-3">
-            <div className="relative">
+
+          {/* Controls Group */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-3">
+            {/* Filter Dropdown */}
+            <div className="relative flex-1 lg:min-w-[180px]">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none pl-10 pr-8 py-2.5 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                className="w-full appearance-none pl-10 pr-8 py-2.5 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm"
               >
                 <option value="All Status">All Status</option>
                 {STATUSES.map((status) => (
@@ -746,27 +770,25 @@ export const AdminApplications = () => {
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
               />
             </div>
-            <button
-              onClick={exportReport}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium text-sm shadow-sm"
-            >
-              <Download size={16} />
-              Export Report
-            </button>
-            <button
-              onClick={fetchApplications}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
-            >
-              <RefreshCw size={16} />
-              Refresh
-            </button>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
-            >
-              <Plus size={16} />
-              Add Application
-            </button>
+
+            {/* Action Buttons Group */}
+            <div className="flex gap-2 flex-1">
+              <button
+                onClick={exportReport}
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-medium text-sm"
+              >
+                <Download size={16} />
+                <span>Export</span>
+              </button>
+
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex-[2] lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm shadow-sm"
+              >
+                <Plus size={18} />
+                <span>Application</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -832,7 +854,7 @@ export const AdminApplications = () => {
                   </td>
                 </tr>
               ) : (
-                filteredApplications.map((app) => {
+                paginatedApplications.map((app) => {
                   const status = app.status || "inquiry";
                   const StatusIconComp = STATUS_CONFIG[status]?.icon || Clock;
                   const progress = app.progress || 0;
@@ -962,8 +984,20 @@ export const AdminApplications = () => {
         </div>
       </div>
 
-      {/* ==================== ADD APPLICATION MODAL (WITH VALIDATION) ==================== */}
+      {/* Pagination & Data Numbers */}
+      {filteredApplications.length > 0 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-5 gap-3">
+          <ShowDataNumber start={dataStart} end={dataEnd} total={totalItems} />
+          <Pagination
+            handlePageClick={handlePageClick}
+            pageNo={currentPage}
+            totalNum={totalItems}
+            pageSize={pageSize}
+          />
+        </div>
+      )}
 
+      {/* Add Application Modal */}
       <AddAdminApplicationModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}

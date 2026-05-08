@@ -9,7 +9,7 @@ import {
   Mail,
   Calendar,
   Briefcase,
-  MessageCircle ,
+  MessageCircle,
 } from "lucide-react";
 
 import { BASE_URL } from "../Content/Url";
@@ -21,6 +21,7 @@ export const MainContent = () => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paymentStats, setPaymentStats] = useState({
     monthlyRevenue: 0,
@@ -91,29 +92,34 @@ export const MainContent = () => {
 
         // Current month revenue
         const monthlyRevenue = paymentsData
-          .filter(p => {
+          .filter((p) => {
             const paidDate = new Date(p.paid_at);
-            return p.status === 'completed' && 
-                   paidDate.getMonth() === thisMonth && 
-                   paidDate.getFullYear() === thisYear;
+            return (
+              p.status === "completed" &&
+              paidDate.getMonth() === thisMonth &&
+              paidDate.getFullYear() === thisYear
+            );
           })
           .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
         // Last month revenue for comparison
         const lastMonthRevenue = paymentsData
-          .filter(p => {
+          .filter((p) => {
             const paidDate = new Date(p.paid_at);
-            return p.status === 'completed' && 
-                   paidDate.getMonth() === lastMonth && 
-                   paidDate.getFullYear() === lastMonthYear;
+            return (
+              p.status === "completed" &&
+              paidDate.getMonth() === lastMonth &&
+              paidDate.getFullYear() === lastMonthYear
+            );
           })
           .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
         // Calculate change percentage
         let revenueChange = "+0%";
         if (lastMonthRevenue > 0) {
-          const change = ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
-          revenueChange = `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+          const change =
+            ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+          revenueChange = `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
         } else if (monthlyRevenue > 0) {
           revenueChange = "+100%";
         }
@@ -122,7 +128,6 @@ export const MainContent = () => {
           monthlyRevenue,
           revenueChange,
         });
-
       } catch (err) {
         console.error("Payments API error:", err);
       }
@@ -131,66 +136,105 @@ export const MainContent = () => {
     fetchPayments();
   }, []);
 
+  // Fetch Applications
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        if (!token) return;
+
+        const res = await fetch(`${BASE_URL}/admin/applications`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch applications");
+        }
+
+        const data = await res.json();
+
+        setApplications(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Applications API error:", err);
+      }
+    };
+
+    fetchApplications();
+  }, []);
+
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
 
   // Calculate real counts for funnel (using total leads)
-// Calculate real counts for funnel (using total leads)
-const newCount = leads.filter(
-  (l) => l.status?.toLowerCase() === "new",
-).length;
-const contactedCount = leads.filter(
-  (l) => l.status?.toLowerCase() === "contacted",
-).length;
-const counselingCount = leads.filter(
-  (l) => l.status?.toLowerCase() === "counseling",
-).length;
-const evaluatedCount = leads.filter(
-  (l) => l.status?.toLowerCase() === "evaluated",
-).length;
-const convertedCount = leads.filter(
-  (l) => l.status?.toLowerCase() === "success",
-).length;
+  // Calculate real counts for funnel (using total leads)
+  const newCount = leads.filter(
+    (l) => l.status?.toLowerCase() === "new",
+  ).length;
+  const contactedCount = leads.filter(
+    (l) => l.status?.toLowerCase() === "contacted",
+  ).length;
+  const counselingCount = leads.filter(
+    (l) => l.status?.toLowerCase() === "counseling",
+  ).length;
+  const evaluatedCount = leads.filter(
+    (l) => l.status?.toLowerCase() === "evaluated",
+  ).length;
+  const convertedCount = leads.filter(
+    (l) => l.status?.toLowerCase() === "success",
+  ).length;
 
-// Calculate total leads (sum of all funnel stages)
-const totalLeadsCount = newCount;
+  // Calculate total leads (sum of all funnel stages)
+  const totalLeadsCount = newCount;
 
-// Active students = Counseling + Evaluated + Converted
-const activeStudentsCount = counselingCount + evaluatedCount + convertedCount;
+  // Active students = Counseling + Evaluated + Converted
+  const activeStudentsCount = counselingCount + evaluatedCount + convertedCount;
 
-const getActiveStudentsChange = () => {
-  if (totalLeadsCount === 0) return "0%";
+  const getActiveStudentsChange = () => {
+    if (totalLeadsCount === 0) return "0%";
 
-  const now = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear = now.getFullYear();
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
 
-  const currentMonthActive = leads.filter((l) => {
-    const status = l.status?.toLowerCase();
-    const d = new Date(l.createdAt);
-    return (status === "counseling" || status === "evaluated" || status === "success") &&
-           d.getMonth() === thisMonth && 
-           d.getFullYear() === thisYear;
-  }).length;
+    const currentMonthActive = leads.filter((l) => {
+      const status = l.status?.toLowerCase();
+      const d = new Date(l.createdAt);
+      return (
+        (status === "counseling" ||
+          status === "evaluated" ||
+          status === "success") &&
+        d.getMonth() === thisMonth &&
+        d.getFullYear() === thisYear
+      );
+    }).length;
 
-  const lastMonthActive = leads.filter((l) => {
-    const status = l.status?.toLowerCase();
-    const d = new Date(l.createdAt);
-    const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-    const prevYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-    return (status === "counseling" || status === "evaluated" || status === "success") &&
-           d.getMonth() === prevMonth && 
-           d.getFullYear() === prevYear;
-  }).length;
+    const lastMonthActive = leads.filter((l) => {
+      const status = l.status?.toLowerCase();
+      const d = new Date(l.createdAt);
+      const prevMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+      const prevYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+      return (
+        (status === "counseling" ||
+          status === "evaluated" ||
+          status === "success") &&
+        d.getMonth() === prevMonth &&
+        d.getFullYear() === prevYear
+      );
+    }).length;
 
-  if (lastMonthActive === 0) return currentMonthActive > 0 ? "+100%" : "0%";
+    if (lastMonthActive === 0) return currentMonthActive > 0 ? "+100%" : "0%";
 
-  const diff = ((currentMonthActive - lastMonthActive) / lastMonthActive) * 100;
-  return `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`;
-};
+    const diff =
+      ((currentMonthActive - lastMonthActive) / lastMonthActive) * 100;
+    return `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`;
+  };
 
-const activeChange = getActiveStudentsChange();
+  const activeChange = getActiveStudentsChange();
 
   const handleNavigateToLeads = () => {
     navigate("/admin/leads");
@@ -203,7 +247,7 @@ const activeChange = getActiveStudentsChange();
   };
   const handleNavigateToPayments = () => {
     navigate("/admin/payments");
-  }
+  };
   // Recent Leads (latest 4)
   const recentLeads = [...leads]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -211,17 +255,30 @@ const activeChange = getActiveStudentsChange();
 
   // Prepare revenue chart data based on actual payments (last 6 months)
   const getMonthlyRevenueData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const monthlyTotals = new Array(12).fill(0);
-    
-    payments.forEach(payment => {
-      if (payment.status === 'completed' && payment.amount > 0) {
+
+    payments.forEach((payment) => {
+      if (payment.status === "completed" && payment.amount > 0) {
         const date = new Date(payment.paid_at);
         const month = date.getMonth();
         monthlyTotals[month] += parseFloat(payment.amount);
       }
     });
-    
+
     // Get last 6 months for better visualization
     const currentMonth = now.getMonth();
     const last6Months = [];
@@ -233,24 +290,24 @@ const activeChange = getActiveStudentsChange();
         amount: monthlyTotals[monthIdx],
       });
     }
-    
+
     return last6Months;
   };
 
   const revenueData = getMonthlyRevenueData();
-  const maxRevenue = Math.max(...revenueData.map(d => d.amount), 1000);
+  const maxRevenue = Math.max(...revenueData.map((d) => d.amount), 1000);
 
   // Generate SVG path for revenue chart
   const generateChartPath = () => {
     if (revenueData.length === 0) return "";
-    
+
     const width = 400;
     const height = 90;
     const step = width / (revenueData.length - 1);
-    
+
     let linePath = `M 0 ${height - (revenueData[0].amount / maxRevenue) * height}`;
     let areaPath = `M 0 ${height} L 0 ${height - (revenueData[0].amount / maxRevenue) * height}`;
-    
+
     for (let i = 1; i < revenueData.length; i++) {
       const x = i * step;
       const y = height - (revenueData[i].amount / maxRevenue) * height;
@@ -258,7 +315,7 @@ const activeChange = getActiveStudentsChange();
       areaPath += ` L ${x} ${y}`;
     }
     areaPath += ` L ${width} ${height} Z`;
-    
+
     return { linePath, areaPath };
   };
 
@@ -288,9 +345,7 @@ const activeChange = getActiveStudentsChange();
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl px-5 py-1 border border-white/20 shadow-inner">
               <Calendar size={20} className="text-teal-100" />
               <div className="flex flex-col">
-                <span className="text-xs text-teal-100 font-bold">
-                  Today
-                </span>
+                <span className="text-xs text-teal-100 font-bold">Today</span>
                 <span className="text-sm font-medium">
                   {new Date().toLocaleDateString("en-US", {
                     weekday: "short",
@@ -339,9 +394,8 @@ const activeChange = getActiveStudentsChange();
         {/* Applications */}
         <StatCard
           title="Applications"
-          value={loading ? "..." : leads.filter(l => l.application_status === 'submitted').length}
-          change="-3.2%"
-          isNegative
+          value={loading ? "..." : applications.length}
+          change="+0%"
           icon={<FileText />}
           color="from-rose-500 to-pink-600"
         />
@@ -402,7 +456,11 @@ const activeChange = getActiveStudentsChange();
             </div>
           </div>
           <div className="h-64 bg-gradient-to-br from-slate-50 via-white to-teal-50 rounded-xl p-4">
-            <svg className="w-full h-48" viewBox="0 0 400 100" preserveAspectRatio="none">
+            <svg
+              className="w-full h-48"
+              viewBox="0 0 400 100"
+              preserveAspectRatio="none"
+            >
               <defs>
                 <linearGradient
                   id="revenueGrad"
@@ -416,10 +474,7 @@ const activeChange = getActiveStudentsChange();
                 </linearGradient>
               </defs>
               {chartPaths.areaPath && (
-                <path
-                  d={chartPaths.areaPath}
-                  fill="url(#revenueGrad)"
-                />
+                <path d={chartPaths.areaPath} fill="url(#revenueGrad)" />
               )}
               {chartPaths.linePath && (
                 <path
@@ -436,7 +491,9 @@ const activeChange = getActiveStudentsChange();
           <div className="flex justify-around mt-3 px-2">
             {revenueData.map((data, index) => (
               <div key={index} className="text-center">
-                <div className="text-xs font-medium text-gray-500">{data.month}</div>
+                <div className="text-xs font-medium text-gray-500">
+                  {data.month}
+                </div>
                 <div className="text-[10px] text-gray-400 mt-1">
                   ${(data.amount / 1000).toFixed(0)}K
                 </div>
@@ -519,7 +576,7 @@ const activeChange = getActiveStudentsChange();
                 icon={<Briefcase size={22} />}
                 label="Add Counselor"
                 color="from-blue-500 to-indigo-500"
-                  onClick={handleNavigateToCounseling}
+                onClick={handleNavigateToCounseling}
               />
               <ActionButton
                 icon={<MessageCircle size={22} />}

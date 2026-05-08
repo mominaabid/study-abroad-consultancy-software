@@ -10,6 +10,7 @@ import { InputField } from "./InputFields/InputField";
 import { TextareaField } from "./InputFields/TextareaField";
 import { AddButton } from "./CustomButtons/AddButton";
 import { CancelButton } from "./CustomButtons/CancelButton";
+import { Title } from "./Title";
 
 // Helper to get token
 const getToken = () => localStorage.getItem("token") || "";
@@ -229,22 +230,7 @@ export const AddAdminApplicationModal = ({ isOpen, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-3xl flex flex-col max-h-[90vh] shadow-xl overflow-hidden">
         {/* Header - Fixed at top */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
-              <Plus size={20} className="text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800">
-              Add New Application
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <XCircleIcon size={20} className="text-gray-500" />
-          </button>
-        </div>
+        <Title setModal={onClose}>Add New Application</Title>
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">

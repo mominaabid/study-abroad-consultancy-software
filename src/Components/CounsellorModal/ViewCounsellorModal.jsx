@@ -11,6 +11,7 @@ import {
   Users,
   XCircleIcon,
 } from "lucide-react";
+import { Title } from "../Title";
 
 export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
   if (!isOpen || !counselor) return null;
@@ -33,41 +34,7 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         {/* Header with Background Pattern */}
-        <div className="relative px-8 py-6 bg-[#00A78E] text-white">
-          <div className="flex justify-between items-start relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-md text-white rounded-full flex items-center justify-center text-2xl font-bold border-2 border-white/30">
-                {counselor.name?.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold leading-tight">
-                  {counselor.name}
-                </h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
-                      counselor.status === "active"
-                        ? "bg-white text-[#00A78E]"
-                        : "bg-red-500 text-white"
-                    }`}
-                  >
-                    {counselor.status || "active"}
-                  </span>
-                  <span className="text-teal-100 text-sm opacity-80">
-                    | {counselor.role || "Counsellor"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-xl transition-colors"
-            >
-              <XCircleIcon size={24} />
-            </button>
-          </div>
-        </div>
-
+        <Title setModal={onClose}>View Counselor Details</Title>
         {/* Content */}
         <div className="p-8">
           <div className="space-y-6">

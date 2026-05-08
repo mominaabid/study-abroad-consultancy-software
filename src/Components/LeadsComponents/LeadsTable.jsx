@@ -1,13 +1,14 @@
+import React from "react";
 import { formatDate } from "./LeadsConstants";
 import { Avatar, StatusBadge } from "./LeadAtoms";
+import { Pagination } from "../Pagination";
+import { ShowDataNumber } from "../ShowDataNumber";
 
 export default function LeadsTable({
   filteredLeads,
-  // counsellors,
   onRowClick,
   onEdit,
   onDelete,
-  // onAssign,
   actionMenu,
   setActionMenu,
   pagination,
@@ -27,12 +28,17 @@ export default function LeadsTable({
     "px-4 py-3 text-left text-[10px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap";
   const tdCls = "px-4 py-3.5 align-middle";
 
+  // Calculate display range for ShowDataNumber
+  const pageSize = pagination.pageSize || 10;
+  const total = pagination.total || 0;
+  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, total);
+
   return (
     <div className="flex-1 overflow-auto px-6 py-4">
       {/* Container */}
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm border-collapse">
-          {/* Headera */}
           <thead>
             <tr className="bg-gray-50/70 border-b border-gray-200">
               <th className="w-10 px-4 py-3">
@@ -41,7 +47,6 @@ export default function LeadsTable({
                   className="w-3.5 h-3.5 rounded border-gray-300 accent-teal-600"
                 />
               </th>
-
               {[
                 "Lead",
                 "Contact",
@@ -57,7 +62,6 @@ export default function LeadsTable({
               ))}
             </tr>
           </thead>
-
           <tbody>
             {filteredLeads.length === 0 && (
               <tr>
@@ -164,32 +168,16 @@ export default function LeadsTable({
           </tbody>
         </table>
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
+        {/* Pagination Section */}
+        {pagination.totalPages >= 1 && (
           <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-200 bg-gray-50/50">
-            <span className="text-xs text-gray-500">
-              Page <strong>{currentPage}</strong> of{" "}
-              <strong>{pagination.totalPages}</strong> · {pagination.total}{" "}
-              leads
-            </span>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                disabled={currentPage <= 1}
-                onClick={() => onPageChange(currentPage - 1)}
-                className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition disabled:opacity-40"
-              >
-                ← Prev
-              </button>
-
-              <button
-                disabled={currentPage >= pagination.totalPages}
-                onClick={() => onPageChange(currentPage + 1)}
-                className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition disabled:opacity-40"
-              >
-                Next →
-              </button>
-            </div>
+            <ShowDataNumber start={start} end={end} total={total} />
+            <Pagination
+              handlePageClick={(page) => onPageChange(page)}
+              pageNo={currentPage}
+              totalNum={total}
+              pageSize={pageSize}
+            />
           </div>
         )}
       </div>

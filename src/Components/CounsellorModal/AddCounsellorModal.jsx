@@ -10,6 +10,7 @@ import { OptionField } from "../InputFields/OptionField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
+import { Title } from "../Title";
 import {
   User,
   Mail,
@@ -132,23 +133,9 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-8 pt-8 pb-4 flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">
-              Add New Counselor
-            </h2>
-            <p className="text-slate-500 text-sm mt-1">
-              Fill in the details to create a new account.
-            </p>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <XCircleIcon size={20} className="text-gray-500" />
-          </button>
-        </div>
+        <Title setModal={onClose}>
+          Add New Counselor
+        </Title>
 
         <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
