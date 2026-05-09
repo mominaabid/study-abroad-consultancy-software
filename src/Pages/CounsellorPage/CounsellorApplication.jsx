@@ -792,6 +792,7 @@ function CounsellorDocumentModal({
   onSuccess,
   student,
   application,
+  blockedDocTypes = new Set(),
 }) {
   const [formData, setFormData] = useState({
     doc_type: "offer_letter",
@@ -800,6 +801,12 @@ function CounsellorDocumentModal({
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  const availableDocTypes = DOC_TYPES.filter(
+    (type) => !blockedDocTypes.has(type.key),
+  );
+
+  const noTypesAvailable = availableDocTypes.length === 0;
 
   const validate = () => {
     const newErrors = {};
@@ -887,7 +894,7 @@ function CounsellorDocumentModal({
           </p>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div>
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Document Type *
             </label>
@@ -905,6 +912,38 @@ function CounsellorDocumentModal({
                 </option>
               ))}
             </select>
+            {errors.doc_type && (
+              <p className="text-red-500 text-xs mt-1">{errors.doc_type}</p>
+            )}
+          </div> */}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document Type *
+            </label>
+            {noTypesAvailable ? (
+              <div className="text-amber-600 text-sm bg-amber-50 p-2 rounded-lg">
+                All document types for this application have already been shared
+                and are pending/verified.
+                <br />
+                You can upload again if a document was rejected.
+              </div>
+            ) : (
+              <select
+                required
+                value={formData.doc_type}
+                onChange={(e) =>
+                  setFormData({ ...formData, doc_type: e.target.value })
+                }
+                className={`w-full border ${errors.doc_type ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+              >
+                {availableDocTypes.map((type) => (
+                  <option key={type.key} value={type.key}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            )}
             {errors.doc_type && (
               <p className="text-red-500 text-xs mt-1">{errors.doc_type}</p>
             )}
@@ -941,7 +980,7 @@ function CounsellorDocumentModal({
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
+          {/* <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
@@ -953,6 +992,27 @@ function CounsellorDocumentModal({
               type="submit"
               disabled={loading}
               className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700"
+            >
+              {loading ? (
+                <RefreshCw size={16} className="animate-spin mx-auto" />
+              ) : (
+                "Share Document"
+              )}
+            </button>
+          </div> */}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || noTypesAvailable}
+              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <RefreshCw size={16} className="animate-spin mx-auto" />
@@ -1193,6 +1253,21 @@ export const CounsellorApplication = () => {
       allowedStatuses.includes(s.status?.toLowerCase()),
     );
   }, [allAssignedStudents, isAdmin]);
+
+  // Inside CounsellorApplication component, after other useMemo definitions
+  const existingDocTypesForSelectedApp = useMemo(() => {
+    if (!selectedAppForDoc) return new Set();
+    const app = applications.find((a) => a.id === selectedAppForDoc.id);
+    if (!app || !app.documents) return new Set();
+    const blocked = new Set();
+    app.documents.forEach((doc) => {
+      // Block doc_type if it exists and is NOT rejected
+      if (doc.status !== "rejected") {
+        blocked.add(doc.doc_type);
+      }
+    });
+    return blocked;
+  }, [selectedAppForDoc, applications]);
 
   // Filtered list for sidebar (all assigned leads)
   const filteredStudents = allAssignedStudents.filter(
@@ -1639,6 +1714,7 @@ export const CounsellorApplication = () => {
         }}
         student={selectedStudent}
         application={selectedAppForDoc}
+        blockedDocTypes={existingDocTypesForSelectedApp}
       />
 
       {/* Delete Confirmation Modal */}

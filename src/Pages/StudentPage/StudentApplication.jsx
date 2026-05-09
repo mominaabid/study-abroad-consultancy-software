@@ -240,6 +240,16 @@ function DocumentCard({ doc, onRefresh }) {
               >
                 <StatusIcon size={10} /> {status.label}
               </span>
+              {/* {doc.uploaded_by === "counsellor" && (
+                <span className="text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+                  Shared by Counsellor
+                </span>
+              )} */}
+              {doc.uploaded_by === "admin" && (
+                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                  Shared by Admin
+                </span>
+              )}
               {doc.uploaded_by === "counsellor" && (
                 <span className="text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
                   Shared by Counsellor
