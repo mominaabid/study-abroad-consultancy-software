@@ -33,6 +33,7 @@ export default function LeadModal({
   onSave,
   counsellors = [],
   editLead,
+  assignMode = false,
 }) {
   const [form, setForm] = useState({
     ...EMPTY_FORM,
@@ -101,7 +102,13 @@ export default function LeadModal({
   if (!open) return null;
 
   const validate = () => {
-    const e = {};
+     const e = {};
+  if (assignMode) {
+    // Only validate counsellor in assign mode
+    if (!form.counsellor_id) e.counsellor_id = "Counsellor is required";
+    return e;
+  }
+   
     if (!form.name?.trim()) e.name = "Name is required";
     if (!form.phone?.trim()) {
       e.phone = "Phone number is required";
@@ -187,7 +194,9 @@ export default function LeadModal({
     >
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
-          <Title setModal={onClose}>{editLead ? "Edit Lead" : "Add New Lead"}</Title>
+       <Title setModal={onClose}>
+  {assignMode ? "Assign Counsellor" : editLead ? "Edit Lead" : "Add New Lead"}
+</Title>
          
        
 
@@ -196,14 +205,15 @@ export default function LeadModal({
           {/* Row 1 — Name & Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <InputField
-                labelName="Full Name *"
-                name="name"
-                value={form.name}
-                handlerChange={handleCustomChange}
-                icon={<User size={16} />}
-                maxLength={50}
-              />
+            <InputField
+  labelName="Full Name *"
+  name="name"
+  value={form.name}
+  handlerChange={handleCustomChange}
+  icon={<User size={16} />}
+  maxLength={50}
+  disabled={assignMode}
+/>
               {errors.name && <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>}
             </div>
 
@@ -215,6 +225,7 @@ export default function LeadModal({
                 value={form.email}
                 handlerChange={handleCustomChange}
                 icon={<Mail size={16} />}
+                 disabled={assignMode}
               />
               {errors.email && <p className="text-red-500 text-[10px] ml-1">{errors.email}</p>}
             </div>
@@ -227,6 +238,7 @@ export default function LeadModal({
               onChange={handleCustomChange}
               name="phone"
               error={errors.phone}
+               disabled={assignMode}
             />
 
             <div className="space-y-1">
@@ -237,6 +249,7 @@ export default function LeadModal({
                 handlerChange={handleCustomChange}
                 optionData={sourceOptions}
                 inital="Select Source"
+                 disabled={assignMode}
               />
               {errors.source && <p className="text-red-500 text-[10px] ml-1">{errors.source}</p>}
             </div>
@@ -256,10 +269,13 @@ export default function LeadModal({
                   type="text"
                   value={countrySearchTerm}
                   onChange={(e) => {
+                     if (assignMode) return; 
                     setCountrySearchTerm(e.target.value);
                     setCountryDropdownOpen(true);
                   }}
-                  onFocus={() => setCountryDropdownOpen(true)}
+                  onFocus={() => { if (!assignMode) setCountryDropdownOpen(true); }}  // ADD assignMode check
+  disabled={assignMode}   // ADD THIS
+                 
                   placeholder={
                     selectedCountries.length >= 5
                       ? "Max 5 countries selected"
@@ -328,6 +344,7 @@ export default function LeadModal({
                 optionData={studyLevelOptions}
                 inital="Select level"
                 icon={<BookOpen size={16} />}
+                 disabled={assignMode}
               />
               {errors.study_level && (
                 <p className="text-red-500 text-[10px] ml-1">{errors.study_level}</p>
@@ -362,11 +379,11 @@ export default function LeadModal({
             >
               Close
             </button>
-            <AddButton
-              label={editLead ? "Update Lead" : "Save Lead"}
-              loading={saving}
-              handleClick={handleSubmit}
-            />
+        <AddButton
+  label={assignMode ? "Assign" : editLead ? "Update Lead" : "Save Lead"}
+  loading={saving}
+  handleClick={handleSubmit}
+/>
           </div>
 
         </form>

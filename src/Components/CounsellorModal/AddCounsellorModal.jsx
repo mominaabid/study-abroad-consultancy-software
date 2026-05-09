@@ -11,6 +11,7 @@ import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
 import { Title } from "../Title";
+import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
 import {
   User,
   Mail,
@@ -47,23 +48,23 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (value.startsWith(" ")) return;
+
+    // Special handling for Phone (now comes with country code)
+    if (name === "phone") {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
     let formattedValue = value;
 
-    if (formattedValue.startsWith(" ")) return;
-
-    if ((name === "name" || name === "father_name") && value.length > 50)
-      return;
+    if ((name === "name" || name === "father_name") && value.length > 50) return;
     if (name === "address" && value.length > 250) return;
 
     if (name === "name" || name === "father_name") {
       const alphaRegex = /^[a-zA-Z\s]*$/;
       if (!alphaRegex.test(formattedValue)) return;
-    }
-
-    if (name === "phone") {
-      const numValue = value.replace(/\D/g, "");
-      if (numValue.length > 11) return;
-      formattedValue = numValue;
     }
 
     if (name === "cnic") {
@@ -94,8 +95,9 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
       return toast.error("Address must be at least 3 characters");
     }
 
-    if (formData.phone.length !== 11) {
-      return toast.error("Phone number must be exactly 11 digits");
+    // Updated phone validation (accepts +92 3001234567 format)
+    if (!formData.phone || formData.phone.replace(/\D/g, "").length < 8) {
+      return toast.error("Valid phone number is required");
     }
     if (formData.cnic.length !== 15) {
       return toast.error("CNIC must be in format: 00000-0000000-0");
@@ -169,14 +171,12 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               handlerChange={handleChange}
               placeholder="email@example.com"
             />
-            <InputField
-              labelName="Phone Number *"
-              name="phone"
-              type="text"
-              icon={<Phone size={18} />}
+                   <PhoneInputWithCountry
               value={formData.phone}
-              handlerChange={handleChange}
-              placeholder="03001234567"
+              onChange={handleChange}
+              name="phone"
+              labelName="Phone Number *"
+              error={formData.phone ? null : "Phone number is required"} // optional
             />
           </div>
 
