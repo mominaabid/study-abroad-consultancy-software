@@ -1,4 +1,3 @@
-// src/components/counsellor/CounsellorApplication.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -413,9 +412,9 @@ function ApplicationModal({
       newErrors.email = "Invalid email format";
     }
 
-    if (formData.phone && !/^\d{11}$/.test(formData.phone)) {
-      newErrors.phone = "Phone number must be exactly 11 digits";
-    }
+    // if (formData.phone && !/^\d{11}$/.test(formData.phone)) {
+    //   newErrors.phone = "Phone number must be exactly 11 digits";
+    // }
 
     if (formData.cgpa && formData.cgpa.trim() !== "") {
       const cgpaNum = parseFloat(formData.cgpa);
@@ -610,14 +609,14 @@ function ApplicationModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <CountrySelect
-  value={formData.target_country}
-  onChange={handleFieldChange}
-  name="target_country"
-  labelName="Target Country"
-  placeholder="Select target country"
-  required={false}
-/>
+            <CountrySelect
+              value={formData.target_country}
+              onChange={handleFieldChange}
+              name="target_country"
+              labelName="Target Country"
+              placeholder="Select target country"
+              required={false}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Deadline
@@ -681,16 +680,16 @@ function ApplicationModal({
                   <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                 )}
               </div>
-              
-          <PhoneInputWithCountry
-            value={formData.phone}
-            onChange={handleFieldChange}
-            name="phone"
-            labelName="Phone Number"
-            error={errors.phone}
-          />
-          
-                         <div>
+
+              <PhoneInputWithCountry
+                value={formData.phone}
+                onChange={handleFieldChange}
+                name="phone"
+                labelName="Phone Number"
+                error={errors.phone}
+              />
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Last Degree
                 </label>
