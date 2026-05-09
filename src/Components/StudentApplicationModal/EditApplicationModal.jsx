@@ -134,8 +134,7 @@ export const EditApplicationModal = ({
     const stringValue = String(value);
     if (hasLeadingSpaces(stringValue)) return "Cannot start with spaces";
     if (containsLetters(stringValue)) return "Cannot contain alphabets";
-    if (!/^\d{11}$/.test(stringValue))
-      return "Phone number must be exactly 11 digits";
+
     return null;
   };
 

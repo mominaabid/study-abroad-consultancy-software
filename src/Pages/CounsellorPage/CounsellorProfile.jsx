@@ -124,10 +124,7 @@ export const CounsellorProfile = () => {
       toast.error("Address must be at least 3 characters");
       return false;
     }
-    if (formData.phone.length !== 11) {
-      toast.error("Phone number must be exactly 11 digits");
-      return false;
-    }
+ 
     if (formData.cnic.replace(/-/g, "").length !== 13) {
       toast.error("CNIC must be exactly 13 digits (format: #####-#######-#)");
       return false;
