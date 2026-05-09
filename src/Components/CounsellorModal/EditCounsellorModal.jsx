@@ -100,9 +100,7 @@ export const EditCounsellorModal = ({
       return toast.error("Please enter a valid 13-digit CNIC");
     }
 
-    if (formData.phone && formData.phone.length !== 11) {
-      return toast.error("Phone number must be exactly 11 digits");
-    }
+   
 
     try {
       setLoading(true);

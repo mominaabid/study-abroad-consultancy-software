@@ -60,8 +60,7 @@ export const AddApplicationModal = ({
     if (!value) return null;
     if (hasLeadingSpaces(value)) return "Cannot start with spaces";
     if (containsLetters(value)) return "Cannot contain alphabets";
-    if (!/^\d{11}$/.test(value))
-      return "Phone number must be exactly 11 digits";
+
     return null;
   };
 
@@ -239,12 +238,7 @@ export const AddApplicationModal = ({
 
     // Apply max length restrictions based on field
     switch (name) {
-      case "phone": {
-        // Only allow digits and max 11 digits
-        formattedValue = value.replace(/\D/g, "");
-        if (formattedValue.length > 11) return;
-        break;
-      }
+ 
 
       case "cnic": {
         // Format CNIC and limit to 13 digits (without hyphens) / 15 characters with hyphens

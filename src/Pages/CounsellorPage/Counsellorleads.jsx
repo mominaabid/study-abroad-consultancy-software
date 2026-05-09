@@ -26,7 +26,7 @@ import LeadModal from "../../Components/LeadsComponents/LeadModal";
 function StatCard({ label, value, icon, color }) {
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4
+      className="bg-white rounded-2xl border border-gray-400 shadow-sm px-5 py-4
                     flex items-center justify-between transition-all duration-200
                     hover:shadow-md hover:-translate-y-0.5"
     >
@@ -374,8 +374,16 @@ const countryFilterRef = useRef(null);
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
+         {/* ── Stats Bar ── */}
+      {!loading && (
+        <div className="flex-shrink-0 grid grid-cols-4 gap-4 px-6 py-4">
+          {stats.map((s) => (
+            <StatCard key={s.label} {...s} />
+          ))}
+        </div>
+      )}
       {/* ── Header ── */}
-      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
+      <div className="flex-shrink-0  backdrop-blur-sm border-b border-gray-100 px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-lg font-bold text-gray-800">My Leads</h1>
@@ -566,14 +574,7 @@ const countryFilterRef = useRef(null);
         </div>
       </div>
 
-      {/* ── Stats Bar ── */}
-      {!loading && (
-        <div className="flex-shrink-0 grid grid-cols-4 gap-4 px-6 py-4">
-          {stats.map((s) => (
-            <StatCard key={s.label} {...s} />
-          ))}
-        </div>
-      )}
+   
 
       {/* ── Loading ── */}
       {loading && (

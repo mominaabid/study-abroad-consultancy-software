@@ -23,7 +23,7 @@ import { DeleteConfirmationModal } from "../../Components/DeleteConfirmationModa
 function StatCard({ label, value, icon, color }) {
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-200 shadow-sm px-5 py-4 
+      className="bg-white rounded-2xl border border-gray-400 shadow-sm px-5 py-4 
                     flex items-center justify-between transition-all duration-200 
                     hover:shadow-md hover:-translate-y-0.5"
     >
@@ -464,11 +464,19 @@ const handleAddNoteOnly = async (leadId, note) => {
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
       {/* ── Top Header ── */}
-      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
+           {/* ── Stats Bar ── */}
+      {!loading && (
+        <div className="flex-shrink-0 grid grid-cols-4 gap-4 px-6 py-4 ">
+          {stats.map((s) => (
+            <StatCard key={s.label} {...s} />
+          ))}
+        </div>
+      )}
+      <div className="flex-shrink-0  backdrop-blur-sm  px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           {/* Title */}
           <div>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-600 mt-0.5">
               {leads.length} total leads in pipeline
             </p>
           </div>
@@ -661,14 +669,7 @@ const handleAddNoteOnly = async (leadId, note) => {
         </div>
       </div>
 
-      {/* ── Stats Bar ── */}
-      {!loading && (
-        <div className="flex-shrink-0 grid grid-cols-4 gap-4 px-6 py-4">
-          {stats.map((s) => (
-            <StatCard key={s.label} {...s} />
-          ))}
-        </div>
-      )}
+ 
 
       {/* ── Loading ── */}
       {loading && (
