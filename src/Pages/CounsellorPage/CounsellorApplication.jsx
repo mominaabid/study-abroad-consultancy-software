@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
 import { BASE_URL } from "../../Content/Url";
 import {
   User,
@@ -67,28 +68,27 @@ const STATUS_OPTIONS = [
   { value: "approved", label: "Approved", color: "green" },
   { value: "reject", label: "Reject", color: "rose" },
 ];
-// Allowed lead statuses for creating new applications
-const ALLOWED_LEAD_STATUSES = [
-  "new",
-  "contacted",
-  "counselling",
-  "inquiry",
-  "follow_up",
-  "pending",
-];
+
 // Document types for counsellor upload
 const DOC_TYPES = [
+  { key: "passport", label: "Passport" },
+  { key: "transcript", label: "Academic Transcript" },
   { key: "offer_letter", label: "Offer Letter" },
+  { key: "visa", label: "Visa" },
+  { key: "sop", label: "Statement of Purpose (SOP)" },
+  { key: "ielts", label: "IELTS / English Test Score" },
+  { key: "photo", label: "Photograph" },
+  { key: "recommendation", label: "Recommendation Letter" },
+  { key: "financial", label: "Financial Document" },
+  { key: "cv", label: "CV / Resume" },
+  { key: "other", label: "Other Document" },
   { key: "acceptance_letter", label: "Acceptance Letter" },
   { key: "visa_letter", label: "Visa Letter" },
   { key: "scholarship_certificate", label: "Scholarship Certificate" },
   { key: "fee_invoice", label: "Fee Invoice" },
-  { key: "passport", label: "Passport Copy" },
-  { key: "transcript", label: "Academic Transcript" },
-  { key: "other", label: "Other Document" },
 ];
 
-// Document Preview Modal - FIXED
+// ===================== DOCUMENT PREVIEW MODAL =====================
 function DocumentPreviewModal({
   isOpen,
   onClose,
@@ -157,7 +157,6 @@ function DocumentPreviewModal({
   const verifiedDocs = documents.filter((d) => d.status === "verified");
   const rejectedDocs = documents.filter((d) => d.status === "rejected");
 
-  // Helper to get file URL
   const getFileUrl = (doc) => {
     return doc.file_path || doc.file_url;
   };
@@ -329,7 +328,7 @@ function DocumentPreviewModal({
   );
 }
 
-// ===================== APPLICATION MODAL WITH VALIDATIONS =====================
+// ===================== APPLICATION MODAL =====================
 function ApplicationModal({
   isOpen,
   onClose,
@@ -403,23 +402,19 @@ function ApplicationModal({
   const validate = () => {
     const newErrors = {};
 
-    // Required fields
     if (!formData.user_id) newErrors.user_id = "Student is required";
     if (!formData.target_university?.trim())
       newErrors.target_university = "University name is required";
     if (!formData.course?.trim()) newErrors.course = "Course name is required";
 
-    // Email validation (if provided, but it's recommended to have email)
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
 
-    // Phone validation (optional, but if provided must be exactly 11 digits)
     if (formData.phone && !/^\d{11}$/.test(formData.phone)) {
       newErrors.phone = "Phone number must be exactly 11 digits";
     }
 
-    // CGPA validation (optional, if entered must be number between 0-10)
     if (formData.cgpa && formData.cgpa.trim() !== "") {
       const cgpaNum = parseFloat(formData.cgpa);
       if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
@@ -432,7 +427,6 @@ function ApplicationModal({
       }
     }
 
-    // Test score validation (optional, if entered must be positive number)
     if (formData.test_score && formData.test_score.trim() !== "") {
       const scoreNum = parseFloat(formData.test_score);
       if (isNaN(scoreNum) || scoreNum < 0) {
@@ -445,7 +439,6 @@ function ApplicationModal({
       }
     }
 
-    // Deadline validation (optional, if provided must be a valid date)
     if (formData.deadline && isNaN(new Date(formData.deadline).getTime())) {
       newErrors.deadline = "Invalid date format";
     }
@@ -455,10 +448,8 @@ function ApplicationModal({
 
   const handleFieldChange = (e) => {
     const { name, value } = e.target;
-    // Prevent leading spaces
     if (value.startsWith(" ")) return;
 
-    // Specific field restrictions
     if (
       (name === "target_university" ||
         name === "course" ||
@@ -468,7 +459,6 @@ function ApplicationModal({
     )
       return;
     if (name === "cgpa") {
-      // Allow only numbers and one decimal point
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
     if (name === "test_score") {
@@ -476,7 +466,6 @@ function ApplicationModal({
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field if any
     if (errors[name]) {
       setErrors((prev) => {
         const newErrs = { ...prev };
@@ -556,7 +545,6 @@ function ApplicationModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Student Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Student *
@@ -802,7 +790,7 @@ function ApplicationModal({
   );
 }
 
-// ===================== DOCUMENT UPLOAD MODAL WITH VALIDATIONS =====================
+// ===================== DOCUMENT UPLOAD MODAL =====================
 function CounsellorDocumentModal({
   isOpen,
   onClose,
@@ -984,7 +972,7 @@ function CounsellorDocumentModal({
   );
 }
 
-// Delete Confirmation Modal
+// ===================== DELETE CONFIRM MODAL =====================
 function DeleteConfirmModal({ isOpen, onClose, onConfirm, application }) {
   if (!isOpen) return null;
 
@@ -1023,12 +1011,11 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, application }) {
   );
 }
 
-// ===================== MAIN COUNSELLOR APPLICATION COMPONENT =====================
+// ===================== MAIN COMPONENT =====================
 export const CounsellorApplication = () => {
   const [students, setStudents] = useState([]);
   const [applications, setApplications] = useState([]);
   const [documents, setDocuments] = useState([]);
-  const [counsellorLeads, setCounsellorLeads] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1042,75 +1029,11 @@ export const CounsellorApplication = () => {
   const [selectedAppForDoc, setSelectedAppForDoc] = useState(null);
   const [currentAppDocuments, setCurrentAppDocuments] = useState([]);
 
-  // Fetch counsellor leads
-  const fetchCounsellorLeads = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
+  // Get logged-in user from Redux
+  const user = useSelector((state) => state.auth.user);
+  const isAdmin = user?.role === "admin";
 
-      const res = await fetch(`${BASE_URL}/counsellor/leads`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      const leadsData = Array.isArray(data) ? data : data.data || [];
-      setCounsellorLeads(leadsData);
-    } catch (err) {
-      console.error("Failed to fetch counsellor leads:", err);
-    }
-  }, []);
-
-  const availableStudents = useMemo(() => {
-    // Filter only eligible leads for new application creation
-    const eligibleLeads = counsellorLeads
-      .filter((lead) => {
-        const status = (lead.status || "").toLowerCase().trim();
-        return ALLOWED_LEAD_STATUSES.includes(status) && !lead.is_deleted;
-      })
-      .map((lead) => ({
-        id: lead.id,
-        user_id: lead.user_id || lead.id,
-        name: lead.name,
-        email: lead.email,
-        phone: lead.phone,
-        status: lead.status,
-      }));
-
-    // Keep students who already have applications
-    const existingStudents = students.map((s) => ({
-      id: s.id,
-      user_id: s.user_id || s.id,
-      name: s.name,
-      email: s.email,
-      status: s.status,
-    }));
-
-    const combined = [...eligibleLeads, ...existingStudents];
-
-    // Remove duplicates
-    const unique = combined.filter(
-      (student, index, self) =>
-        index === self.findIndex((s) => s.id === student.id),
-    );
-
-    return unique;
-  }, [counsellorLeads, students]);
-
-  // Fetch all documents for counsellor
-  const fetchDocuments = useCallback(async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/counsellor/documents/all`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setDocuments(data);
-      }
-    } catch (err) {
-      console.error("Error fetching documents:", err);
-    }
-  }, []);
-
-  // Fetch students with applications
+  // Fetch students + applications
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -1170,16 +1093,11 @@ export const CounsellorApplication = () => {
 
   useEffect(() => {
     fetchData();
-    fetchCounsellorLeads();
-  }, [fetchData, fetchCounsellorLeads]);
+  }, [fetchData]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    Promise.all([
-      fetchData(),
-      fetchDocuments(),
-      fetchCounsellorLeads(),
-    ]).finally(() => setRefreshing(false));
+    fetchData();
   };
 
   const handleVerifyDocument = async (docId) => {
@@ -1261,7 +1179,28 @@ export const CounsellorApplication = () => {
     return labelMap[status] || status;
   };
 
-  const filteredStudents = availableStudents.filter(
+  // All leads assigned to this counsellor (from API) – for sidebar display
+  const allAssignedStudents = useMemo(() => {
+    return students.map((s) => ({
+      id: s.id,
+      user_id: s.user_id || s.id,
+      name: s.name,
+      email: s.email,
+      status: s.status,
+    }));
+  }, [students]);
+
+  // Leads eligible for creating a new application (counsellor only)
+  const eligibleForNewApp = useMemo(() => {
+    if (isAdmin) return allAssignedStudents;
+    const allowedStatuses = ["new", "contacted", "counseling"]; // ✅ only these three
+    return allAssignedStudents.filter((s) =>
+      allowedStatuses.includes(s.status?.toLowerCase()),
+    );
+  }, [allAssignedStudents, isAdmin]);
+
+  // Filtered list for sidebar (all assigned leads)
+  const filteredStudents = allAssignedStudents.filter(
     (s) =>
       s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.email?.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -1275,11 +1214,13 @@ export const CounsellorApplication = () => {
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
               <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
-                Counsellor Portal
+                {isAdmin ? "Admin Portal" : "Counsellor Portal"}
               </p>
               <h1 className="text-2xl font-bold">Student Applications</h1>
               <p className="text-blue-200 text-sm mt-1">
-                Manage student applications, documents, and share files
+                {isAdmin
+                  ? "Manage all student applications (create, edit, delete)"
+                  : "Manage student applications, documents, and share files"}
               </p>
             </div>
             <button
@@ -1309,7 +1250,7 @@ export const CounsellorApplication = () => {
         </div>
       </div>
 
-      {/* Student List */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Student Sidebar */}
         <div className="lg:col-span-1">
@@ -1317,7 +1258,8 @@ export const CounsellorApplication = () => {
             <div className="p-4 border-b border-gray-100 bg-gray-50/50">
               <h3 className="font-semibold text-gray-700 text-sm flex items-center gap-2">
                 <Users size={16} className="text-teal-500" />
-                My Students ({filteredStudents.length})
+                {isAdmin ? "All Students" : "My Students"} (
+                {filteredStudents.length})
               </h3>
             </div>
             <div className="max-h-[500px] overflow-y-auto">
@@ -1465,11 +1407,13 @@ export const CounsellorApplication = () => {
               })}
               {filteredStudents.length === 0 && (
                 <div className="text-center py-8 text-gray-400">
-                  <p>No eligible students for new application</p>
-                  <p className="text-xs mt-1">
-                    Only leads with status: New, Contacted, Counselling, Inquiry
-                    can create applications
-                  </p>
+                  <p>No eligible students found</p>
+                  {!isAdmin && (
+                    <p className="text-xs mt-1">
+                      Only leads with status: New, Contacted, Counselling,
+                      Inquiry can create applications
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -1633,6 +1577,16 @@ export const CounsellorApplication = () => {
                               >
                                 <Upload size={14} className="text-teal-600" />
                               </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedApplication(app);
+                                  setShowDeleteModal(true);
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-red-50 transition"
+                                title="Delete"
+                              >
+                                <Trash2 size={14} className="text-red-500" />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1658,15 +1612,11 @@ export const CounsellorApplication = () => {
         onReject={handleRejectDocument}
       />
 
-      {/* Modals */}
       <ApplicationModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={() => {
-          fetchData();
-          fetchCounsellorLeads();
-        }}
-        students={availableStudents}
+        onSuccess={() => fetchData()}
+        students={eligibleForNewApp}
         selectedStudentForCreate={selectedStudent}
       />
 
@@ -1676,15 +1626,13 @@ export const CounsellorApplication = () => {
           setShowEditModal(false);
           setSelectedApplication(null);
         }}
-        onSuccess={() => {
-          fetchData();
-          fetchCounsellorLeads();
-        }}
+        onSuccess={() => fetchData()}
         application={selectedApplication}
-        students={availableStudents}
+        students={eligibleForNewApp}
         selectedStudentForCreate={null}
       />
 
+      {/* Share Document Modal */}
       <CounsellorDocumentModal
         isOpen={showDocModal}
         onClose={() => {
@@ -1693,12 +1641,12 @@ export const CounsellorApplication = () => {
         }}
         onSuccess={() => {
           fetchData();
-          fetchCounsellorLeads();
         }}
         student={selectedStudent}
         application={selectedAppForDoc}
       />
 
+      {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => {
