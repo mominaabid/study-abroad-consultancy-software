@@ -1119,11 +1119,33 @@ export const CounsellorApplication = () => {
               });
             });
 
+            // allApps.push({
+            //   id: app.id || app._id,
+            //   target_university: app.target_university,
+            //   course: app.course,
+            //   status: app.status,
+            //   created_at: app.created_at,
+            //   student_name: student.name,
+            //   student_email: student.email,
+            //   student_id: student.id,
+            //   user_id: student.user_id || student.id,
+            //   documents: appDocuments,
+            // });
             allApps.push({
               id: app.id || app._id,
               target_university: app.target_university,
               course: app.course,
+              target_country: app.target_country,
+              deadline: app.deadline,
               status: app.status,
+              full_name: app.full_name,
+              email: app.email,
+              phone: app.phone,
+              last_degree: app.last_degree,
+              cgpa: app.cgpa,
+              english_test: app.english_test,
+              test_score: app.test_score,
+              counselor_notes: app.counselor_notes,
               created_at: app.created_at,
               student_name: student.name,
               student_email: student.email,
