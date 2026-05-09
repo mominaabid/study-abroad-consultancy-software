@@ -101,28 +101,27 @@ export default function LeadModal({
 
   if (!open) return null;
 
-  const validate = () => {
-     const e = {};
-  if (assignMode) {
-    // Only validate counsellor in assign mode
-    if (!form.counsellor_id) e.counsellor_id = "Counsellor is required";
-    return e;
-  }
-   
-    if (!form.name?.trim()) e.name = "Name is required";
-    if (!form.phone?.trim()) {
-      e.phone = "Phone number is required";
-    } else if (form.phone.replace(/\D/g, "").length < 8) {
-      e.phone = "Phone number is too short";
-    }
-    if (!form.email?.trim()) e.email = "Email is required";
-    if (!form.source?.trim()) e.source = "Source is required";
-    if (!form.preferred_country?.trim()) e.preferred_country = "Preferred country is required";
-    if (!form.study_level?.trim()) e.study_level = "Study level is required";
-    if (editLead && !form.counsellor_id) e.counsellor_id = "Counsellor is required";
-    return e;
-  };
+const validate = () => {
+  const e = {};
 
+  if (assignMode) {
+    if (!form.counsellor_id) e.counsellor_id = "Counsellor is required";
+    return e;   // ← skip everything else
+  }
+
+  if (!form.name?.trim()) e.name = "Name is required";
+  if (!form.phone?.trim()) {
+    e.phone = "Phone number is required";
+  } else if (form.phone.replace(/\D/g, "").length < 8) {
+    e.phone = "Phone number is too short";
+  }
+  if (!form.email?.trim()) e.email = "Email is required";
+  if (!form.source?.trim()) e.source = "Source is required";
+  if (!form.preferred_country?.trim()) e.preferred_country = "Preferred country is required";
+  if (!form.study_level?.trim()) e.study_level = "Study level is required";
+
+  return e;
+};
   const handleSubmit = async (e) => {
     e?.preventDefault();
     const validationErrors = validate();
@@ -265,29 +264,26 @@ export default function LeadModal({
               </label>
 
               <div className="relative">
-                <input
-                  type="text"
-                  value={countrySearchTerm}
-                  onChange={(e) => {
-                     if (assignMode) return; 
-                    setCountrySearchTerm(e.target.value);
-                    setCountryDropdownOpen(true);
-                  }}
-                  onFocus={() => { if (!assignMode) setCountryDropdownOpen(true); }}  // ADD assignMode check
-  disabled={assignMode}   // ADD THIS
-                 
-                  placeholder={
-                    selectedCountries.length >= 5
-                      ? "Max 5 countries selected"
-                      : "Type to search countries..."
-                  }
-                  disabled={selectedCountries.length >= 5}
-                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors
-                    ${errors.preferred_country
-                      ? "border-red-400"
-                      : "border-slate-300 focus:border-blue-500"}
-                    ${selectedCountries.length >= 5 ? "bg-slate-50 cursor-not-allowed" : "bg-white"}`}
-                />
+          
+<input
+  type="text"
+  value={countrySearchTerm}
+  onChange={(e) => {
+    if (assignMode) return;
+    setCountrySearchTerm(e.target.value);
+    setCountryDropdownOpen(true);
+  }}
+  onFocus={() => { if (!assignMode) setCountryDropdownOpen(true); }}
+  disabled={assignMode || selectedCountries.length >= 5}   // ← merged into ONE
+  placeholder={
+    selectedCountries.length >= 5
+      ? "Max 5 countries selected"
+      : "Type to search countries..."
+  }
+  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors
+    ${errors.preferred_country ? "border-red-400" : "border-slate-300 focus:border-blue-500"}
+    ${assignMode || selectedCountries.length >= 5 ? "bg-slate-100 cursor-not-allowed opacity-60" : "bg-white"}`}
+/>
 
                 {/* Dropdown */}
                 {countryDropdownOpen && countrySearchTerm && (
@@ -319,11 +315,13 @@ export default function LeadModal({
                       className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-lg"
                     >
                       {country}
-                      <X
-                        size={11}
-                        className="cursor-pointer hover:text-red-500 transition-colors"
-                        onClick={() => handleRemoveCountry(country)}
-                      />
+                   {!assignMode && (
+  <X
+    size={11}
+    className="cursor-pointer hover:text-red-500 transition-colors"
+    onClick={() => handleRemoveCountry(country)}
+  />
+)}
                     </span>
                   ))}
                 </div>
@@ -353,7 +351,7 @@ export default function LeadModal({
           </div>
 
           {/* Row 4 — Counsellor (edit only) */}
-          {editLead && (
+  {(editLead && assignMode) && (
             <div className="space-y-1">
               <OptionField
                 labelName="Assign Counsellor *"
