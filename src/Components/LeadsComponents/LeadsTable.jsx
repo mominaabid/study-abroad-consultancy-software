@@ -9,6 +9,7 @@ export default function LeadsTable({
   onRowClick,
   onEdit,
   onDelete,
+  onAssignCounsellor,   // ← ADD THIS
   actionMenu,
   setActionMenu,
   pagination,
@@ -41,12 +42,7 @@ export default function LeadsTable({
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-gray-50/70 border-b border-gray-200">
-              <th className="w-10 px-4 py-3">
-                <input
-                  type="checkbox"
-                  className="w-3.5 h-3.5 rounded border-gray-300 accent-teal-600"
-                />
-              </th>
+          <th className="w-10 px-4 py-3 text-xs font-semibold text-gray-400">Sr No</th>
               {[
                 "Lead",
                 "Contact",
@@ -86,12 +82,9 @@ export default function LeadsTable({
                 ${i % 2 !== 0 ? "bg-gray-50/40" : ""}`}
               >
                 {/* Checkbox */}
-                <td className={tdCls} onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    className="w-3.5 h-3.5 rounded border-gray-300 accent-teal-600"
-                  />
-                </td>
+            <td className={tdCls} onClick={(e) => e.stopPropagation()}>
+  <span className="text-xs text-gray-400 font-medium">{i + 1}</span>
+</td>
 
                 {/* Lead */}
                 <td className={tdCls}>
@@ -183,6 +176,7 @@ export default function LeadsTable({
       </div>
 
       {/* Floating Menu */}
+      {/* Floating Action Menu */}
       {actionMenu && (
         <div
           className="fixed bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-lg z-[1000] min-w-[180px] py-1"
@@ -207,6 +201,18 @@ export default function LeadsTable({
             className="w-full px-4 py-2.5 text-[13px] text-gray-600 hover:bg-gray-100 text-left"
           >
             Edit Lead
+          </button>
+
+          {/* ✅ New Assign Counsellor Button */}
+          <button
+            onClick={() => {
+              onAssignCounsellor(actionMenu.lead);   // This must exist in parent
+              setActionMenu(null);
+            }}
+            className="w-full px-4 py-2.5 text-[13px] text-gray-600 hover:bg-blue-50 text-left flex items-center gap-2"
+          >
+         
+            Assign Counsellor
           </button>
 
           <div className="h-px bg-gray-200 my-1" />

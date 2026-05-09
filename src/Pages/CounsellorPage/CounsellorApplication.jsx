@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
+import PhoneInputWithCountry from "../../Components/InputFields/PhoneInputWithCountry";
 import {
   User,
   FileText,
@@ -26,6 +27,7 @@ import {
   ChevronUp,
   History,
 } from "lucide-react";
+import CountrySelect from "../../Components/InputFields/CountrySelect";
 
 const getToken = () => localStorage.getItem("token") || "";
 
@@ -620,19 +622,14 @@ function ApplicationModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Country
-              </label>
-              <input
-                type="text"
-                name="target_country"
-                value={formData.target_country}
-                onChange={handleFieldChange}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-                placeholder="Country"
-              />
-            </div>
+          <CountrySelect
+  value={formData.target_country}
+  onChange={handleFieldChange}
+  name="target_country"
+  labelName="Target Country"
+  placeholder="Select target country"
+  required={false}
+/>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Deadline
@@ -696,20 +693,19 @@ function ApplicationModal({
                   <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                 )}
               </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Phone (11 digits)"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleFieldChange}
-                  className={`w-full border ${errors.phone ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                />
-                {errors.phone && (
-                  <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
-                )}
-              </div>
-              <div>
+              
+          <PhoneInputWithCountry
+            value={formData.phone}
+            onChange={handleFieldChange}
+            name="phone"
+            labelName="Phone Number"
+            error={errors.phone}
+          />
+          
+                         <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Degree
+                </label>
                 <input
                   type="text"
                   placeholder="Last Degree"

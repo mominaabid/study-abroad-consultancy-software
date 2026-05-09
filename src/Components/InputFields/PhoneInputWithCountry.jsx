@@ -9,6 +9,7 @@ export default function PhoneInputWithCountry({
   labelName = "Phone Number *",
   error,
   defaultCountryCode = "+92",
+  disabled = false, 
 }) {
   const [countryCode, setCountryCode] = useState(defaultCountryCode);
   const [number, setNumber] = useState("");
@@ -67,20 +68,24 @@ export default function PhoneInputWithCountry({
         {labelName}
       </label>
 
-      <div
-        className={`flex items-center border rounded-xl overflow-visible bg-white transition-colors
-          ${error ? "border-red-400" : "border-slate-300 focus-within:border-blue-500"}`}
-      >
+    <div
+  className={`flex items-center border rounded-xl overflow-visible bg-white transition-colors
+    ${error ? "border-red-400" : "border-slate-300 focus-within:border-blue-500"}
+    ${disabled ? "bg-slate-100 opacity-60" : ""}`}   // ← ADD THIS
+>
         {/* ── Searchable code picker ── */}
         <div className="relative shrink-0" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => {
-              setDropdownOpen((prev) => !prev);
-              setSearchTerm("");
-            }}
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border-r border-slate-200 rounded-l-xl hover:bg-slate-100 transition-colors h-full"
-          >
+       <button
+  type="button"
+  onClick={() => {
+    if (disabled) return;        // ← ADD THIS
+    setDropdownOpen((prev) => !prev);
+    setSearchTerm("");
+  }}
+  disabled={disabled}           // ← ADD THIS
+  className={`flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border-r border-slate-200 rounded-l-xl transition-colors h-full
+    ${disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-slate-100"}`}  // ← CHANGE THIS
+>
             <span className="text-sm font-medium text-slate-700">{selectedCountry.value}</span>
             <ChevronDown
               size={13}
@@ -134,6 +139,7 @@ export default function PhoneInputWithCountry({
             type="tel"
             value={number}
             onChange={handleNumberChange}
+             disabled={disabled}  
             className="flex-1 py-2.5 text-sm bg-transparent focus:outline-none placeholder:text-slate-400 text-slate-700"
             placeholder="3001234567"
             maxLength={11}

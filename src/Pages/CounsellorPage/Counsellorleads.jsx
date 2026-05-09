@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BASE_URL } from "../../Content/Url";
 import "../AdminPage/Leads.css";
 import {
@@ -51,7 +51,10 @@ export default function CounsellorLeads() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("kanban");
   const [search, setSearch] = useState("");
-  const [filterCountry, setFilterCountry] = useState("All Countries");
+ const [filterCountry, setFilterCountry] = useState("All Countries");
+const [countrySearch, setCountrySearch] = useState("");
+const [countryFilterOpen, setCountryFilterOpen] = useState(false);
+const countryFilterRef = useRef(null);
   const [filterStatus, setFilterStatus] = useState("All Status");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -108,6 +111,16 @@ export default function CounsellorLeads() {
     fetchLeads(1);
     // ❌ Removed fetchCounsellors()
   }, [fetchLeads]);
+  useEffect(() => {
+  const handler = (e) => {
+    if (countryFilterRef.current && !countryFilterRef.current.contains(e.target)) {
+      setCountryFilterOpen(false);
+      setCountrySearch("");
+    }
+  };
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+}, []);
 
   useEffect(() => {
     const handler = () => setActionMenu(null);
@@ -272,9 +285,12 @@ export default function CounsellorLeads() {
       lead.name?.toLowerCase().includes(search.toLowerCase()) ||
       lead.email?.toLowerCase().includes(search.toLowerCase()) ||
       lead.phone?.includes(search);
-    const matchCountry =
-      filterCountry === "All Countries" ||
-      lead.preferred_country === filterCountry;
+  const matchCountry =
+  filterCountry === "All Countries" ||
+  lead.preferred_country
+    ?.split(",")
+    .map((c) => c.trim())
+    .includes(filterCountry);
     const matchStatus =
       filterStatus === "All Status" || lead.status === filterStatus;
     return matchSearch && matchCountry && matchStatus;
@@ -391,29 +407,82 @@ export default function CounsellorLeads() {
             </div>
 
             {/* Country filter */}
-            <div className="relative">
-              <select
-                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none focus:border-purple-500 appearance-none cursor-pointer"
-                value={filterCountry}
-                onChange={(e) => setFilterCountry(e.target.value)}
-              >
-                {COUNTRIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </div>
-            </div>
+      {/* Country filter */}
+<div className="relative" ref={countryFilterRef}>
+  <button
+    onClick={() => { setCountryFilterOpen((p) => !p); setCountrySearch(""); }}
+    className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[130px]"
+  >
+    <span className="truncate max-w-[100px]">
+      {filterCountry === "All Countries" ? "All Countries" : filterCountry}
+    </span>
+  </button>
+  <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  </div>
+
+  {countryFilterOpen && (
+    <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+      {/* Search */}
+      <div className="p-2 border-b border-gray-100">
+        <input
+          autoFocus
+          type="text"
+          value={countrySearch}
+          onChange={(e) => setCountrySearch(e.target.value)}
+          placeholder="Search country..."
+          className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+        />
+      </div>
+
+      {/* List */}
+      <div className="max-h-52 overflow-y-auto py-1">
+        {/* All Countries option */}
+        <div
+          onClick={() => { setFilterCountry("All Countries"); setCountryFilterOpen(false); setCountrySearch(""); }}
+          className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+            ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+        >
+          All Countries
+        </div>
+
+        {/* Filtered country list — use COUNTRIES from constants */}
+     {/* Filtered country list — built from actual lead data */}
+{[...new Set(
+  leads.flatMap((l) =>
+    l.preferred_country
+      ? l.preferred_country.split(",").map((c) => c.trim()).filter(Boolean)
+      : []
+  )
+)]
+  .filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase()))
+  .map((c) => (
+    <div
+      key={c}
+      onClick={() => { setFilterCountry(c); setCountryFilterOpen(false); setCountrySearch(""); }}
+      className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+        ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+    >
+      {c}
+    </div>
+  ))
+}
+
+{[...new Set(
+  leads.flatMap((l) =>
+    l.preferred_country
+      ? l.preferred_country.split(",").map((c) => c.trim()).filter(Boolean)
+      : []
+  )
+)].filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase())).length === 0 && countrySearch && (
+  <div className="px-4 py-3 text-[13px] text-gray-400">No countries found</div>
+)}
+      </div>
+    </div>
+  )}
+</div>
 
             {/* Status filter */}
             <div className="relative">
