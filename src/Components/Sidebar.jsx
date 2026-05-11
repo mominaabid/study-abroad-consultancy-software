@@ -1,13 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Home,
   Settings,
   User,
   BarChart,
-  X,
   MessageSquare,
-  Bell,
-  GraduationCap,
   DollarSign,
   LogOut,
   FileText,
@@ -21,20 +18,15 @@ import { logout, selectRole } from "../redux/slices/authSlice";
 const ADMIN_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/admin/dashboard" },
   { name: "Leads", icon: <BarChart size={20} />, path: "/admin/leads" },
-    {
+  {
     name: "Applications",
     icon: <Settings size={20} />,
     path: "/admin/applications",
   },
-  
- 
-
   { name: "Payments", icon: <DollarSign size={20} />, path: "/admin/payments" },
-   { name: "Profile", icon: <User size={20} />, path: "/admin/profile" },
+  { name: "Profile", icon: <User size={20} />, path: "/admin/profile" },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/admin/chats" },
- { name: "Counselors", icon: <User size={20} />, path: "/admin/counsellors" },
-
-  // { name: "Notifications",icon: <Bell size={20} />,         path: "/admin/notifications" },
+  { name: "Counselors", icon: <User size={20} />, path: "/admin/counsellors" },
 ];
 
 const COUNSELLOR_MENU = [
@@ -43,17 +35,16 @@ const COUNSELLOR_MENU = [
     icon: <Home size={20} />,
     path: "/counsellor/dashboard",
   },
-    {
+  {
     name: "Profile",
     icon: <User size={20} />,
     path: "/counsellor/profile",
   },
-  { name: "My Leads", icon: <BarChart size={20} />, path: "/counsellor/leads" },
-  // {
-  //   name: "Documents",
-  //   icon: <FileText size={20} />,
-  //   path: "/counsellor/documents",
-  // },
+  {
+    name: "My Leads",
+    icon: <BarChart size={20} />,
+    path: "/counsellor/leads",
+  },
   {
     name: "Applications",
     icon: <FileText size={20} />,
@@ -64,12 +55,11 @@ const COUNSELLOR_MENU = [
     icon: <MessageSquare size={20} />,
     path: "/counsellor/chats",
   },
-
 ];
 
 const STUDENT_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/student/dashboard" },
-    {
+  {
     name: "Profile",
     icon: <User size={20} />,
     path: "/student/profile",
@@ -79,19 +69,28 @@ const STUDENT_MENU = [
     icon: <FileText size={20} />,
     path: "/student/application",
   },
-  // {
-  //   name: "Documents",
-  //   icon: <GraduationCap size={20} />,
-  //   path: "/student/documents",
-  // },
   {
     name: "Payments",
     icon: <DollarSign size={20} />,
     path: "/student/payments",
   },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/student/chats" },
-
 ];
+
+// ── Helper to check if screen is desktop ──────────────────────────────────────
+const useDesktop = () => {
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return isDesktop;
+};
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
@@ -100,6 +99,14 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
   const location = useLocation();
   const dispatch = useDispatch();
   const role = useSelector(selectRole);
+  const isDesktop = useDesktop();
+
+  // Force sidebar closed on mobile when component mounts or screen size becomes mobile
+  useEffect(() => {
+    if (!isDesktop && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isDesktop, isOpen, setIsOpen]);
 
   // Pick menu based on role
   const menuItems =
@@ -118,25 +125,41 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
         ? "/counsellor/dashboard"
         : "/student/dashboard";
 
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    if (onHoverChange) onHoverChange(true);
-  };
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    if (onHoverChange) onHoverChange(false);
-  };
-  const isExpanded = isHovered || (isOpen && window.innerWidth < 768);
+  // Handle hover only on desktop
+  const handleMouseEnter = useCallback(() => {
+    if (isDesktop) {
+      setIsHovered(true);
+      if (onHoverChange) onHoverChange(true);
+    }
+  }, [isDesktop, onHoverChange]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDesktop) {
+      setIsHovered(false);
+      if (onHoverChange) onHoverChange(false);
+    }
+  }, [isDesktop, onHoverChange]);
+
+  // Determine expanded state: on desktop = hover, on mobile = only when open
+  const isExpanded = isDesktop ? isHovered : isOpen;
 
   function handleLogout() {
     dispatch(logout());
     navigate("/login");
+    if (!isDesktop) setIsOpen(false);
   }
+
+  // Transform classes for mobile off-canvas
+  const mobileTransform = !isDesktop
+    ? isOpen
+      ? "translate-x-full"
+      : "-translate-x-0"
+    : "md:translate-x-0";
 
   return (
     <>
       {/* Mobile overlay */}
-      {isOpen && (
+      {!isDesktop && isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsOpen(false)}
@@ -147,8 +170,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={`fixed inset-y-0 left-0 z-50 bg-white text-black transition-all duration-300 p-4 flex flex-col border-r border-gray-100 shadow-xl
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0
+          ${mobileTransform}
           ${isExpanded ? "w-64" : "w-20"}`}
       >
         {/* Logo */}
@@ -157,16 +179,13 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
             className="flex items-center gap-3 min-w-max cursor-pointer"
             onClick={() => navigate(homePath)}
           >
-            <img src={logo} alt="Logo" className="h-8 w-12  object-contain" />
+            <img src={logo} alt="Logo" className="h-8 w-12 object-contain" />
             {isExpanded && (
               <span className="text-lg font-bold text-gray-800 transition-opacity duration-300">
                 Educatia
               </span>
             )}
           </div>
-          <button className="md:hidden p-1" onClick={() => setIsOpen(false)}>
-            <X size={24} />
-          </button>
         </div>
 
         {/* Role badge */}
@@ -196,7 +215,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                 key={index}
                 onClick={() => {
                   if (item.path) navigate(item.path);
-                  if (window.innerWidth < 768) setIsOpen(false);
+                  if (!isDesktop) setIsOpen(false);
                 }}
                 className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200
                   ${

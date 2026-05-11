@@ -18,7 +18,7 @@ import {
   clearNotifications,
 } from "../redux/slices/notificationSlice";
 
-export const Header = ({ toggleSideBar }) => {
+export const Header = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
@@ -80,14 +80,14 @@ export const Header = ({ toggleSideBar }) => {
       <div className="px-4 h-16 flex items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center gap-4">
-          <button
+          {/* <button
             onClick={toggleSideBar}
             className="p-2 hover:bg-gray-100 rounded-lg md:hidden text-gray-600"
           >
             <Menu size={24} />
-          </button>
+          </button> */}
 
-          <span className="text-xl ml-2 font-bold text-gray-800">
+          <span className="text-sm sm:text-base md:text-xl font-bold text-gray-800 whitespace-nowrap ml-2">
             {getTitle()}
           </span>
         </div>

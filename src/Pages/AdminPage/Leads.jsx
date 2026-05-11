@@ -57,10 +57,10 @@ export default function Leads() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("kanban");
   const [search, setSearch] = useState("");
-const [filterCountry, setFilterCountry] = useState("All Countries");
-const [countrySearch, setCountrySearch] = useState("");
-const [countryFilterOpen, setCountryFilterOpen] = useState(false);
-const countryFilterRef = useRef(null);
+  const [filterCountry, setFilterCountry] = useState("All Countries");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [countryFilterOpen, setCountryFilterOpen] = useState(false);
+  const countryFilterRef = useRef(null);
   const [filterStatus, setFilterStatus] = useState("All Status");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -107,12 +107,12 @@ const countryFilterRef = useRef(null);
       setLoading(false);
     }
   }, []);
-    // New Handler for Assign Counsellor
+  // New Handler for Assign Counsellor
 
-const onAssignCounsellor = (lead) => {
-  setEditLead({ ...lead, _assignOnly: true });
-  setModalOpen(true);
-};
+  const onAssignCounsellor = (lead) => {
+    setEditLead({ ...lead, _assignOnly: true });
+    setModalOpen(true);
+  };
   // ── Fetch Counsellors ──────────────────────────────────────────────────────
   // const fetchCounsellors = useCallback(async () => {
   //   try {
@@ -158,15 +158,18 @@ const onAssignCounsellor = (lead) => {
     fetchLeads(1);
   }, [fetchLeads]);
   useEffect(() => {
-  const handler = (e) => {
-    if (countryFilterRef.current && !countryFilterRef.current.contains(e.target)) {
-      setCountryFilterOpen(false);
-      setCountrySearch("");
-    }
-  };
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
-}, []);
+    const handler = (e) => {
+      if (
+        countryFilterRef.current &&
+        !countryFilterRef.current.contains(e.target)
+      ) {
+        setCountryFilterOpen(false);
+        setCountrySearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   useEffect(() => {
     fetchCounsellors();
   }, [fetchCounsellors]);
@@ -347,49 +350,49 @@ const onAssignCounsellor = (lead) => {
       lead.name?.toLowerCase().includes(search.toLowerCase()) ||
       lead.email?.toLowerCase().includes(search.toLowerCase()) ||
       lead.phone?.includes(search);
-  const matchCountry =
-  filterCountry === "All Countries" ||
-  lead.preferred_country
-    ?.split(",")
-    .map((c) => c.trim())
-    .includes(filterCountry);
+    const matchCountry =
+      filterCountry === "All Countries" ||
+      lead.preferred_country
+        ?.split(",")
+        .map((c) => c.trim())
+        .includes(filterCountry);
     const matchStatus =
       filterStatus === "All Status" || lead.status === filterStatus;
     return matchSearch && matchCountry && matchStatus;
   });
-const handleAddNoteOnly = async (leadId, note) => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    toast.error("Not logged in.");
-    return;
-  }
-  
-  try {
-    const response = await fetch(`${BASE_URL}/admin/leads/${leadId}/note`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ note }),
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to add note");
+  const handleAddNoteOnly = async (leadId, note) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Not logged in.");
+      return;
     }
-    
-    toast.success("Note added successfully!");
-    
-    // Refresh if needed
-    if (drawerLead?.id === leadId) {
-      fetchLeads(currentPage);
+
+    try {
+      const response = await fetch(`${BASE_URL}/admin/leads/${leadId}/note`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ note }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to add note");
+      }
+
+      toast.success("Note added successfully!");
+
+      // Refresh if needed
+      if (drawerLead?.id === leadId) {
+        fetchLeads(currentPage);
+      }
+    } catch (error) {
+      console.error("Error adding note:", error);
+      toast.error(error.message || "Failed to add note");
     }
-  } catch (error) {
-    console.error("Error adding note:", error);
-    toast.error(error.message || "Failed to add note");
-  }
-};
+  };
   const leadsByStage = STAGES.reduce((acc, s) => {
     acc[s.key] = filteredLeads.filter((l) => l.status === s.key);
     return acc;
@@ -412,7 +415,9 @@ const handleAddNoteOnly = async (leadId, note) => {
     },
     {
       label: "Conversions",
-      value: leads.filter((l) => l.status === "success").length,
+
+      value: leads.filter((l) => l.status !== "new" && l.status !== "contacted")
+        .length,
       icon: <FiCheckCircle />,
       color: "#10b981", // green
     },
@@ -464,14 +469,17 @@ const handleAddNoteOnly = async (leadId, note) => {
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
       {/* ── Top Header ── */}
-           {/* ── Stats Bar ── */}
+      {/* ── Stats Bar ── */}
+
+      {/* ── Stats Bar ── */}
       {!loading && (
-        <div className="flex-shrink-0 grid grid-cols-4 gap-4 px-6 py-4 ">
+        <div className="flex-shrink-0 grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:px-6">
           {stats.map((s) => (
             <StatCard key={s.label} {...s} />
           ))}
         </div>
       )}
+
       <div className="flex-shrink-0  backdrop-blur-sm  px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           {/* Title */}
@@ -505,82 +513,118 @@ const handleAddNoteOnly = async (leadId, note) => {
             </div>
 
             {/* Country filter */}
-         {/* Country filter */}
-<div className="relative" ref={countryFilterRef}>
-  <button
-    onClick={() => { setCountryFilterOpen((p) => !p); setCountrySearch(""); }}
-    className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[130px]"
-  >
-    <span className="truncate max-w-[100px]">
-      {filterCountry === "All Countries" ? "All Countries" : filterCountry}
-    </span>
-  </button>
-  <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  </div>
+            {/* Country filter */}
+            <div className="relative" ref={countryFilterRef}>
+              <button
+                onClick={() => {
+                  setCountryFilterOpen((p) => !p);
+                  setCountrySearch("");
+                }}
+                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[130px]"
+              >
+                <span className="truncate max-w-[100px]">
+                  {filterCountry === "All Countries"
+                    ? "All Countries"
+                    : filterCountry}
+                </span>
+              </button>
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
 
-  {countryFilterOpen && (
-    <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-      {/* Search */}
-      <div className="p-2 border-b border-gray-100">
-        <input
-          autoFocus
-          type="text"
-          value={countrySearch}
-          onChange={(e) => setCountrySearch(e.target.value)}
-          placeholder="Search country..."
-          className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
-        />
-      </div>
+              {countryFilterOpen && (
+                <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                  {/* Search */}
+                  <div className="p-2 border-b border-gray-100">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={countrySearch}
+                      onChange={(e) => setCountrySearch(e.target.value)}
+                      placeholder="Search country..."
+                      className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+                    />
+                  </div>
 
-      {/* List */}
-      <div className="max-h-52 overflow-y-auto py-1">
-        {/* All Countries option */}
-        <div
-          onClick={() => { setFilterCountry("All Countries"); setCountryFilterOpen(false); setCountrySearch(""); }}
-          className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+                  {/* List */}
+                  <div className="max-h-52 overflow-y-auto py-1">
+                    {/* All Countries option */}
+                    <div
+                      onClick={() => {
+                        setFilterCountry("All Countries");
+                        setCountryFilterOpen(false);
+                        setCountrySearch("");
+                      }}
+                      className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
             ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
-        >
-          All Countries
-        </div>
+                    >
+                      All Countries
+                    </div>
 
-        {/* Filtered country list — use COUNTRIES from constants */}
-   {/* Filtered country list — built from actual lead data */}
-{[...new Set(
-  leads.flatMap((l) =>
-    l.preferred_country
-      ? l.preferred_country.split(",").map((c) => c.trim()).filter(Boolean)
-      : []
-  )
-)]
-  .filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase()))
-  .map((c) => (
-    <div
-      key={c}
-      onClick={() => { setFilterCountry(c); setCountryFilterOpen(false); setCountrySearch(""); }}
-      className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+                    {/* Filtered country list — use COUNTRIES from constants */}
+                    {/* Filtered country list — built from actual lead data */}
+                    {[
+                      ...new Set(
+                        leads.flatMap((l) =>
+                          l.preferred_country
+                            ? l.preferred_country
+                                .split(",")
+                                .map((c) => c.trim())
+                                .filter(Boolean)
+                            : [],
+                        ),
+                      ),
+                    ]
+                      .filter((c) =>
+                        c.toLowerCase().includes(countrySearch.toLowerCase()),
+                      )
+                      .map((c) => (
+                        <div
+                          key={c}
+                          onClick={() => {
+                            setFilterCountry(c);
+                            setCountryFilterOpen(false);
+                            setCountrySearch("");
+                          }}
+                          className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
         ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
-    >
-      {c}
-    </div>
-  ))
-}
+                        >
+                          {c}
+                        </div>
+                      ))}
 
-{[...new Set(
-  leads.flatMap((l) =>
-    l.preferred_country
-      ? l.preferred_country.split(",").map((c) => c.trim()).filter(Boolean)
-      : []
-  )
-)].filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase())).length === 0 && countrySearch && (
-  <div className="px-4 py-3 text-[13px] text-gray-400">No countries found</div>
-)}
-      </div>
-    </div>
-  )}
-</div>
+                    {[
+                      ...new Set(
+                        leads.flatMap((l) =>
+                          l.preferred_country
+                            ? l.preferred_country
+                                .split(",")
+                                .map((c) => c.trim())
+                                .filter(Boolean)
+                            : [],
+                        ),
+                      ),
+                    ].filter((c) =>
+                      c.toLowerCase().includes(countrySearch.toLowerCase()),
+                    ).length === 0 &&
+                      countrySearch && (
+                        <div className="px-4 py-3 text-[13px] text-gray-400">
+                          No countries found
+                        </div>
+                      )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Status filter */}
             <div className="relative">
@@ -669,8 +713,6 @@ const handleAddNoteOnly = async (leadId, note) => {
         </div>
       </div>
 
- 
-
       {/* ── Loading ── */}
       {loading && (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
@@ -712,25 +754,25 @@ const handleAddNoteOnly = async (leadId, note) => {
 
       {/* ── Table View ── */}
       {!loading && view === "table" && (
-         <LeadsTable
-        filteredLeads={filteredLeads}
-        counsellors={counsellors}
-        onRowClick={setDrawerLead}
-        onEdit={(l) => {
-          setEditLead(l);
-          setModalOpen(true);
-        }}
-        onDelete={setDeleteConfirm}
- onAssignCounsellor={onAssignCounsellor}    // ← Add this line
-        actionMenu={actionMenu}
-        setActionMenu={setActionMenu}
-        pagination={pagination}
-        currentPage={currentPage}
-        onPageChange={(page) => {
-          setCurrentPage(page);
-          fetchLeads(page);
-        }}
-      />
+        <LeadsTable
+          filteredLeads={filteredLeads}
+          counsellors={counsellors}
+          onRowClick={setDrawerLead}
+          onEdit={(l) => {
+            setEditLead(l);
+            setModalOpen(true);
+          }}
+          onDelete={setDeleteConfirm}
+          onAssignCounsellor={onAssignCounsellor} // ← Add this line
+          actionMenu={actionMenu}
+          setActionMenu={setActionMenu}
+          pagination={pagination}
+          currentPage={currentPage}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            fetchLeads(page);
+          }}
+        />
       )}
 
       {/* ── Modals & Overlays ── */}
@@ -742,7 +784,7 @@ const handleAddNoteOnly = async (leadId, note) => {
         message={`Are you sure you want to delete ${deleteConfirm?.name}? This action cannot be undone.`}
       />
 
-        <LeadModal
+      <LeadModal
         open={modalOpen}
         onClose={() => {
           setModalOpen(false);
@@ -751,7 +793,7 @@ const handleAddNoteOnly = async (leadId, note) => {
         onSave={handleSave}
         counsellors={counsellors}
         editLead={editLead}
-      assignMode={editLead?._assignOnly === true} // Optional: better logic later
+        assignMode={editLead?._assignOnly === true} // Optional: better logic later
       />
 
       <LeadDrawer
@@ -764,7 +806,7 @@ const handleAddNoteOnly = async (leadId, note) => {
         counsellors={counsellors}
         onAssign={handleAssign}
         onStage={handleStage}
-         onAddNoteOnly={handleAddNoteOnly} // ADD THIS LINE
+        onAddNoteOnly={handleAddNoteOnly} // ADD THIS LINE
       />
     </div>
   );

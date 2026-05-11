@@ -1,7 +1,7 @@
-// src/components/student/StudentProfile.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import CountryFlag from "react-country-flag";
 import {
   User,
   Mail,
@@ -17,8 +17,144 @@ import {
   CheckCircle,
   Shield,
   Camera,
+  ChevronDown,
+  Search,
 } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
+import { PHONE_COUNTRIES } from "../../constants/countries";
+import PhoneInputWithCountry from "../../components/InputFields/PhoneInputWithCountry";
+
+// Helper: get country object from country name (e.g., "Pakistan" -> { name, code, iso })
+const getCountryByName = (countryName) => {
+  if (!countryName) return null;
+  return PHONE_COUNTRIES.find(
+    (c) => c.name.toLowerCase() === countryName.toLowerCase(),
+  );
+};
+
+// Country selector component for preferred country (flag + code picker)
+const CountrySelector = ({ value, onChange, disabled, error }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef(null);
+
+  // Find selected country object based on stored country name
+  const selectedCountry = getCountryByName(value);
+
+  const filteredCountries = PHONE_COUNTRIES.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.value.includes(searchTerm),
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectCountry = (country) => {
+    onChange(country.name); // store country name (compatible with backend)
+    setDropdownOpen(false);
+    setSearchTerm("");
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => !disabled && setDropdownOpen((prev) => !prev)}
+        disabled={disabled}
+        className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-xl bg-white transition ${
+          disabled
+            ? "bg-gray-50 border-gray-100 text-gray-600 cursor-not-allowed"
+            : "border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-teal-400"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          {selectedCountry ? (
+            <>
+              <CountryFlag
+                countryCode={selectedCountry.iso}
+                svg
+                style={{ width: "1.4em", height: "1.1em", borderRadius: "2px" }}
+                title={selectedCountry.name}
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {selectedCountry.name} ({selectedCountry.value})
+              </span>
+            </>
+          ) : (
+            <span className="text-gray-500 text-sm">Select country</span>
+          )}
+        </div>
+        {!disabled && (
+          <ChevronDown
+            size={16}
+            className={`text-gray-400 transition-transform ${
+              dropdownOpen ? "rotate-180" : ""
+            }`}
+          />
+        )}
+      </button>
+
+      {dropdownOpen && !disabled && (
+        <div className="absolute z-50 left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-gray-100">
+            <div className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg bg-gray-50">
+              <Search size={13} className="text-gray-400 shrink-0" />
+              <input
+                autoFocus
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search country..."
+                className="flex-1 bg-transparent text-sm focus:outline-none text-gray-700"
+              />
+            </div>
+          </div>
+          <div className="max-h-52 overflow-y-auto">
+            {filteredCountries.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-400">No results</div>
+            ) : (
+              filteredCountries.map((country) => (
+                <div
+                  key={country.id}
+                  onClick={() => handleSelectCountry(country)}
+                  className={`flex items-center justify-between px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
+                    value === country.name
+                      ? "bg-teal-50 text-teal-700 font-medium"
+                      : "text-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <CountryFlag
+                      countryCode={country.iso}
+                      svg
+                      style={{
+                        width: "1.4em",
+                        height: "1.1em",
+                        borderRadius: "2px",
+                      }}
+                    />
+                    <span>{country.name}</span>
+                  </div>
+                  <span className="text-xs text-gray-400">{country.value}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  );
+};
 
 export const StudentProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -35,16 +171,13 @@ export const StudentProfile = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
-
     return `${day}-${month}-${year}`;
   };
 
-  // Fetch student profile
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -73,47 +206,46 @@ export const StudentProfile = () => {
     fetchProfile();
   }, []);
 
-  // Handle input changes with basic validation & formatting
   const handleChange = (e) => {
     const { name, value } = e.target;
     let formattedValue = value;
 
-    // Prevent leading spaces
     if (formattedValue.startsWith(" ")) return;
 
-    // Name: letters & spaces only, max 50
     if (name === "name") {
       const alphaRegex = /^[a-zA-Z\s]*$/;
       if (!alphaRegex.test(formattedValue)) return;
       if (formattedValue.length > 50) return;
     }
 
-    // Phone: digits only, max 15
     if (name === "phone") {
-      const numValue = value.replace(/\D/g, "");
-      if (numValue.length > 15) return;
-      formattedValue = numValue;
+      // Phone is now handled by PhoneInputWithCountry, so we keep raw value
+      if (value.length > 20) return;
+      formattedValue = value;
     }
 
-    // Preferred country & study level: max 50
-    if (
-      (name === "preferred_country" || name === "study_level") &&
-      value.length > 50
-    )
-      return;
+    if (name === "study_level" && value.length > 50) return;
 
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
-  // Validate before submit
+  // Handle phone change from custom component
+  const handlePhoneChange = (phoneValue) => {
+    setFormData((prev) => ({ ...prev, phone: phoneValue }));
+  };
+
+  // Handle country change from selector
+  const handleCountryChange = (countryName) => {
+    setFormData((prev) => ({ ...prev, preferred_country: countryName }));
+  };
+
   const validateForm = () => {
     if (!formData.name.trim() || formData.name.trim().length < 2) {
       toast.error("Name must be at least 2 characters");
       return false;
     }
-
-    if (!formData.phone.trim() || !/^\d{10,15}$/.test(formData.phone)) {
-      toast.error("Phone number must be 10–15 digits");
+    if (!formData.phone.trim()) {
+      toast.error("Phone number is required");
       return false;
     }
     if (!formData.preferred_country.trim()) {
@@ -127,7 +259,6 @@ export const StudentProfile = () => {
     return true;
   };
 
-  // Submit updated profile
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -156,6 +287,17 @@ export const StudentProfile = () => {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const cancelEdit = () => {
+    setEditMode(false);
+    setFormData({
+      name: profile.name || "",
+      email: profile.email || "",
+      phone: profile.phone || "",
+      preferred_country: profile.preferred_country || "",
+      study_level: profile.study_level || "",
+    });
   };
 
   if (loading) {
@@ -197,41 +339,6 @@ export const StudentProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Sticky Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className="px-2 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-wrap items-center justify-end gap-4">
-            {!editMode ? (
-              <button
-                onClick={() => setEditMode(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium shadow-sm transition duration-200"
-              >
-                <Edit3 size={18} />
-                Edit Profile
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditMode(false);
-                  setFormData({
-                    name: profile.name || "",
-                    email: profile.email || "",
-                    phone: profile.phone || "",
-                    preferred_country: profile.preferred_country || "",
-                    study_level: profile.study_level || "",
-                  });
-                }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition duration-200"
-              >
-                <X size={18} />
-                Cancel Editing
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
       <div className="p-2 sm:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT COLUMN - Profile Summary Cards */}
@@ -318,8 +425,23 @@ export const StudentProfile = () => {
                   <span className="text-gray-500 flex items-center gap-2">
                     <Globe size={14} /> Preferred Country
                   </span>
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-gray-700 flex items-center gap-1.5">
+                    {profile.preferred_country && (
+                      <CountryFlag
+                        countryCode={
+                          getCountryByName(profile.preferred_country)?.iso || ""
+                        }
+                        svg
+                        style={{ width: "1.2em", height: "0.9em" }}
+                      />
+                    )}
                     {profile.preferred_country || "—"}
+                    {profile.preferred_country &&
+                      getCountryByName(profile.preferred_country) && (
+                        <span className="text-gray-400 text-xs ml-1">
+                          ({getCountryByName(profile.preferred_country)?.value})
+                        </span>
+                      )}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-50">
@@ -355,6 +477,7 @@ export const StudentProfile = () => {
                     : "Your profile information is read-only. Click edit to make changes."}
                 </p>
               </div>
+
               <form onSubmit={handleUpdate} className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Full Name */}
@@ -382,7 +505,7 @@ export const StudentProfile = () => {
                     </div>
                   </div>
 
-                  {/* Email */}
+                  {/* Email (read-only) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Email Address <span className="text-red-500">*</span>
@@ -402,54 +525,67 @@ export const StudentProfile = () => {
                     </div>
                   </div>
 
-                  {/* Phone */}
+                  {/* Phone Number - using PhoneInputWithCountry */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Phone Number <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone size={18} className="text-gray-400" />
-                      </div>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition ${
-                          editMode
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-100 text-gray-600"
-                        }`}
-                        placeholder="03001234567"
-                      />
-                    </div>
+                    <PhoneInputWithCountry
+                      value={formData.phone}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      name="phone"
+                      labelName="Phone Number *"
+                      disabled={!editMode}
+                      error={
+                        !formData.phone && editMode ? "Phone is required" : ""
+                      }
+                    />
                   </div>
 
-                  {/* Preferred Country */}
+                  {/* Preferred Country with flag & code selector */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Preferred Country <span className="text-red-500">*</span>
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Globe size={18} className="text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="preferred_country"
+                    {editMode ? (
+                      <CountrySelector
                         value={formData.preferred_country}
-                        onChange={handleChange}
+                        onChange={handleCountryChange}
                         disabled={!editMode}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition ${
-                          editMode
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-100 text-gray-600"
-                        }`}
-                        placeholder="e.g., USA, Canada, UK"
+                        error={
+                          !formData.preferred_country && editMode
+                            ? "Country is required"
+                            : ""
+                        }
                       />
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-700">
+                        {formData.preferred_country ? (
+                          <>
+                            <CountryFlag
+                              countryCode={
+                                getCountryByName(formData.preferred_country)
+                                  ?.iso || ""
+                              }
+                              svg
+                              style={{ width: "1.4em", height: "1.1em" }}
+                            />
+                            <span>
+                              {formData.preferred_country}{" "}
+                              {getCountryByName(formData.preferred_country) && (
+                                <span className="text-gray-400 text-xs">
+                                  (
+                                  {
+                                    getCountryByName(formData.preferred_country)
+                                      ?.value
+                                  }
+                                  )
+                                </span>
+                              )}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-gray-500">Not provided</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Study Level */}
@@ -477,7 +613,7 @@ export const StudentProfile = () => {
                     </div>
                   </div>
 
-                  {/* Role (Read-only) */}
+                  {/* Role (read-only) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Role
@@ -493,21 +629,11 @@ export const StudentProfile = () => {
                   </div>
                 </div>
 
-                {/* Save Button (only in edit mode) */}
                 {editMode && (
                   <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditMode(false);
-                        setFormData({
-                          name: profile.name || "",
-                          email: profile.email || "",
-                          phone: profile.phone || "",
-                          preferred_country: profile.preferred_country || "",
-                          study_level: profile.study_level || "",
-                        });
-                      }}
+                      onClick={cancelEdit}
                       className="px-6 py-2.5 rounded-xl font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition"
                     >
                       Cancel
@@ -523,6 +649,18 @@ export const StudentProfile = () => {
                   </div>
                 )}
               </form>
+
+              {!editMode && (
+                <div className="px-6 pb-6 flex justify-end">
+                  <button
+                    onClick={() => setEditMode(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium shadow-sm transition duration-200"
+                  >
+                    <Edit3 size={18} />
+                    Edit Profile
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

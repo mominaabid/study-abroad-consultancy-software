@@ -8,8 +8,17 @@ import { DeleteIcon } from "../CustomButtons/DeleteIcon";
 export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
-  const { name, role, email, phone, status, assigned_leads, conversion_rate } =
-    counselor;
+
+  const {
+    name,
+    role,
+    email,
+    phone,
+    status,
+    assigned_leads,
+    counsellingStageCount,
+    counsellingConversionRate,
+  } = counselor;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -20,6 +29,11 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Format percentage to one decimal place
+  const formattedConvRate = counsellingConversionRate
+    ? counsellingConversionRate.toFixed(1)
+    : "0";
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-visible group hover:shadow-md transition-all">
@@ -115,15 +129,20 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
       <div className="px-5 py-4 bg-slate-50/50 flex border-t border-slate-100 rounded-b-xl">
         <div className="flex-1 text-center border-r border-slate-200">
           <p className="text-[10px] text-slate-500 uppercase font-bold">
-            Leads
+            Assigned Leads
           </p>
           <p className="font-bold text-slate-700">{assigned_leads || 0}</p>
         </div>
         <div className="flex-1 text-center">
           <p className="text-[10px] text-slate-500 uppercase font-bold">
-            Conv.
+            Converted to Student
           </p>
-          <p className="font-bold text-teal-600">{conversion_rate || 0}%</p>
+          <p className="font-bold text-teal-600">
+            {counsellingStageCount || 0}
+            <span className="text-[10px] text-slate-400 ml-1 font-normal">
+              ({formattedConvRate}%)
+            </span>
+          </p>
         </div>
       </div>
     </div>

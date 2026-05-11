@@ -27,8 +27,22 @@ export const MainContent = () => {
     monthlyRevenue: 0,
     revenueChange: "+0%",
   });
+
+  // Dynamic stat footer data
+  const [leadsChange, setLeadsChange] = useState("+0%");
+  const [applicationsChange, setApplicationsChange] = useState("+0%");
+
   const notifications = useSelector(selectNotifications);
   const user = useSelector(selectUser);
+
+  // Helper: calculate percentage change between two numbers
+  const getPercentageChange = (current, previous) => {
+    if (previous === 0) {
+      return current > 0 ? "+100%" : "0%";
+    }
+    const change = ((current - previous) / previous) * 100;
+    return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
+  };
 
   // Fetch Leads
   useEffect(() => {
@@ -62,6 +76,35 @@ export const MainContent = () => {
 
     fetchLeads();
   }, []);
+
+  // Compute dynamic change for Total Leads
+  useEffect(() => {
+    if (leads.length === 0) {
+      setLeadsChange("0%");
+      return;
+    }
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // First day of current month
+    const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
+    // Last day of previous month
+    const endOfPreviousMonth = new Date(currentYear, currentMonth, 0);
+
+    // Total leads up to now (current total)
+    const totalNow = leads.length;
+
+    // Total leads up to end of previous month (includes all leads created on or before that date)
+    const totalPreviousMonth = leads.filter((lead) => {
+      const createdAt = new Date(lead.createdAt);
+      return createdAt <= endOfPreviousMonth;
+    }).length;
+
+    const change = getPercentageChange(totalNow, totalPreviousMonth);
+    setLeadsChange(change);
+  }, [leads]);
 
   // Fetch Payments for Revenue Stats
   useEffect(() => {
@@ -136,42 +179,87 @@ export const MainContent = () => {
     fetchPayments();
   }, []);
 
-  // Fetch Applications
+  // Fetch Counsellor Applications
   useEffect(() => {
-    const fetchApplications = async () => {
+    const fetchCounsellorApplications = async () => {
       try {
         const token = localStorage.getItem("token");
-
         if (!token) return;
 
-        const res = await fetch(`${BASE_URL}/admin/applications`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+        const res = await fetch(
+          `${BASE_URL}/counsellor/applications/students`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch applications");
-        }
+        if (!res.ok) throw new Error("Failed to fetch counsellor applications");
 
         const data = await res.json();
-
-        setApplications(Array.isArray(data) ? data : []);
+        if (data.success && data.students) {
+          const allApps = [];
+          data.students.forEach((student) => {
+            if (student.applications && Array.isArray(student.applications)) {
+              student.applications.forEach((app) => {
+                allApps.push({
+                  id: app.id || app._id,
+                  ...app,
+                  student_name: student.name,
+                  student_email: student.email,
+                  student_id: student.id,
+                });
+              });
+            }
+          });
+          setApplications(allApps);
+        } else {
+          setApplications([]);
+        }
       } catch (err) {
-        console.error("Applications API error:", err);
+        console.error("Counsellor applications API error:", err);
+        setApplications([]);
       }
     };
 
-    fetchApplications();
+    fetchCounsellorApplications();
   }, []);
+
+  // Compute dynamic change for Applications
+  useEffect(() => {
+    if (applications.length === 0) {
+      setApplicationsChange("0%");
+      return;
+    }
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // End of previous month
+    const endOfPreviousMonth = new Date(currentYear, currentMonth, 0);
+
+    // Total applications now
+    const totalNow = applications.length;
+
+    // Total applications created on or before end of previous month
+    const totalPreviousMonth = applications.filter((app) => {
+      // Use createdAt or fallback to current date
+      const createdDate = app.createdAt ? new Date(app.createdAt) : new Date();
+      return createdDate <= endOfPreviousMonth;
+    }).length;
+
+    const change = getPercentageChange(totalNow, totalPreviousMonth);
+    setApplicationsChange(change);
+  }, [applications]);
 
   const now = new Date();
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
 
-  // Calculate real counts for funnel (using total leads)
-  // Calculate real counts for funnel (using total leads)
+  // Calculate real counts for funnel
   const newCount = leads.filter(
     (l) => l.status?.toLowerCase() === "new",
   ).length;
@@ -188,8 +276,12 @@ export const MainContent = () => {
     (l) => l.status?.toLowerCase() === "success",
   ).length;
 
-  // Calculate total leads (sum of all funnel stages)
-  const totalLeadsCount = newCount;
+  // Total leads - fixed to actual total count
+  // const totalLeadsCount = leads.length;
+  const totalLeadsCount = leads.filter((l) => {
+    const status = l.status?.toLowerCase();
+    return status === "new" || status === "contacted";
+  }).length;
 
   // Active students = Counseling + Evaluated + Converted
   const activeStudentsCount = counselingCount + evaluatedCount + convertedCount;
@@ -248,6 +340,15 @@ export const MainContent = () => {
   const handleNavigateToPayments = () => {
     navigate("/admin/payments");
   };
+
+  const handleNavigateToApplications = () => {
+    navigate("/admin/applications");
+  };
+
+  const handleNavigateToActiveStudents = () => {
+    navigate("/admin/leads");
+  };
+
   // Recent Leads (latest 4)
   const recentLeads = [...leads]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
@@ -361,11 +462,12 @@ export const MainContent = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-        {/* Total Leads - Fixed to show sum of all funnel stages */}
+        {/* Total Leads - Dynamic change */}
+        {/* Total Leads */}
         <StatCard
           title="Total Leads"
           value={loading ? "..." : totalLeadsCount}
-          change="+12.5%"
+          change={leadsChange}
           icon={<Users />}
           color="from-cyan-500 to-blue-600"
           onClick={handleNavigateToLeads}
@@ -379,9 +481,10 @@ export const MainContent = () => {
           isNegative={activeChange.startsWith("-")}
           icon={<UserCheck />}
           color="from-emerald-400 to-teal-500"
+          onClick={handleNavigateToActiveStudents}
         />
 
-        {/* Monthly Revenue - Dynamic */}
+        {/* Monthly Revenue */}
         <StatCard
           title="Monthly Revenue"
           value={`$${(paymentStats.monthlyRevenue / 1000).toFixed(1)}K`}
@@ -389,15 +492,18 @@ export const MainContent = () => {
           isNegative={paymentStats.revenueChange.startsWith("-")}
           icon={<DollarSign />}
           color="from-violet-500 to-indigo-600"
+          onClick={handleNavigateToPayments}
         />
 
         {/* Applications */}
         <StatCard
           title="Applications"
           value={loading ? "..." : applications.length}
-          change="+0%"
+          change={applicationsChange}
+          isNegative={applicationsChange.startsWith("-")}
           icon={<FileText />}
           color="from-rose-500 to-pink-600"
+          onClick={handleNavigateToApplications}
         />
       </div>
 

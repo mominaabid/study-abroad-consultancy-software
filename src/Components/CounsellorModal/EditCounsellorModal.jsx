@@ -2,21 +2,14 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
-import {
-  User,
-  Mail,
-  Phone,
-  IdCard,
-  MapPin,
-  Users,
-  XCircleIcon,
-} from "lucide-react";
+import { User, Mail, IdCard, MapPin, Users, XCircleIcon } from "lucide-react";
 
 import { InputField } from "../InputFields/InputField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import { CancelButton } from "../CustomButtons/CancelButton";
 import { Title } from "../Title";
+import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
 
 export const EditCounsellorModal = ({
   isOpen,
@@ -100,8 +93,6 @@ export const EditCounsellorModal = ({
       return toast.error("Please enter a valid 13-digit CNIC");
     }
 
-   
-
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -134,7 +125,7 @@ export const EditCounsellorModal = ({
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <Title setModal={onClose}>Edit Counselor</Title>
 
-        <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InputField
               labelName="Full Name *"
@@ -165,24 +156,24 @@ export const EditCounsellorModal = ({
               value={formData.email || ""}
               handlerChange={handleChange}
             />
-            <InputField
-              labelName="Phone Number *"
+            <PhoneInputWithCountry
               name="phone"
-              type="text"
-              icon={<Phone size={18} />}
               value={formData.phone || ""}
-              handlerChange={handleChange}
+              onChange={handleChange}
+              labelName="Phone Number *"
             />
           </div>
 
-          <InputField
-            labelName="CNIC *"
-            name="cnic"
-            type="text"
-            icon={<IdCard size={18} />}
-            value={formData.cnic || ""}
-            handlerChange={handleChange}
-          />
+          <div className="md:col-span-2">
+            <InputField
+              labelName="CNIC *"
+              name="cnic"
+              type="text"
+              icon={<IdCard size={18} />}
+              value={formData.cnic || ""}
+              handlerChange={handleChange}
+            />
+          </div>
 
           <TextareaField
             labelName="Address *"

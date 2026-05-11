@@ -224,9 +224,33 @@ function DocumentPreviewModal({
                           <p className="text-sm text-gray-600">
                             File: {fileName}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          {/* <p className="text-xs text-gray-400">
                             Submitted:{" "}
                             {new Date(doc.submitted_at).toLocaleDateString()}
+                          </p> */}
+                          <p className="text-xs text-gray-400">
+                            Submitted:{" "}
+                            {(() => {
+                              const dateValue =
+                                doc.submitted_at ||
+                                doc.created_at ||
+                                doc.uploaded_at ||
+                                doc.date;
+                              if (!dateValue) return "No date";
+                              const parsed = new Date(dateValue);
+                              if (isNaN(parsed.getTime()))
+                                return "Invalid date";
+
+                              const day = String(parsed.getDate()).padStart(
+                                2,
+                                "0",
+                              );
+                              const month = String(
+                                parsed.getMonth() + 1,
+                              ).padStart(2, "0");
+                              const year = parsed.getFullYear();
+                              return `${day}-${month}-${year}`;
+                            })()}
                           </p>
                           {doc.rejection_reason && (
                             <p className="text-xs text-red-600 mt-2">
@@ -412,10 +436,6 @@ function ApplicationModal({
       newErrors.email = "Invalid email format";
     }
 
-    // if (formData.phone && !/^\d{11}$/.test(formData.phone)) {
-    //   newErrors.phone = "Phone number must be exactly 11 digits";
-    // }
-
     if (formData.cgpa && formData.cgpa.trim() !== "") {
       const cgpaNum = parseFloat(formData.cgpa);
       if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
@@ -447,10 +467,40 @@ function ApplicationModal({
     return newErrors;
   };
 
+  // const handleFieldChange = (e) => {
+  //   const { name, value } = e.target;
+  //   if (value.startsWith(" ")) return;
+
+  //   if (
+  //     (name === "target_university" ||
+  //       name === "course" ||
+  //       name === "target_country" ||
+  //       name === "full_name") &&
+  //     /\d/.test(value)
+  //   )
+  //     return;
+  //   if (name === "cgpa") {
+  //     if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
+  //   }
+  //   if (name === "test_score") {
+  //     if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
+  //   }
+
+  //   setFormData((prev) => ({ ...prev, [name]: value }));
+  //   if (errors[name]) {
+  //     setErrors((prev) => {
+  //       const newErrs = { ...prev };
+  //       delete newErrs[name];
+  //       return newErrs;
+  //     });
+  //   }
+  // };
+
   const handleFieldChange = (e) => {
     const { name, value } = e.target;
     if (value.startsWith(" ")) return;
 
+    // Validation for specific fields (unchanged)
     if (
       (name === "target_university" ||
         name === "course" ||
@@ -466,6 +516,35 @@ function ApplicationModal({
       if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
     }
 
+    // ──────────────────────────────────────────────
+    // NEW: Auto-fill student details when user_id changes
+    // ──────────────────────────────────────────────
+    if (name === "user_id") {
+      const selectedStudent = students.find(
+        (s) => (s.user_id || s.id) === parseInt(value),
+      );
+      if (selectedStudent) {
+        setFormData((prev) => ({
+          ...prev,
+          user_id: value,
+          full_name: selectedStudent.name || "",
+          email: selectedStudent.email || "",
+          phone: selectedStudent.phone || "",
+        }));
+      } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      }
+      // Clear errors for auto-filled fields (optional)
+      setErrors((prev) => {
+        const newErrs = { ...prev };
+        delete newErrs.user_id;
+        delete newErrs.email;
+        return newErrs;
+      });
+      return;
+    }
+
+    // For all other fields, normal update
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {
@@ -538,226 +617,248 @@ function ApplicationModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-5 border-b border-gray-100 sticky top-0 bg-white">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        {/* Fixed Header */}
+        <div className="p-5 border-b border-gray-100 flex-shrink-0">
           <h2 className="text-lg font-bold text-gray-800">
             {application ? "Edit Application" : "Create Application"}
           </h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Student *
-            </label>
-            <select
-              required
-              value={formData.user_id}
-              onChange={handleFieldChange}
-              name="user_id"
-              className={`w-full border ${errors.user_id ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-            >
-              <option value="">Select Student</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.user_id || s.id}>
-                  {s.name} - {s.email}
-                </option>
-              ))}
-            </select>
-            {errors.user_id && (
-              <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Scrollable Form Body */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                University *
+                Student *
               </label>
-              <input
-                type="text"
+              <select
                 required
-                name="target_university"
-                value={formData.target_university}
+                value={formData.user_id}
                 onChange={handleFieldChange}
-                className={`w-full border ${errors.target_university ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                placeholder="University name"
-              />
-              {errors.target_university && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.target_university}
-                </p>
+                name="user_id"
+                className={`w-full border ${
+                  errors.user_id ? "border-red-400" : "border-gray-200"
+                } rounded-xl px-4 py-2.5 focus:border-teal-400`}
+              >
+                <option value="">Select Student</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.user_id || s.id}>
+                    {s.name} - {s.email} - {s.phone}
+                  </option>
+                ))}
+              </select>
+              {errors.user_id && (
+                <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
               )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Course *
-              </label>
-              <input
-                type="text"
-                required
-                name="course"
-                value={formData.course}
-                onChange={handleFieldChange}
-                className={`w-full border ${errors.course ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                placeholder="Course name"
-              />
-              {errors.course && (
-                <p className="text-red-500 text-xs mt-1">{errors.course}</p>
-              )}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CountrySelect
-              value={formData.target_country}
-              onChange={handleFieldChange}
-              name="target_country"
-              labelName="Target Country"
-              placeholder="Select target country"
-              required={false}
-            />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Deadline
-              </label>
-              <input
-                type="date"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleFieldChange}
-                className={`w-full border ${errors.deadline ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-              />
-              {errors.deadline && (
-                <p className="text-red-500 text-xs mt-1">{errors.deadline}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              name="status"
-              value={formData.status}
-              onChange={handleFieldChange}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="border-t pt-4">
-            <h3 className="font-semibold text-gray-800 text-sm mb-3">
-              Student Details
-            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleFieldChange}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-                />
-              </div>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleFieldChange}
-                  className={`w-full border ${errors.email ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                )}
-              </div>
-
-              <PhoneInputWithCountry
-                value={formData.phone}
-                onChange={handleFieldChange}
-                name="phone"
-                labelName="Phone Number"
-                error={errors.phone}
-              />
-
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Last Degree
+                  University *
                 </label>
                 <input
                   type="text"
-                  placeholder="Last Degree"
-                  name="last_degree"
-                  value={formData.last_degree}
+                  required
+                  name="target_university"
+                  value={formData.target_university}
                   onChange={handleFieldChange}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                  className={`w-full border ${
+                    errors.target_university
+                      ? "border-red-400"
+                      : "border-gray-200"
+                  } rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                  placeholder="University name"
                 />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="CGPA (0-10)"
-                  name="cgpa"
-                  value={formData.cgpa}
-                  onChange={handleFieldChange}
-                  className={`w-full border ${errors.cgpa ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                />
-                {errors.cgpa && (
-                  <p className="text-red-500 text-xs mt-1">{errors.cgpa}</p>
-                )}
-              </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="English Test (IELTS/TOEFL)"
-                  name="english_test"
-                  value={formData.english_test}
-                  onChange={handleFieldChange}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Test Score"
-                  name="test_score"
-                  value={formData.test_score}
-                  onChange={handleFieldChange}
-                  className={`w-full border ${errors.test_score ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                />
-                {errors.test_score && (
+                {errors.target_university && (
                   <p className="text-red-500 text-xs mt-1">
-                    {errors.test_score}
+                    {errors.target_university}
                   </p>
                 )}
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Course *
+                </label>
+                <input
+                  type="text"
+                  required
+                  name="course"
+                  value={formData.course}
+                  onChange={handleFieldChange}
+                  className={`w-full border ${
+                    errors.course ? "border-red-400" : "border-gray-200"
+                  } rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                  placeholder="Course name"
+                />
+                {errors.course && (
+                  <p className="text-red-500 text-xs mt-1">{errors.course}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CountrySelect
+                value={formData.target_country}
+                onChange={handleFieldChange}
+                name="target_country"
+                labelName="Target Country"
+                placeholder="Select target country"
+                required={false}
+              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Deadline
+                </label>
+                <input
+                  type="date"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleFieldChange}
+                  className={`w-full border ${
+                    errors.deadline ? "border-red-400" : "border-gray-200"
+                  } rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                />
+                {errors.deadline && (
+                  <p className="text-red-500 text-xs mt-1">{errors.deadline}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleFieldChange}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-semibold text-gray-800 text-sm mb-3">
+                Student Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleFieldChange}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleFieldChange}
+                    className={`w-full border ${
+                      errors.email ? "border-red-400" : "border-gray-200"
+                    } rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                  />
+                  {errors.email && (
+                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  )}
+                </div>
+
+                <PhoneInputWithCountry
+                  key={formData.phone}
+                  value={formData.phone}
+                  onChange={handleFieldChange}
+                  name="phone"
+                  labelName="Phone Number"
+                  error={errors.phone}
+                />
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Degree
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Last Degree"
+                    name="last_degree"
+                    value={formData.last_degree}
+                    onChange={handleFieldChange}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="CGPA (0-10)"
+                    name="cgpa"
+                    value={formData.cgpa}
+                    onChange={handleFieldChange}
+                    className={`w-full border ${
+                      errors.cgpa ? "border-red-400" : "border-gray-200"
+                    } rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                  />
+                  {errors.cgpa && (
+                    <p className="text-red-500 text-xs mt-1">{errors.cgpa}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="English Test (IELTS/TOEFL)"
+                    name="english_test"
+                    value={formData.english_test}
+                    onChange={handleFieldChange}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Test Score"
+                    name="test_score"
+                    value={formData.test_score}
+                    onChange={handleFieldChange}
+                    className={`w-full border ${
+                      errors.test_score ? "border-red-400" : "border-gray-200"
+                    } rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                  />
+                  {errors.test_score && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.test_score}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notes
+              </label>
+              <textarea
+                rows="3"
+                name="counselor_notes"
+                value={formData.counselor_notes}
+                onChange={handleFieldChange}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none"
+                placeholder="Internal notes..."
+              />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Counselor Notes
-            </label>
-            <textarea
-              rows="3"
-              name="counselor_notes"
-              value={formData.counselor_notes}
-              onChange={handleFieldChange}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none"
-              placeholder="Internal notes..."
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
+          {/* Fixed Footer with Buttons */}
+          <div className="p-5 border-t border-gray-100 flex gap-3 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
@@ -1263,6 +1364,7 @@ export const CounsellorApplication = () => {
       user_id: s.user_id || s.id,
       name: s.name,
       email: s.email,
+      phone: s.phone || "",
       status: s.status,
     }));
   }, [students]);

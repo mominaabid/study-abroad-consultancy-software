@@ -11,6 +11,23 @@ import { EditCounsellorModal } from "../../Components/CounsellorModal/EditCounse
 import { ViewCounsellorModal } from "../../Components/CounsellorModal/ViewCounsellorModal";
 import { DeleteConfirmationModal } from "../../Components/DeleteConfirmationModal";
 
+const isLeadInCounsellingStage = (lead) => {
+  const stageField =
+    lead.stage || lead.lead_stage || lead.current_stage || lead.status;
+
+  if (typeof stageField === "string") {
+    const normalized = stageField.toLowerCase();
+    if (normalized === "new" || normalized === "contacted") {
+      return false;
+    }
+    return true;
+  }
+
+  if (lead.is_counselling_stage === true) return true;
+
+  return false;
+};
+
 export const Counsellor = () => {
   const [allCounsellors, setAllCounsellors] = useState([]);
   const [leads, setLeads] = useState([]);
@@ -24,14 +41,10 @@ export const Counsellor = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedCounsellor, setSelectedCounsellor] = useState(null);
 
-  // In Counsellor.jsx, update getAllCounsellors function:
-
   const getAllCounsellors = async () => {
     const token = localStorage.getItem("token");
     const res = await axios.get(`${BASE_URL}/admin/getCounsellors`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
     return res.data;
   };
@@ -49,13 +62,9 @@ export const Counsellor = () => {
   const fetchLeads = async () => {
     try {
       const token = localStorage.getItem("token");
-
       const res = await axios.get(`${BASE_URL}/admin/leads`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = Array.isArray(res.data) ? res.data : res.data.data || [];
       setLeads(data);
     } catch (err) {
@@ -90,75 +99,68 @@ export const Counsellor = () => {
     setIsViewOpen(true);
   };
 
-  // const handleDeleteConfirm = async () => {
-  //   try {
-  //     const id = selectedCounsellor.id || selectedCounsellor._id;
-  //     await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`);
-  //     toast.success("Counsellor deleted successfully");
-  //     await fetchCounsellors(); // Refresh the list
-  //   } catch (error) {
-  //     console.error(error);
-  //     toast.error("Failed to delete counsellor");
-  //   }
-  // };
-
-
   const handleDeleteConfirm = async () => {
-  try {
-    const id = selectedCounsellor.id || selectedCounsellor._id;
-    const token = localStorage.getItem("token");
-    
-    await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    toast.success("Counsellor deleted successfully");
-    await fetchCounsellors();
-  } catch (error) {
-    console.error(error);
-    toast.error("Failed to delete counsellor");
-  }
-};
+    try {
+      const id = selectedCounsellor.id || selectedCounsellor._id;
+      const token = localStorage.getItem("token");
+      await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Counsellor deleted successfully");
+      await fetchCounsellors();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete counsellor");
+    }
+  };
 
   const handleDeleteClick = (counsellor) => {
     setSelectedCounsellor(counsellor);
     setIsDeleteOpen(true);
   };
 
-  const stats = useMemo(() => {
-    return {
-      total: allCounsellors.length,
-      active: allCounsellors.filter((c) => c.status === "active").length,
-      leads: allCounsellors.reduce(
-        (sum, c) => sum + (c.assigned_leads || 0),
-        0,
-      ),
-      avgRate:
-        allCounsellors.length > 0
-          ? (
-              allCounsellors.reduce(
-                (sum, c) => sum + (c.conversion_rate || 0),
-                0,
-              ) / allCounsellors.length
-            ).toFixed(0)
-          : 0,
-    };
-  }, [allCounsellors]);
-
+  // Build counsellor list with lead-based stats
   const counsellorsWithLeads = useMemo(() => {
     return allCounsellors.map((c) => {
-      const count = leads.filter(
-        (l) => l.counsellor_id === (c.user_id ),
+      const counselorLeads = leads.filter((l) => l.counsellor_id === c.user_id);
+      const assignedCount = counselorLeads.length;
+      const counsellingCount = counselorLeads.filter(
+        isLeadInCounsellingStage,
       ).length;
+      const conversionRate =
+        assignedCount > 0 ? (counsellingCount / assignedCount) * 100 : 0;
 
       return {
         ...c,
-        assigned_leads: count,
+        assigned_leads: assignedCount,
+        counsellingStageCount: counsellingCount,
+        counsellingConversionRate: conversionRate,
       };
     });
   }, [allCounsellors, leads]);
+
+  // Overall statistics based on the new fields
+  const stats = useMemo(() => {
+    const totalAssignedLeads = counsellorsWithLeads.reduce(
+      (sum, c) => sum + (c.assigned_leads || 0),
+      0,
+    );
+    const totalCounsellingStudents = counsellorsWithLeads.reduce(
+      (sum, c) => sum + (c.counsellingStageCount || 0),
+      0,
+    );
+    const overallCounsellingConv =
+      totalAssignedLeads > 0
+        ? ((totalCounsellingStudents / totalAssignedLeads) * 100).toFixed(0)
+        : 0;
+
+    return {
+      total: allCounsellors.length,
+      active: allCounsellors.filter((c) => c.status === "active").length,
+      totalCounsellingStudents,
+      overallCounsellingConv,
+    };
+  }, [counsellorsWithLeads, allCounsellors]);
 
   const filteredCounsellors = useMemo(() => {
     return counsellorsWithLeads.filter((c) => {
@@ -179,19 +181,30 @@ export const Counsellor = () => {
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-auto font-sans text-slate-700">
+      {/* ── Stats Section ── */}
+      <div className="flex-shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4">
+        <CounsellorStatCard label="Total Counselors" value={stats.total} />
+        <CounsellorStatCard label="Active" value={stats.active} />
+        <CounsellorStatCard
+          label="Converted Students"
+          value={stats.totalCounsellingStudents}
+        />
+        <CounsellorStatCard
+          label="Student Conv.%"
+          value={`${stats.overallCounsellingConv}%`}
+        />
+      </div>
+
       {/* ── Top Header ── */}
-      <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
+      <div className="flex-shrink-0 backdrop-blur-sm px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Title / Info */}
           <div>
             <p className="text-xs text-gray-400 mt-0.5">
               {filteredCounsellors.length} total counsellors
             </p>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Search */}
             <div className="flex items-center gap-2 h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl min-w-[200px] focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100">
               <Search size={14} className="text-gray-400" />
               <input
@@ -202,7 +215,6 @@ export const Counsellor = () => {
               />
             </div>
 
-            {/* Add Counsellor */}
             <button
               onClick={() => setIsAddOpen(true)}
               className="flex items-center gap-1.5 h-9 px-4 bg-teal-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap"
@@ -212,16 +224,6 @@ export const Counsellor = () => {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* ── Stats Section ── */}
-      <div className="flex-shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4">
-        <CounsellorStatCard label="Total Counselors" value={stats.total} />
-        <CounsellorStatCard label="Active" value={stats.active} />
-        <CounsellorStatCard
-          label="Avg Conversion"
-          value={`${stats.avgRate}%`}
-        />
       </div>
 
       {/* ── Content ── */}

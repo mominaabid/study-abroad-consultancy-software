@@ -6,14 +6,7 @@ import { AddButton } from "../CustomButtons/AddButton";
 import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
 import { COUNTRIES } from "../../constants/countries";
 import { Title } from "../Title";
-import {
-  User,
-  Mail,
-  BookOpen,
-  UserCheck,
-  XCircleIcon,
-  X,
-} from "lucide-react";
+import { User, Mail, BookOpen, UserCheck, XCircleIcon, X } from "lucide-react";
 
 const SOURCE_ICONS = {
   website: "🌐",
@@ -49,22 +42,24 @@ export default function LeadModal({
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const countryDropdownRef = useRef(null);
 
-  const filteredCountries = COUNTRIES
-    .filter((c) =>
+  const filteredCountries = COUNTRIES.filter(
+    (c) =>
       c.country.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
-      c.iso.toLowerCase().includes(countrySearchTerm.toLowerCase())
-    )
-    .map((c) => ({
-      value: c.country,
-      display: `${c.country} (${c.iso})`,
-    }));
+      c.iso.toLowerCase().includes(countrySearchTerm.toLowerCase()),
+  ).map((c) => ({
+    value: c.country,
+    display: `${c.country} (${c.iso})`,
+  }));
 
   useEffect(() => {
     if (!open) return;
 
     if (editLead) {
       const countries = editLead.preferred_country
-        ? editLead.preferred_country.split(",").map((s) => s.trim()).filter(Boolean)
+        ? editLead.preferred_country
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [];
       setSelectedCountries(countries);
       setForm({
@@ -74,7 +69,9 @@ export default function LeadModal({
         source: editLead.source || "walkin",
         preferred_country: editLead.preferred_country || "",
         study_level: editLead.study_level || "",
-        counsellor_id: editLead.counsellor_id ? String(editLead.counsellor_id) : "",
+        counsellor_id: editLead.counsellor_id
+          ? String(editLead.counsellor_id)
+          : "",
       });
     } else {
       setSelectedCountries([]);
@@ -91,7 +88,10 @@ export default function LeadModal({
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target)) {
+      if (
+        countryDropdownRef.current &&
+        !countryDropdownRef.current.contains(e.target)
+      ) {
         setCountryDropdownOpen(false);
       }
     };
@@ -101,27 +101,28 @@ export default function LeadModal({
 
   if (!open) return null;
 
-const validate = () => {
-  const e = {};
+  const validate = () => {
+    const e = {};
 
-  if (assignMode) {
-    if (!form.counsellor_id) e.counsellor_id = "Counsellor is required";
-    return e;   // ← skip everything else
-  }
+    if (assignMode) {
+      if (!form.counsellor_id) e.counsellor_id = "Counsellor is required";
+      return e; // ← skip everything else
+    }
 
-  if (!form.name?.trim()) e.name = "Name is required";
-  if (!form.phone?.trim()) {
-    e.phone = "Phone number is required";
-  } else if (form.phone.replace(/\D/g, "").length < 8) {
-    e.phone = "Phone number is too short";
-  }
-  if (!form.email?.trim()) e.email = "Email is required";
-  if (!form.source?.trim()) e.source = "Source is required";
-  if (!form.preferred_country?.trim()) e.preferred_country = "Preferred country is required";
-  if (!form.study_level?.trim()) e.study_level = "Study level is required";
+    if (!form.name?.trim()) e.name = "Name is required";
+    if (!form.phone?.trim()) {
+      e.phone = "Phone number is required";
+    } else if (form.phone.replace(/\D/g, "").length < 8) {
+      e.phone = "Phone number is too short";
+    }
+    if (!form.email?.trim()) e.email = "Email is required";
+    if (!form.source?.trim()) e.source = "Source is required";
+    if (!form.preferred_country?.trim())
+      e.preferred_country = "Preferred country is required";
+    if (!form.study_level?.trim()) e.study_level = "Study level is required";
 
-  return e;
-};
+    return e;
+  };
   const handleSubmit = async (e) => {
     e?.preventDefault();
     const validationErrors = validate();
@@ -155,12 +156,20 @@ const validate = () => {
   };
 
   const handleAddCountry = (countryValue) => {
-    if (selectedCountries.includes(countryValue) || selectedCountries.length >= 5) return;
+    if (
+      selectedCountries.includes(countryValue) ||
+      selectedCountries.length >= 5
+    )
+      return;
     const updated = [...selectedCountries, countryValue];
     setSelectedCountries(updated);
     setForm((prev) => ({ ...prev, preferred_country: updated.join(", ") }));
     if (errors.preferred_country) {
-      setErrors((prev) => { const e = { ...prev }; delete e.preferred_country; return e; });
+      setErrors((prev) => {
+        const e = { ...prev };
+        delete e.preferred_country;
+        return e;
+      });
     }
     setCountrySearchTerm("");
     setCountryDropdownOpen(false);
@@ -178,7 +187,11 @@ const validate = () => {
     label: `${SOURCE_ICONS[s.toLowerCase()] || "📍"} ${s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ")}`,
   }));
 
-  const studyLevelOptions = STUDY_LEVELS.map((l) => ({ id: l, value: l, label: l }));
+  const studyLevelOptions = STUDY_LEVELS.map((l) => ({
+    id: l,
+    value: l,
+    label: l,
+  }));
 
   const counsellorOptions = counsellors.map((c) => ({
     id: c.user?.id || c.id,
@@ -192,28 +205,30 @@ const validate = () => {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        
-       <Title setModal={onClose}>
-  {assignMode ? "Assign Counsellor" : editLead ? "Edit Lead" : "Add New Lead"}
-</Title>
-         
-       
+        <Title setModal={onClose}>
+          {assignMode
+            ? "Assign Counsellor"
+            : editLead
+              ? "Edit Lead"
+              : "Add New Lead"}
+        </Title>
 
-        <form className="p-8 pt-4 space-y-4" onSubmit={handleSubmit}>
-
+        <form className="p-6 pt-4 space-y-4" onSubmit={handleSubmit}>
           {/* Row 1 — Name & Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-            <InputField
-  labelName="Full Name *"
-  name="name"
-  value={form.name}
-  handlerChange={handleCustomChange}
-  icon={<User size={16} />}
-  maxLength={50}
-  disabled={assignMode}
-/>
-              {errors.name && <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>}
+              <InputField
+                labelName="Full Name *"
+                name="name"
+                value={form.name}
+                handlerChange={handleCustomChange}
+                icon={<User size={16} />}
+                maxLength={50}
+                disabled={assignMode}
+              />
+              {errors.name && (
+                <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -224,9 +239,11 @@ const validate = () => {
                 value={form.email}
                 handlerChange={handleCustomChange}
                 icon={<Mail size={16} />}
-                 disabled={assignMode}
+                disabled={assignMode}
               />
-              {errors.email && <p className="text-red-500 text-[10px] ml-1">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-red-500 text-[10px] ml-1">{errors.email}</p>
+              )}
             </div>
           </div>
 
@@ -237,7 +254,7 @@ const validate = () => {
               onChange={handleCustomChange}
               name="phone"
               error={errors.phone}
-               disabled={assignMode}
+              disabled={assignMode}
             />
 
             <div className="space-y-1">
@@ -248,15 +265,16 @@ const validate = () => {
                 handlerChange={handleCustomChange}
                 optionData={sourceOptions}
                 inital="Select Source"
-                 disabled={assignMode}
+                disabled={assignMode}
               />
-              {errors.source && <p className="text-red-500 text-[10px] ml-1">{errors.source}</p>}
+              {errors.source && (
+                <p className="text-red-500 text-[10px] ml-1">{errors.source}</p>
+              )}
             </div>
           </div>
 
           {/* Row 3 — Preferred Countries & Study Level */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
             {/* ── Preferred Countries (inline search, no separate component) ── */}
             <div className="space-y-1" ref={countryDropdownRef}>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -264,32 +282,35 @@ const validate = () => {
               </label>
 
               <div className="relative">
-          
-<input
-  type="text"
-  value={countrySearchTerm}
-  onChange={(e) => {
-    if (assignMode) return;
-    setCountrySearchTerm(e.target.value);
-    setCountryDropdownOpen(true);
-  }}
-  onFocus={() => { if (!assignMode) setCountryDropdownOpen(true); }}
-  disabled={assignMode || selectedCountries.length >= 5}   // ← merged into ONE
-  placeholder={
-    selectedCountries.length >= 5
-      ? "Max 5 countries selected"
-      : "Type to search countries..."
-  }
-  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors
+                <input
+                  type="text"
+                  value={countrySearchTerm}
+                  onChange={(e) => {
+                    if (assignMode) return;
+                    setCountrySearchTerm(e.target.value);
+                    setCountryDropdownOpen(true);
+                  }}
+                  onFocus={() => {
+                    if (!assignMode) setCountryDropdownOpen(true);
+                  }}
+                  disabled={assignMode || selectedCountries.length >= 5} // ← merged into ONE
+                  placeholder={
+                    selectedCountries.length >= 5
+                      ? "Max 5 countries selected"
+                      : "Type to search countries..."
+                  }
+                  className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors
     ${errors.preferred_country ? "border-red-400" : "border-slate-300 focus:border-blue-500"}
     ${assignMode || selectedCountries.length >= 5 ? "bg-slate-100 cursor-not-allowed opacity-60" : "bg-white"}`}
-/>
+                />
 
                 {/* Dropdown */}
                 {countryDropdownOpen && countrySearchTerm && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-auto py-1">
                     {filteredCountries.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-slate-400">No countries found</div>
+                      <div className="px-4 py-3 text-sm text-slate-400">
+                        No countries found
+                      </div>
                     ) : (
                       filteredCountries.map((c) => (
                         <div
@@ -315,20 +336,22 @@ const validate = () => {
                       className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-lg"
                     >
                       {country}
-                   {!assignMode && (
-  <X
-    size={11}
-    className="cursor-pointer hover:text-red-500 transition-colors"
-    onClick={() => handleRemoveCountry(country)}
-  />
-)}
+                      {!assignMode && (
+                        <X
+                          size={11}
+                          className="cursor-pointer hover:text-red-500 transition-colors"
+                          onClick={() => handleRemoveCountry(country)}
+                        />
+                      )}
                     </span>
                   ))}
                 </div>
               )}
 
               {errors.preferred_country && (
-                <p className="text-red-500 text-[10px] ml-1">{errors.preferred_country}</p>
+                <p className="text-red-500 text-[10px] ml-1">
+                  {errors.preferred_country}
+                </p>
               )}
             </div>
 
@@ -342,16 +365,18 @@ const validate = () => {
                 optionData={studyLevelOptions}
                 inital="Select level"
                 icon={<BookOpen size={16} />}
-                 disabled={assignMode}
+                disabled={assignMode}
               />
               {errors.study_level && (
-                <p className="text-red-500 text-[10px] ml-1">{errors.study_level}</p>
+                <p className="text-red-500 text-[10px] ml-1">
+                  {errors.study_level}
+                </p>
               )}
             </div>
           </div>
 
           {/* Row 4 — Counsellor (edit only) */}
-  {(editLead && assignMode) && (
+          {editLead && assignMode && (
             <div className="space-y-1">
               <OptionField
                 labelName="Assign Counsellor *"
@@ -363,7 +388,9 @@ const validate = () => {
                 icon={<UserCheck size={16} />}
               />
               {errors.counsellor_id && (
-                <p className="text-red-500 text-[10px] ml-1">{errors.counsellor_id}</p>
+                <p className="text-red-500 text-[10px] ml-1">
+                  {errors.counsellor_id}
+                </p>
               )}
             </div>
           )}
@@ -377,13 +404,14 @@ const validate = () => {
             >
               Close
             </button>
-        <AddButton
-  label={assignMode ? "Assign" : editLead ? "Update Lead" : "Save Lead"}
-  loading={saving}
-  handleClick={handleSubmit}
-/>
+            <AddButton
+              label={
+                assignMode ? "Assign" : editLead ? "Update Lead" : "Save Lead"
+              }
+              loading={saving}
+              handleClick={handleSubmit}
+            />
           </div>
-
         </form>
       </div>
     </div>

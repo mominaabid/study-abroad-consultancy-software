@@ -1,4 +1,3 @@
-// components/AdminProfile.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -212,37 +211,6 @@ export const AdminProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Page Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-wrap items-center justify-end gap-4">
-            {!editMode ? (
-              <button
-                onClick={() => setEditMode(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium shadow-sm transition duration-200"
-              >
-                <Edit3 size={18} />
-                Edit Profile
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditMode(false);
-                  setFormData({
-                    name: profile.name || "",
-                    email: profile.email || "",
-                  });
-                }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition duration-200"
-              >
-                <X size={18} />
-                Cancel Editing
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="p-4 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -448,7 +416,21 @@ export const AdminProfile = () => {
                   </div>
                 </div>
 
-                {/* Save Button (only in edit mode) */}
+                {/* Edit button (only when not in edit mode) */}
+                {!editMode && (
+                  <div className="mt-8 flex justify-end pt-4 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditMode(true)}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium shadow-sm transition duration-200"
+                    >
+                      <Edit3 size={18} />
+                      Edit Profile
+                    </button>
+                  </div>
+                )}
+
+                {/* Save/Cancel Buttons (only in edit mode) */}
                 {editMode && (
                   <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button

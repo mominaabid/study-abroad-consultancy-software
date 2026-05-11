@@ -1,5 +1,5 @@
-// StudentDashboard.jsx - With SSE Integration (Updated)
-import React, { useState, useEffect } from "react";
+// StudentDashboard.jsx - With per‑application document verification counts
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../redux/slices/authSlice";
@@ -38,7 +38,7 @@ function formatDate(dateStr) {
   });
 }
 
-// ── Stage pipeline config ─────────────────────────────────────────────────────
+// ── Stage pipeline config (unchanged) ────────────────────────────────────────
 const STAGES = [
   { key: "new", label: "Inquiry", color: "#3b82f6" },
   { key: "contacted", label: "Contacted", color: "#f59e0b" },
@@ -75,8 +75,7 @@ const DOC_STATUS = {
   },
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
+// ── Sub-components (StatCard, QuickAction, DocCard unchanged) ────────────────
 const StatCard = ({
   title,
   value,
@@ -152,7 +151,6 @@ const QuickAction = ({ icon, label, color, bgColor, onClick, badge }) => (
   </button>
 );
 
-// ── Document Card ─────────────────────────────────────────────────────────────
 function DocCard({ doc }) {
   const s = DOC_STATUS[doc.status] || DOC_STATUS.pending;
   return (
@@ -182,7 +180,6 @@ function DocCard({ doc }) {
   );
 }
 
-// ── Document Type Labels ──────────────────────────────────────────────────────
 const DOC_TYPE_LABELS = {
   passport: "Passport Copy",
   transcript: "Academic Transcript",
@@ -202,87 +199,71 @@ export const StudentDashboard = () => {
   const navigate = useNavigate();
   const user = useSelector(selectUser);
 
-  // Initialize SSE connection - this will automatically connect when component mounts
-  // The hook returns the latest event data and connection status
+  // SSE connection
   const { lastEvent, isConnected, reconnect } = useSSE();
 
-  // const [profile, setProfile] = useState(null);
   const [documents, setDocuments] = useState([]);
-  const [applications, setApplications] = useState([]); // Added for applications
+  const [applications, setApplications] = useState([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [appsLoading, setAppsLoading] = useState(true);
   const [showNotification, setShowNotification] = useState(null);
 
-  // Handle real-time SSE events
+  // ── Helper: group documents per application and compute verified/total ──
+  const applicationsWithDocStats = useMemo(() => {
+    // Build a map: appId -> { verified, total }
+    const statsMap = new Map();
+
+    documents.forEach((doc) => {
+      const appId = doc.application_id; // IMPORTANT: documents must have application_id
+      if (!appId) return; // skip if not linked to any application
+
+      if (!statsMap.has(appId)) {
+        statsMap.set(appId, { verified: 0, total: 0 });
+      }
+      const stats = statsMap.get(appId);
+      stats.total += 1;
+      if (doc.status === "verified") {
+        stats.verified += 1;
+      }
+    });
+
+    // Attach stats to each application
+    return applications.map((app) => ({
+      ...app,
+      docStats: statsMap.get(app.id) || { verified: 0, total: 0 },
+    }));
+  }, [applications, documents]);
+
+  // ── SSE event handling ──────────────────────────────────────────────────────
   useEffect(() => {
     if (lastEvent) {
       console.log("Received SSE event:", lastEvent);
-
-      // Show notification for real-time updates
       setShowNotification({
         type: lastEvent.type || "update",
         message: lastEvent.message || "New update received!",
         data: lastEvent.data,
       });
-
-      // Auto-hide notification after 5 seconds
       const timer = setTimeout(() => setShowNotification(null), 5000);
 
-      // Handle different event types
       switch (lastEvent.type) {
         case "document_verified":
         case "document_rejected":
         case "document_uploaded":
-          // Refresh documents when document status changes
           fetchDocs();
           break;
-
         case "application_updated":
         case "application_status_changed":
-          // Refresh applications when application status changes
           fetchApplications();
           break;
-
-        case "profile_updated":
-        case "stage_changed":
-          // Refresh profile when stage changes
-          // fetchProfile();
-          break;
-
-        case "message_received":
-          // New message notification (could trigger chat refresh)
-          if (lastEvent.message) {
-            // Optional: Show chat notification badge
-            console.log("New message received:", lastEvent.message);
-          }
-          break;
-
         default:
-          // For unknown event types, refresh all data
-          console.log("Unknown event type, refreshing all data");
           fetchDocs();
           fetchApplications();
-        // fetchProfile();
       }
-
       return () => clearTimeout(timer);
     }
   }, [lastEvent]);
 
-  // ── Fetch profile ────────────────────────────────────────────────────────
-  // const fetchProfile = async () => {
-  //   try {
-  //     const res = await fetch(`${BASE_URL}/student/profile`, {
-  //       headers: { Authorization: `Bearer ${getToken()}` },
-  //     });
-  //     const data = await res.json();
-  //     setProfile(data.data || data);
-  //   } catch (err) {
-  //     console.error("Profile fetch error:", err);
-  //   }
-  // };
-
-  // ── Fetch documents ──────────────────────────────────────────────────────
+  // ── API calls ───────────────────────────────────────────────────────────────
   const fetchDocs = async () => {
     setDocsLoading(true);
     try {
@@ -298,7 +279,6 @@ export const StudentDashboard = () => {
     }
   };
 
-  // ── Fetch applications ────────────────────────────────────────────────────
   const fetchApplications = async () => {
     setAppsLoading(true);
     try {
@@ -314,54 +294,46 @@ export const StudentDashboard = () => {
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
-    // fetchProfile();
     fetchDocs();
     fetchApplications();
   }, []);
 
-  // ── Derived calculations ──────────────────────────────────────────────────
-
+  // ── Derived global calculations (optional) ─────────────────────────────────
   const verifiedDocs = documents.filter((d) => d.status === "verified").length;
-  const pendingDocs = documents.filter((d) => d.status === "pending").length;
-  const reviewDocs = documents.filter((d) => d.status === "review").length;
-  const rejectedDocs = documents.filter((d) => d.status === "rejected").length;
-
-  const totalRequired = 9; // Required documents count
   const totalUploaded = documents.length;
+  const totalRequired = applications.length * 9; // global required – kept for overall progress
   const progressPct = Math.min(
     100,
     Math.round((verifiedDocs / totalRequired) * 100),
   );
 
-  const counsellorName =
-    // profile?.lead?.counsellor?.name ||
-    // profile?.counsellor?.name ||
-    "Not Assigned";
-
-  // Get recent documents (last 5)
-  const recentDocs = [...documents]
-    .sort(
-      (a, b) =>
-        new Date(b.submitted_at || b.created_at) -
-        new Date(a.submitted_at || a.created_at),
-    )
-    .slice(0, 5);
-
-  // Get active applications count
+  const counsellorName = "Not Assigned"; // placeholder
   const activeApplicationsCount = applications.filter(
     (app) => app.status !== "rejected" && app.status !== "completed",
   ).length;
 
-  // Get recent applications (last 3)
-  const recentApplications = [...applications]
+  const recentApplications = applicationsWithDocStats
     .sort(
       (a, b) =>
         new Date(b.created_at || b.createdAt) -
         new Date(a.created_at || a.createdAt),
     )
     .slice(0, 3);
+
+  // Group documents according to application
+  const groupedDocuments = useMemo(() => {
+    return applications.map((app) => {
+      const appDocs = documents.filter(
+        (doc) => Number(doc.application_id) === Number(app.id),
+      );
+
+      return {
+        ...app,
+        documents: appDocs,
+      };
+    });
+  }, [applications, documents]);
 
   return (
     <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
@@ -385,7 +357,7 @@ export const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* Real-time Notification Toast */}
+      {/* Real‑time Notification Toast */}
       {showNotification && (
         <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
           <div className="bg-white rounded-xl shadow-lg border-l-4 border-teal-500 p-4 max-w-sm">
@@ -427,7 +399,7 @@ export const StudentDashboard = () => {
         </div>
       )}
 
-      {/* ── Welcome Banner ── */}
+      {/* Welcome Banner (unchanged) */}
       <div className="mb-3">
         <div className="relative bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 text-white rounded-xl p-3 shadow-xl overflow-hidden">
           <div className="absolute -right-8 -top-8 w-48 h-48 bg-white/10 rounded-full" />
@@ -444,18 +416,7 @@ export const StudentDashboard = () => {
               <h1 className="text-3xl font-bold tracking-tight">
                 Hello, {user?.name?.split(" ")[0] || "Student"} 👋
               </h1>
-
               <div className="flex flex-wrap gap-2 mt-4">
-                {/* {profile?.lead?.preferred_country && (
-                  <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
-                    <Globe size={11} /> {profile.lead.preferred_country}
-                  </span>
-                )}
-                {profile?.lead?.study_level && (
-                  <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
-                    <BookOpen size={11} /> {profile.lead.study_level}
-                  </span>
-                )} */}
                 {counsellorName !== "Not Assigned" && (
                   <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
                     <Award size={11} /> {counsellorName}
@@ -483,9 +444,8 @@ export const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* ── Stats Grid (Updated - Removed Current Stage and Action Needed) ── */}
+      {/* Stats Grid (global counts – optional but kept) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-        {/* Active Applications Card */}
         <StatCard
           title="Active Applications"
           value={appsLoading ? "..." : activeApplicationsCount}
@@ -495,24 +455,23 @@ export const StudentDashboard = () => {
           onClick={() => navigate("/student/application")}
           clickable
         />
-        {/* Verified Documents Card */}
         <StatCard
-          title="Verified Documents"
+          title="Verified Documents (Global)"
           value={docsLoading ? "..." : `${verifiedDocs}/${totalRequired}`}
           icon={<CheckCircle size={20} />}
           gradient="linear-gradient(135deg,#3b82f6,#2563eb)"
           sub="Approved by counsellor"
-          onClick={() => navigate("/student/documents")}
+          onClick={() => navigate("/student/application")}
           clickable
         />
       </div>
 
-      {/* ── Main Grid ── */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* ── Left: Documents + Applications ── */}
+        {/* Left column: Recent Applications + Documents */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Recent Applications Section */}
-          {!appsLoading && applications.length > 0 && (
+          {/* Recent Applications Section – now with per‑application document verification */}
+          {!appsLoading && applicationsWithDocStats.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
                 <div>
@@ -530,48 +489,81 @@ export const StudentDashboard = () => {
                   View All →
                 </button>
               </div>
-              <div className="p-5 space-y-3">
-                {recentApplications.map((app) => (
-                  <div
-                    key={app.id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white cursor-pointer"
-                    onClick={() => navigate("/student/application")}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center">
-                        <GraduationCap size={18} className="text-teal-600" />
+              <div className="p-5 space-y-4">
+                {recentApplications.map((app) => {
+                  const { verified, total } = app.docStats;
+                  const percent = total === 0 ? 0 : (verified / total) * 100;
+                  return (
+                    <div
+                      key={app.id}
+                      className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white cursor-pointer"
+                      onClick={() => navigate("/student/application")}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center">
+                            <GraduationCap
+                              size={18}
+                              className="text-teal-600"
+                            />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">
+                              {app.target_university ||
+                                "University Application"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {app.course || "Course not specified"}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                            app.status === "In Progress" ||
+                            app.status === "pending"
+                              ? "bg-amber-100 text-amber-700"
+                              : app.status === "submitted" ||
+                                  app.status === "applied"
+                                ? "bg-blue-100 text-blue-700"
+                                : app.status === "accepted"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {app.status || "In Progress"}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">
-                          {app.target_university || "University Application"}
-                        </p>
-                        {/* <p className="text-xs text-gray-500">
-                          {app.course || "Course not specified"} • Deadline:{" "}
-                          {formatDate(app.deadline) || "TBD"}
-                        </p> */}
+                      {/* Per‑application document verification details */}
+                      <div className="mt-3 pt-2 border-t border-gray-50">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-500">
+                            Documents verified
+                          </span>
+                          <span className="font-medium text-teal-600">
+                            {verified} / {total}
+                          </span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-teal-500 transition-all duration-500"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        {total === 0 && (
+                          <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                            <AlertCircle size={12} /> No documents uploaded yet
+                            for this application.
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                        app.status === "In Progress" || app.status === "pending"
-                          ? "bg-amber-100 text-amber-700"
-                          : app.status === "submitted" ||
-                              app.status === "applied"
-                            ? "bg-blue-100 text-blue-700"
-                            : app.status === "accepted"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {app.status || "In Progress"}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Documents Section */}
+          {/* Documents Section (unchanged, still global) */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
               <div>
@@ -583,7 +575,7 @@ export const StudentDashboard = () => {
                 </p>
               </div>
               <button
-                onClick={() => navigate("/student/documents")}
+                onClick={() => navigate("/student/application")}
                 className="flex items-center gap-2 bg-teal-600 text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-teal-700 transition shadow-sm shadow-teal-200"
               >
                 <Upload size={12} /> Upload
@@ -627,7 +619,7 @@ export const StudentDashboard = () => {
                     Upload your required documents to proceed
                   </p>
                   <button
-                    onClick={() => navigate("/student/documents")}
+                    onClick={() => navigate("/student/application")}
                     className="mt-3 bg-teal-600 text-white text-xs font-semibold px-5 py-2 rounded-xl hover:bg-teal-700 transition"
                   >
                     Upload Now
@@ -635,12 +627,73 @@ export const StudentDashboard = () => {
                 </div>
               ) : (
                 <>
-                  {recentDocs.map((doc) => (
+                  {/* {documents.slice(0, 5).map((doc) => (
                     <DocCard key={doc.id} doc={doc} />
-                  ))}
+                  ))} */}
+
+                  {groupedDocuments.length === 0 ? (
+                    <div className="text-center py-10">
+                      <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-3 border border-dashed border-gray-200">
+                        <Upload size={22} className="text-gray-300" />
+                      </div>
+
+                      <p className="text-gray-500 text-sm font-semibold">
+                        No documents uploaded yet
+                      </p>
+
+                      <p className="text-gray-400 text-xs mt-1">
+                        Upload your required documents to proceed
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      {groupedDocuments.map((app) => (
+                        <div
+                          key={app.id}
+                          className="border border-gray-100 rounded-xl overflow-hidden"
+                        >
+                          {/* Application Header */}
+                          <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-sm font-bold text-gray-800">
+                                  {app.target_university ||
+                                    "University Application"}
+                                </h4>
+
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {app.course || "Course not specified"}
+                                </p>
+                              </div>
+
+                              <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full">
+                                {app.documents.length} Document
+                                {app.documents.length !== 1 ? "s" : ""}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Documents */}
+                          <div className="p-3 space-y-2 bg-white">
+                            {app.documents.length > 0 ? (
+                              app.documents.map((doc) => (
+                                <DocCard key={doc.id} doc={doc} />
+                              ))
+                            ) : (
+                              <div className="text-center py-5">
+                                <p className="text-xs text-amber-600">
+                                  No documents uploaded for this application
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {documents.length > 5 && (
                     <button
-                      onClick={() => navigate("/student/documents")}
+                      onClick={() => navigate("/student/application")}
                       className="w-full text-center text-xs text-teal-600 font-semibold py-2 hover:underline"
                     >
                       View all {documents.length} documents →
@@ -652,9 +705,8 @@ export const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* ── Right column ── */}
+        {/* Right column: Quick Actions + Document Summary (unchanged) */}
         <div className="space-y-5">
-          {/* Quick Actions */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
               <div className="w-2 h-2 bg-amber-400 rounded-full" />
@@ -666,8 +718,8 @@ export const StudentDashboard = () => {
                 label="Upload Documents"
                 color="#0d9488"
                 bgColor="bg-teal-50"
-                onClick={() => navigate("/student/documents")}
-                badge={rejectedDocs}
+                onClick={() => navigate("/student/application")}
+                badge={documents.filter((d) => d.status === "rejected").length}
               />
               <QuickAction
                 icon={<MessageSquare size={16} />}
@@ -687,11 +739,10 @@ export const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* Document Summary */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
               <div className="w-2 h-2 bg-purple-400 rounded-full" />
-              Document Status Summary
+              Document Status Summary (Global)
             </h3>
             <div className="space-y-3">
               {[
@@ -703,13 +754,16 @@ export const StudentDashboard = () => {
                 },
                 {
                   label: "In Review",
-                  count: reviewDocs + pendingDocs,
+                  count: documents.filter(
+                    (d) => d.status === "review" || d.status === "pending",
+                  ).length,
                   color: "#f59e0b",
                   bg: "bg-amber-50",
                 },
                 {
                   label: "Rejected",
-                  count: rejectedDocs,
+                  count: documents.filter((d) => d.status === "rejected")
+                    .length,
                   color: "#ef4444",
                   bg: "bg-red-50",
                 },

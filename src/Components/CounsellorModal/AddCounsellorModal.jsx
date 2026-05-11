@@ -59,7 +59,8 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
 
     let formattedValue = value;
 
-    if ((name === "name" || name === "father_name") && value.length > 50) return;
+    if ((name === "name" || name === "father_name") && value.length > 50)
+      return;
     if (name === "address" && value.length > 250) return;
 
     if (name === "name" || name === "father_name") {
@@ -135,11 +136,9 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <Title setModal={onClose}>
-          Add New Counselor
-        </Title>
+        <Title setModal={onClose}>Add New Counselor</Title>
 
-        <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InputField
               labelName="Full Name *"
@@ -171,37 +170,27 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               handlerChange={handleChange}
               placeholder="email@example.com"
             />
-                   <PhoneInputWithCountry
+            <PhoneInputWithCountry
               value={formData.phone}
               onChange={handleChange}
               name="phone"
               labelName="Phone Number *"
-              error={formData.phone ? null : "Phone number is required"} // optional
             />
           </div>
 
+          {/* Updated CNIC section to span 2 columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              labelName="CNIC *"
-              name="cnic"
-              type="text"
-              icon={<CreditCard size={18} />}
-              value={formData.cnic}
-              handlerChange={handleChange}
-              placeholder="34104-0000000-0"
-            />
-
-            {/* <OptionField
-              labelName="Status"
-              name="status"
-              value={formData.status}
-              handlerChange={handleChange}
-              optionData={[
-                { id: 1, label: "✅ Active", value: "active" },
-                { id: 2, label: "🚫 Inactive", value: "inactive" },
-              ]}
-              inital="Select Status"
-            /> */}
+            <div className="md:col-span-2">
+              <InputField
+                labelName="CNIC *"
+                name="cnic"
+                type="text"
+                icon={<CreditCard size={18} />}
+                value={formData.cnic}
+                handlerChange={handleChange}
+                placeholder="34104-0000000-0"
+              />
+            </div>
           </div>
 
           <TextareaField

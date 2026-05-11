@@ -123,8 +123,14 @@ export const CounsellorDashboard = () => {
     },
     {
       label: "Counseling",
-      count: leads.filter((l) => l.status === "counselling").length,
+      count: leads.filter((l) => l.status === "counseling").length,
       color: "#8b5cf6",
+    },
+
+    {
+      label: "Evaluated",
+      count: leads.filter((l) => l.status === "evaluated").length,
+      color: "#d5f65c",
     },
     {
       label: "Applied",

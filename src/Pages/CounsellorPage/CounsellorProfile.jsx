@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
 import { selectUser, loadUser } from "../../redux/slices/authSlice";
+import PhoneInputWithCountry from "../../Components/InputFields/PhoneInputWithCountry";
+import { PHONE_COUNTRIES } from "../../constants/countries";
+import CountryFlag from "react-country-flag";
 
 export const CounsellorProfile = () => {
   const dispatch = useDispatch();
@@ -36,6 +39,23 @@ export const CounsellorProfile = () => {
     cnic: "",
     address: "",
   });
+
+  // Helper: Extract country ISO code from phone number (e.g., "+92 32225324534" -> "PK")
+  const getCountryIsoFromPhone = (phone) => {
+    const match = phone?.match(/^\+(\d+)/);
+    if (match) {
+      const code = `+${match[1]}`;
+      const country = PHONE_COUNTRIES.find((c) => c.value === code);
+      return country?.iso;
+    }
+    return null;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+
+    return new Date(date).toLocaleDateString("en-GB").replace(/\//g, "-");
+  };
 
   // Fetch counsellor profile
   const fetchProfile = async () => {
@@ -66,7 +86,7 @@ export const CounsellorProfile = () => {
     fetchProfile();
   }, []);
 
-  // Handle form input changes
+  // Handle form input changes (for name, father_name, cnic, address only)
   const handleChange = (e) => {
     const { name, value } = e.target;
     let formattedValue = value;
@@ -83,13 +103,6 @@ export const CounsellorProfile = () => {
     if (name === "name" || name === "father_name") {
       const alphaRegex = /^[a-zA-Z\s]*$/;
       if (!alphaRegex.test(formattedValue)) return;
-    }
-
-    // Phone: digits only, max 11
-    if (name === "phone") {
-      const numValue = value.replace(/\D/g, "");
-      if (numValue.length > 11) return;
-      formattedValue = numValue;
     }
 
     // CNIC: auto-format #####-#######-# (total 13 digits → 15 chars with dashes)
@@ -124,12 +137,14 @@ export const CounsellorProfile = () => {
       toast.error("Address must be at least 3 characters");
       return false;
     }
- 
+    if (!formData.phone || formData.phone.trim().length < 8) {
+      toast.error("Please enter a valid phone number");
+      return false;
+    }
     if (formData.cnic.replace(/-/g, "").length !== 13) {
       toast.error("CNIC must be exactly 13 digits (format: #####-#######-#)");
       return false;
     }
-
     return true;
   };
 
@@ -156,12 +171,10 @@ export const CounsellorProfile = () => {
         },
       );
 
-      // Update local state
       setProfile(response.data);
       toast.success("Profile updated successfully!");
       setEditMode(false);
 
-      // If name or email changed, refresh Redux user state
       if (
         response.data.name !== currentUser?.name ||
         response.data.email !== currentUser?.email
@@ -215,47 +228,10 @@ export const CounsellorProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Page Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className=" px-2 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-wrap items-center justify-end gap-4">
-            {!editMode ? (
-              <button
-                onClick={() => setEditMode(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium shadow-sm transition duration-200"
-              >
-                <Edit3 size={18} />
-                Edit Profile
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditMode(false);
-                  setFormData({
-                    name: profile.name || "",
-                    father_name: profile.father_name || "",
-                    email: profile.email || "",
-                    phone: profile.phone || "",
-                    cnic: profile.cnic || "",
-                    address: profile.address || "",
-                  });
-                }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition duration-200"
-              >
-                <X size={18} />
-                Cancel Editing
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
       <div className="p-2 sm:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
           {/* Left Column - Profile Summary Card */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Profile Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="relative h-28 bg-gradient-to-r from-teal-500 to-emerald-500">
                 <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
@@ -301,19 +277,35 @@ export const CounsellorProfile = () => {
                   <Mail size={16} className="text-gray-400" />
                   <span className="text-gray-600">{profile.email}</span>
                 </div>
+                {/* Phone with flag */}
                 <div className="flex items-center gap-3 text-sm">
                   <Phone size={16} className="text-gray-400" />
                   <span className="text-gray-600">
-                    {profile.phone || "Not provided"}
+                    {profile.phone ? (
+                      <>
+                        <CountryFlag
+                          countryCode={
+                            getCountryIsoFromPhone(profile.phone) || "PK"
+                          }
+                          svg
+                          style={{
+                            width: "1.2em",
+                            height: "0.9em",
+                            marginRight: "6px",
+                            display: "inline-block",
+                          }}
+                        />
+                        {profile.phone}
+                      </>
+                    ) : (
+                      "Not provided"
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Calendar size={16} className="text-gray-400" />
                   <span className="text-gray-600">
-                    Joined{" "}
-                    {profile.createdAt
-                      ? new Date(profile.createdAt).toLocaleDateString()
-                      : "N/A"}
+                    Joined {formatDate(profile.createdAt)}
                   </span>
                 </div>
               </div>
@@ -341,9 +333,7 @@ export const CounsellorProfile = () => {
                 <div className="flex justify-between py-2">
                   <span className="text-gray-500">Last Updated</span>
                   <span className="font-medium text-gray-700">
-                    {profile.updatedAt
-                      ? new Date(profile.updatedAt).toLocaleDateString()
-                      : "N/A"}
+                    {formatDate(profile.updatedAt)}
                   </span>
                 </div>
               </div>
@@ -437,29 +427,22 @@ export const CounsellorProfile = () => {
                     </div>
                   </div>
 
-                  {/* Phone */}
+                  {/* Phone with Country Flag Input */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Phone Number <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Phone size={18} className="text-gray-400" />
-                      </div>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition ${
-                          editMode
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-100 text-gray-600"
-                        }`}
-                        placeholder="03001234567"
-                      />
-                    </div>
+                    <PhoneInputWithCountry
+                      name="phone"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
+                      labelName="Phone Number *"
+                      defaultCountryCode="+92"
+                      disabled={!editMode}
+                      error={false}
+                    />
                   </div>
 
                   {/* CNIC */}
@@ -531,36 +514,46 @@ export const CounsellorProfile = () => {
                   </div>
                 </div>
 
-                {/* Save Button (only in edit mode) */}
-                {editMode && (
-                  <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                {/* Action Buttons */}
+                <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
+                  {editMode ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditMode(false);
+                          setFormData({
+                            name: profile.name || "",
+                            father_name: profile.father_name || "",
+                            email: profile.email || "",
+                            phone: profile.phone || "",
+                            cnic: profile.cnic || "",
+                            address: profile.address || "",
+                          });
+                        }}
+                        className="px-6 py-2.5 rounded-xl font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={updating}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition shadow-sm disabled:opacity-70"
+                      >
+                        <Save size={18} />
+                        {updating ? "Saving..." : "Save Changes"}
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      type="button"
-                      onClick={() => {
-                        setEditMode(false);
-                        setFormData({
-                          name: profile.name || "",
-                          father_name: profile.father_name || "",
-                          email: profile.email || "",
-                          phone: profile.phone || "",
-                          cnic: profile.cnic || "",
-                          address: profile.address || "",
-                        });
-                      }}
-                      className="px-6 py-2.5 rounded-xl font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition"
+                      onClick={() => setEditMode(true)}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium shadow-sm transition duration-200"
                     >
-                      Cancel
+                      <Edit3 size={18} />
+                      Edit Profile
                     </button>
-                    <button
-                      type="submit"
-                      disabled={updating}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition shadow-sm disabled:opacity-70"
-                    >
-                      <Save size={18} />
-                      {updating ? "Saving..." : "Save Changes"}
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </form>
             </div>
           </div>

@@ -36,7 +36,7 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
         {/* Header with Background Pattern */}
         <Title setModal={onClose}>View Counselor Details</Title>
         {/* Content */}
-        <div className="p-8">
+        <div className="p-6">
           <div className="space-y-6">
             {/* Primary Info Grid */}
             <section>
@@ -85,10 +85,23 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
                     Assigned Leads
                   </p>
                 </div>
-                <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex flex-col items-center justify-center text-center">
+                {/* <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex flex-col items-center justify-center text-center">
                   <TrendingUp className="text-orange-600 mb-2" size={24} />
                   <p className="text-2xl font-bold text-slate-800">
                     {counselor.conversion_rate || 0}%
+                  </p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                    Conversion Rate
+                  </p>
+                </div> */}
+
+                <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex flex-col items-center justify-center text-center">
+                  <TrendingUp className="text-orange-600 mb-2" size={24} />
+                  <p className="text-2xl font-bold text-slate-800">
+                    {Number(counselor.counsellingConversionRate || 0).toFixed(
+                      0,
+                    )}
+                    %
                   </p>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
                     Conversion Rate
