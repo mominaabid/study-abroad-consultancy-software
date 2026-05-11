@@ -156,7 +156,7 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
   );
 };
 
-export const StudentProfile = () => {
+const StudentProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -668,3 +668,4 @@ export const StudentProfile = () => {
     </div>
   );
 };
+export default StudentProfile;
