@@ -784,17 +784,21 @@ export default function Leads() {
         message={`Are you sure you want to delete ${deleteConfirm?.name}? This action cannot be undone.`}
       />
 
-      <LeadModal
-        open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditLead(null);
-        }}
-        onSave={handleSave}
-        counsellors={counsellors}
-        editLead={editLead}
-        assignMode={editLead?._assignOnly === true} // Optional: better logic later
-      />
+  <LeadModal
+  open={modalOpen}
+  onClose={() => {
+    setModalOpen(false);
+    setEditLead(null);
+  }}
+  onSave={
+    editLead?._assignOnly
+      ? (form) => handleAssign(editLead.id, form.counsellor_id)
+      : handleSave
+  }
+  counsellors={counsellors}
+  editLead={editLead}
+  assignMode={editLead?._assignOnly === true}
+/>
 
       <LeadDrawer
         lead={drawerLead}
