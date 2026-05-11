@@ -3,7 +3,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { X, Camera } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
-
+import UniversitySelect from "../InputFields/UniversitySelect";
+import universitiesList from "../../constants/universities.json";
 export const AddApplicationModal = ({
   isOpen,
   onClose,
