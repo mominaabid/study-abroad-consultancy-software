@@ -38,7 +38,7 @@ import StudentChat from "./Pages/StudentPage/StudentChat";
 import StudentDocuments from "./Pages/StudentPage/StudentDocuments";
 import { StudentApplication } from "./Pages/StudentPage/StudentApplication";
 import StudentPayments from "./Pages/StudentPage/StudentPayment";
-import  StudentProfile  from "./Pages/StudentPage/StudentProfile";
+import { StudentProfile } from "./Pages/StudentPage/StudentProfile";
 
 // SSE initializer (unchanged)
 const SSEInitializer = ({ children }) => {

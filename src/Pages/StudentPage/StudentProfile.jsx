@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
 import { PHONE_COUNTRIES } from "../../constants/countries";
-import PhoneInputWithCountry from "../../components/InputFields/PhoneInputWithCountry";
+import PhoneInputWithCountry from "../../Components/InputFields/PhoneInputWithCountry";
 
 // Helper: get country object from country name (e.g., "Pakistan" -> { name, code, iso })
 const getCountryByName = (countryName) => {
@@ -156,7 +156,7 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
   );
 };
 
-const StudentProfile = () => {
+export const StudentProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -668,4 +668,3 @@ const StudentProfile = () => {
     </div>
   );
 };
-export default StudentProfile;
