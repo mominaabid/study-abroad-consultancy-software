@@ -641,6 +641,7 @@ function ApplicationModal({
                 value={formData.user_id}
                 onChange={handleFieldChange}
                 name="user_id"
+                disabled={!!application}
                 className={`w-full border ${
                   errors.user_id ? "border-red-400" : "border-gray-200"
                 } rounded-xl px-4 py-2.5 focus:border-teal-400`}
@@ -656,7 +657,7 @@ function ApplicationModal({
                 <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
               )}
             </div>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <CountrySelect
                 value={formData.target_country}
                 onChange={handleFieldChange}
@@ -666,34 +667,34 @@ function ApplicationModal({
                 required={false}
               />
               <div>
-    <UniversitySelect
-      value={formData.target_university}
-      onChange={handleFieldChange}
-      name="target_university"
-      universities={universitieslist}
-      required={true}
-    />
-    {errors.target_university && (
-      <p className="text-red-500 text-xs mt-1">
-        {errors.target_university}
-      </p>
-    )}
-  </div>
+                <UniversitySelect
+                  value={formData.target_university}
+                  onChange={handleFieldChange}
+                  name="target_university"
+                  universities={universitieslist}
+                  required={true}
+                />
+                {errors.target_university && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.target_university}
+                  </p>
+                )}
+              </div>
             </div>
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div>
-  <CourseSelect
-    value={formData.course}
-    onChange={handleFieldChange}
-    name="course"
-    courses={coursesList}
-    required={true}
-  />
-  {errors.course && (
-    <p className="text-red-500 text-xs mt-1">{errors.course}</p>
-  )}
-</div>
- <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <CourseSelect
+                  value={formData.course}
+                  onChange={handleFieldChange}
+                  name="course"
+                  courses={coursesList}
+                  required={true}
+                />
+                {errors.course && (
+                  <p className="text-red-500 text-xs mt-1">{errors.course}</p>
+                )}
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Deadline
                 </label>
@@ -710,10 +711,7 @@ function ApplicationModal({
                   <p className="text-red-500 text-xs mt-1">{errors.deadline}</p>
                 )}
               </div>
- 
-</div>
-
-          
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1174,6 +1172,17 @@ export const CounsellorApplication = () => {
   const [selectedAppForDoc, setSelectedAppForDoc] = useState(null);
   const [currentAppDocuments, setCurrentAppDocuments] = useState([]);
 
+  useEffect(() => {
+    if (showDocumentPreview && selectedApplication) {
+      const updatedApp = applications.find(
+        (app) => app.id === selectedApplication.id,
+      );
+      if (updatedApp) {
+        setCurrentAppDocuments(updatedApp.documents || []);
+      }
+    }
+  }, [applications, showDocumentPreview, selectedApplication]);
+
   // Get logged-in user from Redux
   const user = useSelector((state) => state.auth.user);
   const isAdmin = user?.role === "admin";
@@ -1240,7 +1249,7 @@ export const CounsellorApplication = () => {
               student_name: student.name,
               student_email: student.email,
               student_id: student.id,
-              user_id: student.user_id || student.id,
+              user_id: student.user_id,
               documents: appDocuments,
             });
           });
@@ -1760,7 +1769,7 @@ export const CounsellorApplication = () => {
                               >
                                 <Upload size={14} className="text-teal-600" />
                               </button>
-                              <button
+                              {/* <button
                                 onClick={() => {
                                   setSelectedApplication(app);
                                   setShowDeleteModal(true);
@@ -1769,7 +1778,7 @@ export const CounsellorApplication = () => {
                                 title="Delete"
                               >
                                 <Trash2 size={14} className="text-red-500" />
-                              </button>
+                              </button> */}
                             </div>
                           </td>
                         </tr>
