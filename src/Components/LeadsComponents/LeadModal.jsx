@@ -6,7 +6,18 @@ import { AddButton } from "../CustomButtons/AddButton";
 import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
 import { COUNTRIES } from "../../constants/countries";
 import { Title } from "../Title";
-import { User, Mail, BookOpen, UserCheck, XCircleIcon, X } from "lucide-react";
+import {
+  User,
+  Mail,
+  BookOpen,
+  X,
+  Phone,
+  Globe,
+  GraduationCap,
+  Radio,
+  Search,
+  ChevronDown,
+} from "lucide-react";
 
 const SOURCE_ICONS = {
   website: "🌐",
@@ -20,6 +31,121 @@ const SOURCE_ICONS = {
   agent: "🏢",
 };
 
+// ─── Searchable Counsellor Select ───────────────────────────────────────────
+function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const selected = counsellors.find(
+    (c) => String(c.user?.id || c.id) === String(value)
+  );
+
+  const filtered = counsellors.filter((c) =>
+    c.name?.toLowerCase().includes(query.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSelect = (c) => {
+    const id = String(c.user?.id || c.id);
+    onChange({ target: { name: "counsellor_id", value: id } });
+    setQuery("");
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+        Assign Counsellor *
+      </label>
+
+      <div
+        className={`flex items-center gap-2 w-full px-3.5 py-2.5 border rounded-xl bg-white text-sm cursor-text transition-all
+          ${error ? "border-red-400 ring-1 ring-red-200" : open ? "border-blue-500 ring-1 ring-blue-100" : "border-slate-300 hover:border-slate-400"}`}
+        onClick={() => setOpen(true)}
+      >
+        <Search size={15} className="text-slate-400 shrink-0" />
+        <input
+          type="text"
+          className="flex-1 outline-none bg-transparent text-slate-700 placeholder:text-slate-400"
+          placeholder={selected ? selected.name : "Search counsellor..."}
+          value={open ? query : selected ? selected.name : ""}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+        />
+        <ChevronDown
+          size={15}
+          className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </div>
+
+      {open && (
+        <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="max-h-52 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-slate-400 text-center">
+                No counsellors found
+              </div>
+            ) : (
+              filtered.map((c) => {
+                const id = String(c.user?.id || c.id);
+                const isSelected = String(value) === id;
+                return (
+                  <div
+                    key={id}
+                    onClick={() => handleSelect(c)}
+                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm transition-colors
+                      ${isSelected ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-slate-50 text-slate-700"}`}
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {c.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <span>{c.name}</span>
+                    {isSelected && (
+                      <span className="ml-auto text-blue-500 text-xs">✓ Selected</span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-red-500 text-[10px] mt-1 ml-1">{error}</p>}
+    </div>
+  );
+}
+
+// ─── Info Row ───────────────────────────────────────────────────────────────
+function InfoRow({ icon, label, value }) {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 mt-0.5">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
+          {label}
+        </p>
+        <p className="text-sm font-medium text-slate-700 break-words">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Modal ───────────────────────────────────────────────────────────────
 export default function LeadModal({
   open,
   onClose,
@@ -45,7 +171,7 @@ export default function LeadModal({
   const filteredCountries = COUNTRIES.filter(
     (c) =>
       c.country.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
-      c.iso.toLowerCase().includes(countrySearchTerm.toLowerCase()),
+      c.iso.toLowerCase().includes(countrySearchTerm.toLowerCase())
   ).map((c) => ({
     value: c.country,
     display: `${c.country} (${c.iso})`,
@@ -56,10 +182,7 @@ export default function LeadModal({
 
     if (editLead) {
       const countries = editLead.preferred_country
-        ? editLead.preferred_country
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
+        ? editLead.preferred_country.split(",").map((s) => s.trim()).filter(Boolean)
         : [];
       setSelectedCountries(countries);
       setForm({
@@ -69,46 +192,34 @@ export default function LeadModal({
         source: editLead.source || "walkin",
         preferred_country: editLead.preferred_country || "",
         study_level: editLead.study_level || "",
-        counsellor_id: editLead.counsellor_id
-          ? String(editLead.counsellor_id)
-          : "",
+        counsellor_id: editLead.counsellor_id ? String(editLead.counsellor_id) : "",
       });
     } else {
       setSelectedCountries([]);
       setCountrySearchTerm("");
-      setForm({
-        ...EMPTY_FORM,
-        source: "walkin",
-        study_level: "",
-      });
+      setForm({ ...EMPTY_FORM, source: "walkin", study_level: "" });
     }
 
     setErrors({});
   }, [open, editLead]);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        countryDropdownRef.current &&
-        !countryDropdownRef.current.contains(e.target)
-      ) {
+    const handler = (e) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target))
         setCountryDropdownOpen(false);
-      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   if (!open) return null;
 
   const validate = () => {
     const e = {};
-
     if (assignMode) {
       if (!form.counsellor_id) e.counsellor_id = "Counsellor is required";
-      return e; // ← skip everything else
+      return e;
     }
-
     if (!form.name?.trim()) e.name = "Name is required";
     if (!form.phone?.trim()) {
       e.phone = "Phone number is required";
@@ -120,9 +231,9 @@ export default function LeadModal({
     if (!form.preferred_country?.trim())
       e.preferred_country = "Preferred country is required";
     if (!form.study_level?.trim()) e.study_level = "Study level is required";
-
     return e;
   };
+
   const handleSubmit = async (e) => {
     e?.preventDefault();
     const validationErrors = validate();
@@ -156,11 +267,7 @@ export default function LeadModal({
   };
 
   const handleAddCountry = (countryValue) => {
-    if (
-      selectedCountries.includes(countryValue) ||
-      selectedCountries.length >= 5
-    )
-      return;
+    if (selectedCountries.includes(countryValue) || selectedCountries.length >= 5) return;
     const updated = [...selectedCountries, countryValue];
     setSelectedCountries(updated);
     setForm((prev) => ({ ...prev, preferred_country: updated.join(", ") }));
@@ -187,18 +294,84 @@ export default function LeadModal({
     label: `${SOURCE_ICONS[s.toLowerCase()] || "📍"} ${s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ")}`,
   }));
 
-  const studyLevelOptions = STUDY_LEVELS.map((l) => ({
-    id: l,
-    value: l,
-    label: l,
-  }));
+  const studyLevelOptions = STUDY_LEVELS.map((l) => ({ id: l, value: l, label: l }));
 
-  const counsellorOptions = counsellors.map((c) => ({
-    id: c.user?.id || c.id,
-    value: c.user?.id || c.id,
-    label: c.name,
-  }));
+  const sourceLabel = editLead?.source
+    ? `${SOURCE_ICONS[editLead.source.toLowerCase()] || "📍"} ${
+        editLead.source.charAt(0).toUpperCase() + editLead.source.slice(1).replace("_", " ")
+      }`
+    : "—";
 
+  // ════════════════════════════════════════════════════════════════════════
+  // ASSIGN MODE
+  // ════════════════════════════════════════════════════════════════════════
+  if (assignMode) {
+    return (
+      <div
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[92vh]">
+          <Title setModal={onClose}>Assign Counsellor</Title>
+
+          {/* Scrollable Content Area */}
+          <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
+            {/* Lead Info Card */}
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                Lead Details
+              </p>
+
+              <InfoRow icon={<User size={15} />} label="Full Name" value={editLead?.name} />
+              <InfoRow icon={<Mail size={15} />} label="Email" value={editLead?.email} />
+              <InfoRow icon={<Phone size={15} />} label="Phone" value={editLead?.phone} />
+              <InfoRow
+                icon={<Globe size={15} />}
+                label="Preferred Countries"
+                value={editLead?.preferred_country}
+              />
+              <InfoRow
+                icon={<GraduationCap size={15} />}
+                label="Study Level"
+                value={editLead?.study_level}
+              />
+              <InfoRow icon={<Radio size={15} />} label="Source" value={sourceLabel} />
+            </div>
+
+            {/* Counsellor Assignment */}
+            <SearchableCounsellorSelect
+              counsellors={counsellors}
+              value={form.counsellor_id}
+              onChange={handleCustomChange}
+              error={errors.counsellor_id}
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-slate-100 bg-white">
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
+              >
+                Close
+              </button>
+              <AddButton
+                label="Assign"
+                loading={saving}
+                handleClick={handleSubmit}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // ADD / EDIT MODE (Unchanged)
+  // ════════════════════════════════════════════════════════════════════════
   return (
     <div
       className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
@@ -206,11 +379,7 @@ export default function LeadModal({
     >
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <Title setModal={onClose}>
-          {assignMode
-            ? "Assign Counsellor"
-            : editLead
-              ? "Edit Lead"
-              : "Add New Lead"}
+          {editLead ? "Edit Lead" : "Add New Lead"}
         </Title>
 
         <form className="p-6 pt-4 space-y-4" onSubmit={handleSubmit}>
@@ -224,11 +393,8 @@ export default function LeadModal({
                 handlerChange={handleCustomChange}
                 icon={<User size={16} />}
                 maxLength={50}
-                disabled={assignMode}
               />
-              {errors.name && (
-                <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-red-500 text-[10px] ml-1">{errors.name}</p>}
             </div>
 
             <div className="space-y-1">
@@ -239,11 +405,8 @@ export default function LeadModal({
                 value={form.email}
                 handlerChange={handleCustomChange}
                 icon={<Mail size={16} />}
-                disabled={assignMode}
               />
-              {errors.email && (
-                <p className="text-red-500 text-[10px] ml-1">{errors.email}</p>
-              )}
+              {errors.email && <p className="text-red-500 text-[10px] ml-1">{errors.email}</p>}
             </div>
           </div>
 
@@ -254,7 +417,6 @@ export default function LeadModal({
               onChange={handleCustomChange}
               name="phone"
               error={errors.phone}
-              disabled={assignMode}
             />
 
             <div className="space-y-1">
@@ -265,17 +427,13 @@ export default function LeadModal({
                 handlerChange={handleCustomChange}
                 optionData={sourceOptions}
                 inital="Select Source"
-                disabled={assignMode}
               />
-              {errors.source && (
-                <p className="text-red-500 text-[10px] ml-1">{errors.source}</p>
-              )}
+              {errors.source && <p className="text-red-500 text-[10px] ml-1">{errors.source}</p>}
             </div>
           </div>
 
           {/* Row 3 — Preferred Countries & Study Level */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* ── Preferred Countries (inline search, no separate component) ── */}
             <div className="space-y-1" ref={countryDropdownRef}>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Preferred Countries *
@@ -286,31 +444,25 @@ export default function LeadModal({
                   type="text"
                   value={countrySearchTerm}
                   onChange={(e) => {
-                    if (assignMode) return;
                     setCountrySearchTerm(e.target.value);
                     setCountryDropdownOpen(true);
                   }}
-                  onFocus={() => {
-                    if (!assignMode) setCountryDropdownOpen(true);
-                  }}
-                  disabled={assignMode || selectedCountries.length >= 5} // ← merged into ONE
+                  onFocus={() => setCountryDropdownOpen(true)}
+                  disabled={selectedCountries.length >= 5}
                   placeholder={
                     selectedCountries.length >= 5
                       ? "Max 5 countries selected"
                       : "Type to search countries..."
                   }
                   className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors
-    ${errors.preferred_country ? "border-red-400" : "border-slate-300 focus:border-blue-500"}
-    ${assignMode || selectedCountries.length >= 5 ? "bg-slate-100 cursor-not-allowed opacity-60" : "bg-white"}`}
+                    ${errors.preferred_country ? "border-red-400" : "border-slate-300 focus:border-blue-500"}
+                    ${selectedCountries.length >= 5 ? "bg-slate-100 cursor-not-allowed opacity-60" : "bg-white"}`}
                 />
 
-                {/* Dropdown */}
                 {countryDropdownOpen && countrySearchTerm && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-auto py-1">
                     {filteredCountries.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-slate-400">
-                        No countries found
-                      </div>
+                      <div className="px-4 py-3 text-sm text-slate-400">No countries found</div>
                     ) : (
                       filteredCountries.map((c) => (
                         <div
@@ -327,7 +479,6 @@ export default function LeadModal({
                 )}
               </div>
 
-              {/* Selected country tags */}
               {selectedCountries.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {selectedCountries.map((country) => (
@@ -336,26 +487,21 @@ export default function LeadModal({
                       className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-lg"
                     >
                       {country}
-                      {!assignMode && (
-                        <X
-                          size={11}
-                          className="cursor-pointer hover:text-red-500 transition-colors"
-                          onClick={() => handleRemoveCountry(country)}
-                        />
-                      )}
+                      <X
+                        size={11}
+                        className="cursor-pointer hover:text-red-500 transition-colors"
+                        onClick={() => handleRemoveCountry(country)}
+                      />
                     </span>
                   ))}
                 </div>
               )}
 
               {errors.preferred_country && (
-                <p className="text-red-500 text-[10px] ml-1">
-                  {errors.preferred_country}
-                </p>
+                <p className="text-red-500 text-[10px] ml-1">{errors.preferred_country}</p>
               )}
             </div>
 
-            {/* Study Level */}
             <div className="space-y-1">
               <OptionField
                 labelName="Study Level *"
@@ -365,35 +511,12 @@ export default function LeadModal({
                 optionData={studyLevelOptions}
                 inital="Select level"
                 icon={<BookOpen size={16} />}
-                disabled={assignMode}
               />
               {errors.study_level && (
-                <p className="text-red-500 text-[10px] ml-1">
-                  {errors.study_level}
-                </p>
+                <p className="text-red-500 text-[10px] ml-1">{errors.study_level}</p>
               )}
             </div>
           </div>
-
-          {/* Row 4 — Counsellor (edit only) */}
-          {editLead && assignMode && (
-            <div className="space-y-1">
-              <OptionField
-                labelName="Assign Counsellor *"
-                name="counsellor_id"
-                value={form.counsellor_id}
-                handlerChange={handleCustomChange}
-                optionData={counsellorOptions}
-                inital="Select Counsellor"
-                icon={<UserCheck size={16} />}
-              />
-              {errors.counsellor_id && (
-                <p className="text-red-500 text-[10px] ml-1">
-                  {errors.counsellor_id}
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Footer */}
           <div className="flex justify-end gap-3 pt-4">
@@ -405,9 +528,7 @@ export default function LeadModal({
               Close
             </button>
             <AddButton
-              label={
-                assignMode ? "Assign" : editLead ? "Update Lead" : "Save Lead"
-              }
+              label={editLead ? "Update Lead" : "Save Lead"}
               loading={saving}
               handleClick={handleSubmit}
             />
