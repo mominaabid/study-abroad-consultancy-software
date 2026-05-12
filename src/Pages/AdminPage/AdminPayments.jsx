@@ -35,7 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import SearchableSelect from "../../components/SearchableSelect";
+import SearchableSelect from "../../Components/SearchableSelect";
 function getToken() {
   return localStorage.getItem("token") || "";
 }
