@@ -31,6 +31,107 @@ const SOURCE_ICONS = {
   agent: "🏢",
 };
 
+// ─── Searchable Dropdown Component ───────────────────────────────────────────
+// ─── Searchable Dropdown Component (FIXED - No duplicate icon) ──────────────────
+function SearchableDropdown({ 
+  options = [], 
+  value, 
+  onChange, 
+  label, 
+  placeholder = "Search...",
+  error,
+  icon,
+  required = false
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const selectedOption = options.find(opt => String(opt.value) === String(value));
+  
+  const filteredOptions = options.filter(opt =>
+    opt.label?.toLowerCase().includes(query.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSelect = (opt) => {
+    onChange({ target: { name: label.toLowerCase().replace(/\s/g, "_"), value: opt.value } });
+    setQuery("");
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {label} {required && "*"}
+      </label>
+
+      <div
+        className={`flex items-center gap-2 w-full px-4 py-2.5 border rounded-xl bg-white text-sm cursor-text transition-all
+          ${error ? "border-red-400 ring-1 ring-red-200" : open ? "border-blue-500 ring-1 ring-blue-100" : "border-slate-300 hover:border-slate-400"}`}
+        onClick={() => setOpen(true)}
+      >
+        {icon && <span className="text-slate-400 shrink-0">{icon}</span>}
+        <Search size={15} className="text-slate-400 shrink-0" />
+        <input
+          type="text"
+          className="flex-1 outline-none bg-transparent text-slate-700 placeholder:text-slate-400"
+          placeholder={selectedOption ? selectedOption.label : placeholder}
+          value={open ? query : selectedOption ? selectedOption.label : ""}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+        />
+        <ChevronDown
+          size={15}
+          className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </div>
+
+      {open && (
+        <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="max-h-52 overflow-y-auto py-1">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-slate-400 text-center">
+                No options found
+              </div>
+            ) : (
+              filteredOptions.map((opt) => {
+                const isSelected = String(value) === String(opt.value);
+                return (
+                  <div
+                    key={opt.value}
+                    onClick={() => handleSelect(opt)}
+                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm transition-colors
+                      ${isSelected ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-slate-50 text-slate-700"}`}
+                  >
+                    {/* REMOVED: {opt.icon && <span className="text-base">{opt.icon}</span>} */}
+                    <span>{opt.label}</span>
+                    {isSelected && (
+                      <span className="ml-auto text-blue-500 text-xs">✓ Selected</span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-red-500 text-[10px] mt-1 ml-1">{error}</p>}
+    </div>
+  );
+}
+
 // ─── Searchable Counsellor Select ───────────────────────────────────────────
 function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }) {
   const [query, setQuery] = useState("");
@@ -177,6 +278,18 @@ export default function LeadModal({
     display: `${c.country} (${c.iso})`,
   }));
 
+  // Prepare options for searchable dropdowns
+  const sourceOptions = SOURCES.map((s) => ({
+    value: s,
+    label: `${SOURCE_ICONS[s.toLowerCase()] || "📍"} ${s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ")}`,
+    icon: SOURCE_ICONS[s.toLowerCase()] || "📍",
+  }));
+
+  const studyLevelOptions = STUDY_LEVELS.map((l) => ({
+    value: l,
+    label: l,
+  }));
+
   useEffect(() => {
     if (!open) return;
 
@@ -288,17 +401,9 @@ export default function LeadModal({
     setForm((prev) => ({ ...prev, preferred_country: updated.join(", ") }));
   };
 
-  const sourceOptions = SOURCES.map((s) => ({
-    id: s,
-    value: s,
-    label: `${SOURCE_ICONS[s.toLowerCase()] || "📍"} ${s.charAt(0).toUpperCase() + s.slice(1).replace("_", " ")}`,
-  }));
-
-  const studyLevelOptions = STUDY_LEVELS.map((l) => ({ id: l, value: l, label: l }));
-
   const sourceLabel = editLead?.source
     ? `${SOURCE_ICONS[editLead.source.toLowerCase()] || "📍"} ${
-        editLead.source.charAt(0).toUpperCase() + editLead.source.slice(1).replace("_", " ")
+        editLead.source.charAt(0).toUpperCase() + editLead.source.slice(1).replace(/_/g, " ")
       }`
     : "—";
 
@@ -314,9 +419,7 @@ export default function LeadModal({
         <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[92vh]">
           <Title setModal={onClose}>Assign Counsellor</Title>
 
-          {/* Scrollable Content Area */}
           <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
-            {/* Lead Info Card */}
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                 Lead Details
@@ -338,7 +441,6 @@ export default function LeadModal({
               <InfoRow icon={<Radio size={15} />} label="Source" value={sourceLabel} />
             </div>
 
-            {/* Counsellor Assignment */}
             <SearchableCounsellorSelect
               counsellors={counsellors}
               value={form.counsellor_id}
@@ -347,7 +449,6 @@ export default function LeadModal({
             />
           </div>
 
-          {/* Footer */}
           <div className="p-6 border-t border-slate-100 bg-white">
             <div className="flex justify-end gap-3">
               <button
@@ -370,7 +471,7 @@ export default function LeadModal({
   }
 
   // ════════════════════════════════════════════════════════════════════════
-  // ADD / EDIT MODE (Unchanged)
+  // ADD / EDIT MODE with Searchable Dropdowns
   // ════════════════════════════════════════════════════════════════════════
   return (
     <div
@@ -410,7 +511,7 @@ export default function LeadModal({
             </div>
           </div>
 
-          {/* Row 2 — Phone & Source */}
+          {/* Row 2 — Phone & Source (Searchable) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PhoneInputWithCountry
               value={form.phone}
@@ -420,19 +521,19 @@ export default function LeadModal({
             />
 
             <div className="space-y-1">
-              <OptionField
-                labelName="Source *"
-                name="source"
+              <SearchableDropdown
+                options={sourceOptions}
                 value={form.source}
-                handlerChange={handleCustomChange}
-                optionData={sourceOptions}
-                inital="Select Source"
+                onChange={handleCustomChange}
+                label="Source"
+                placeholder="Search source..."
+                error={errors.source}
+                required={true}
               />
-              {errors.source && <p className="text-red-500 text-[10px] ml-1">{errors.source}</p>}
             </div>
           </div>
 
-          {/* Row 3 — Preferred Countries & Study Level */}
+          {/* Row 3 — Preferred Countries & Study Level (Searchable) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1" ref={countryDropdownRef}>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -503,18 +604,16 @@ export default function LeadModal({
             </div>
 
             <div className="space-y-1">
-              <OptionField
-                labelName="Study Level *"
-                name="study_level"
+              <SearchableDropdown
+                options={studyLevelOptions}
                 value={form.study_level}
-                handlerChange={handleCustomChange}
-                optionData={studyLevelOptions}
-                inital="Select level"
+                onChange={handleCustomChange}
+                label="Study Level"
+                placeholder="Search study level..."
                 icon={<BookOpen size={16} />}
+                error={errors.study_level}
+                required={true}
               />
-              {errors.study_level && (
-                <p className="text-red-500 text-[10px] ml-1">{errors.study_level}</p>
-              )}
             </div>
           </div>
 

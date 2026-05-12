@@ -8,6 +8,9 @@ import UniversitySelect from "../../Components/InputFields/UniversitySelect";
 import universitieslist from "../../constants/universities.json";
 import CourseSelect from "../../Components/InputFields/CourseSelect";
 import coursesList from "../../constants/courses.json";
+import ApplicationStatusModal from "../../Components/Modals/ApplicationStatusModal";
+import CreateApplicationModal from "../../Components/Modals/CreateApplicationModal";
+import EditApplicationModal from "../../Components/Modals/EditApplicationModal";
 import {
   User,
   FileText,
@@ -228,10 +231,6 @@ function DocumentPreviewModal({
                           <p className="text-sm text-gray-600">
                             File: {fileName}
                           </p>
-                          {/* <p className="text-xs text-gray-400">
-                            Submitted:{" "}
-                            {new Date(doc.submitted_at).toLocaleDateString()}
-                          </p> */}
                           <p className="text-xs text-gray-400">
                             Submitted:{" "}
                             {(() => {
@@ -357,522 +356,6 @@ function DocumentPreviewModal({
   );
 }
 
-// ===================== APPLICATION MODAL =====================
-function ApplicationModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  application,
-  students,
-  selectedStudentForCreate,
-}) {
-  const [formData, setFormData] = useState({
-    user_id: "",
-    target_university: "",
-    course: "",
-    target_country: "",
-    deadline: "",
-    status: "inquiry",
-    full_name: "",
-    email: "",
-    phone: "",
-    last_degree: "",
-    cgpa: "",
-    english_test: "",
-    test_score: "",
-    counselor_notes: "",
-  });
-
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (application) {
-      setFormData({
-        user_id: application.user_id || application.student_id || "",
-        target_university: application.target_university || "",
-        course: application.course || "",
-        target_country: application.target_country || "",
-        deadline: application.deadline
-          ? String(application.deadline).split("T")[0]
-          : "",
-        status: application.status || "inquiry",
-        full_name: application.full_name || "",
-        email: application.email || "",
-        phone: application.phone || "",
-        last_degree: application.last_degree || "",
-        cgpa: application.cgpa || "",
-        english_test: application.english_test || "",
-        test_score: application.test_score || "",
-        counselor_notes: application.counselor_notes || "",
-      });
-    } else if (selectedStudentForCreate) {
-      setFormData({
-        user_id:
-          selectedStudentForCreate.user_id || selectedStudentForCreate.id || "",
-        full_name: selectedStudentForCreate.name || "",
-        email: selectedStudentForCreate.email || "",
-        phone: selectedStudentForCreate.phone || "",
-        target_university: "",
-        course: "",
-        target_country: "",
-        deadline: "",
-        status: "inquiry",
-        last_degree: "",
-        cgpa: "",
-        english_test: "",
-        test_score: "",
-        counselor_notes: "",
-      });
-    }
-    setErrors({});
-  }, [application, selectedStudentForCreate, isOpen]);
-
-  const validate = () => {
-    const newErrors = {};
-
-    if (!formData.user_id) newErrors.user_id = "Student is required";
-    if (!formData.target_university?.trim())
-      newErrors.target_university = "University name is required";
-    if (!formData.course?.trim()) newErrors.course = "Course name is required";
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
-    }
-
-    if (formData.cgpa && formData.cgpa.trim() !== "") {
-      const cgpaNum = parseFloat(formData.cgpa);
-      if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
-        newErrors.cgpa = "CGPA must be a number between 0 and 10";
-      } else if (
-        formData.cgpa.includes(".") &&
-        formData.cgpa.split(".")[1]?.length > 2
-      ) {
-        newErrors.cgpa = "CGPA can have at most 2 decimal places";
-      }
-    }
-
-    if (formData.test_score && formData.test_score.trim() !== "") {
-      const scoreNum = parseFloat(formData.test_score);
-      if (isNaN(scoreNum) || scoreNum < 0) {
-        newErrors.test_score = "Test score must be a positive number";
-      } else if (
-        formData.test_score.includes(".") &&
-        formData.test_score.split(".")[1]?.length > 1
-      ) {
-        newErrors.test_score = "Score can have at most 1 decimal place";
-      }
-    }
-
-    if (formData.deadline && isNaN(new Date(formData.deadline).getTime())) {
-      newErrors.deadline = "Invalid date format";
-    }
-
-    return newErrors;
-  };
-
-  // const handleFieldChange = (e) => {
-  //   const { name, value } = e.target;
-  //   if (value.startsWith(" ")) return;
-
-  //   if (
-  //     (name === "target_university" ||
-  //       name === "course" ||
-  //       name === "target_country" ||
-  //       name === "full_name") &&
-  //     /\d/.test(value)
-  //   )
-  //     return;
-  //   if (name === "cgpa") {
-  //     if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
-  //   }
-  //   if (name === "test_score") {
-  //     if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
-  //   }
-
-  //   setFormData((prev) => ({ ...prev, [name]: value }));
-  //   if (errors[name]) {
-  //     setErrors((prev) => {
-  //       const newErrs = { ...prev };
-  //       delete newErrs[name];
-  //       return newErrs;
-  //     });
-  //   }
-  // };
-
-  const handleFieldChange = (e) => {
-    const { name, value } = e.target;
-    if (value.startsWith(" ")) return;
-
-    // Validation for specific fields (unchanged)
-    if (
-      (name === "target_university" ||
-        name === "course" ||
-        name === "target_country" ||
-        name === "full_name") &&
-      /\d/.test(value)
-    )
-      return;
-    if (name === "cgpa") {
-      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
-    }
-    if (name === "test_score") {
-      if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
-    }
-
-    // ──────────────────────────────────────────────
-    // NEW: Auto-fill student details when user_id changes
-    // ──────────────────────────────────────────────
-    if (name === "user_id") {
-      const selectedStudent = students.find(
-        (s) => (s.user_id || s.id) === parseInt(value),
-      );
-      if (selectedStudent) {
-        setFormData((prev) => ({
-          ...prev,
-          user_id: value,
-          full_name: selectedStudent.name || "",
-          email: selectedStudent.email || "",
-          phone: selectedStudent.phone || "",
-        }));
-      } else {
-        setFormData((prev) => ({ ...prev, [name]: value }));
-      }
-      // Clear errors for auto-filled fields (optional)
-      setErrors((prev) => {
-        const newErrs = { ...prev };
-        delete newErrs.user_id;
-        delete newErrs.email;
-        return newErrs;
-      });
-      return;
-    }
-
-    // For all other fields, normal update
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => {
-        const newErrs = { ...prev };
-        delete newErrs[name];
-        return newErrs;
-      });
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      toast.error("Please fix the validation errors");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const payload = {
-        user_id: parseInt(formData.user_id),
-        target_university: formData.target_university,
-        course: formData.course,
-        target_country: formData.target_country,
-        deadline: formData.deadline,
-        status: formData.status,
-        full_name: formData.full_name,
-        email: formData.email,
-        phone: formData.phone,
-        last_degree: formData.last_degree,
-        cgpa: formData.cgpa,
-        english_test: formData.english_test,
-        test_score: formData.test_score,
-        counselor_notes: formData.counselor_notes,
-      };
-
-      let res;
-      if (application) {
-        res = await authAxios.put(
-          `${BASE_URL}/counsellor/applications/${application.id}`,
-          payload,
-        );
-      } else {
-        res = await authAxios.post(
-          `${BASE_URL}/counsellor/applications`,
-          payload,
-        );
-      }
-
-      if (res.data.success) {
-        toast.success(
-          application
-            ? "Application updated successfully"
-            : "Application created successfully",
-        );
-        onSuccess();
-        onClose();
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      toast.error(err.response?.data?.message || "Failed to save application");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-        {/* Fixed Header */}
-        <div className="p-5 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-lg font-bold text-gray-800">
-            {application ? "Edit Application" : "Create Application"}
-          </h2>
-        </div>
-
-        {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Student *
-              </label>
-              <select
-                required
-                value={formData.user_id}
-                onChange={handleFieldChange}
-                name="user_id"
-                disabled={!!application}
-                className={`w-full border ${
-                  errors.user_id ? "border-red-400" : "border-gray-200"
-                } rounded-xl px-4 py-2.5 focus:border-teal-400`}
-              >
-                <option value="">Select Student</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.user_id || s.id}>
-                    {s.name} - {s.email} - {s.phone}
-                  </option>
-                ))}
-              </select>
-              {errors.user_id && (
-                <p className="text-red-500 text-xs mt-1">{errors.user_id}</p>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CountrySelect
-                value={formData.target_country}
-                onChange={handleFieldChange}
-                name="target_country"
-                labelName="Target Country"
-                placeholder="Select target country"
-                required={false}
-              />
-              <div>
-                <UniversitySelect
-                  value={formData.target_university}
-                  onChange={handleFieldChange}
-                  name="target_university"
-                  universities={universitieslist}
-                  required={true}
-                />
-                {errors.target_university && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.target_university}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <CourseSelect
-                  value={formData.course}
-                  onChange={handleFieldChange}
-                  name="course"
-                  courses={coursesList}
-                  required={true}
-                />
-                {errors.course && (
-                  <p className="text-red-500 text-xs mt-1">{errors.course}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Deadline
-                </label>
-                <input
-                  type="date"
-                  name="deadline"
-                  value={formData.deadline}
-                  onChange={handleFieldChange}
-                  className={`w-full border ${
-                    errors.deadline ? "border-red-400" : "border-gray-200"
-                  } rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                />
-                {errors.deadline && (
-                  <p className="text-red-500 text-xs mt-1">{errors.deadline}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleFieldChange}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-              >
-                {STATUS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="border-t pt-4">
-              <h3 className="font-semibold text-gray-800 text-sm mb-3">
-                Student Details
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    name="full_name"
-                    value={formData.full_name}
-                    onChange={handleFieldChange}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleFieldChange}
-                    className={`w-full border ${
-                      errors.email ? "border-red-400" : "border-gray-200"
-                    } rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                  )}
-                </div>
-
-                <PhoneInputWithCountry
-                  key={formData.phone}
-                  value={formData.phone}
-                  onChange={handleFieldChange}
-                  name="phone"
-                  labelName="Phone Number"
-                  error={errors.phone}
-                />
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Degree
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Last Degree"
-                    name="last_degree"
-                    value={formData.last_degree}
-                    onChange={handleFieldChange}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="CGPA (0-10)"
-                    name="cgpa"
-                    value={formData.cgpa}
-                    onChange={handleFieldChange}
-                    className={`w-full border ${
-                      errors.cgpa ? "border-red-400" : "border-gray-200"
-                    } rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                  />
-                  {errors.cgpa && (
-                    <p className="text-red-500 text-xs mt-1">{errors.cgpa}</p>
-                  )}
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="English Test (IELTS/TOEFL)"
-                    name="english_test"
-                    value={formData.english_test}
-                    onChange={handleFieldChange}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Test Score"
-                    name="test_score"
-                    value={formData.test_score}
-                    onChange={handleFieldChange}
-                    className={`w-full border ${
-                      errors.test_score ? "border-red-400" : "border-gray-200"
-                    } rounded-xl px-4 py-2.5 focus:border-teal-400`}
-                  />
-                  {errors.test_score && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.test_score}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                rows="3"
-                name="counselor_notes"
-                value={formData.counselor_notes}
-                onChange={handleFieldChange}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none"
-                placeholder="Internal notes..."
-              />
-            </div>
-          </div>
-
-          {/* Fixed Footer with Buttons */}
-          <div className="p-5 border-t border-gray-100 flex gap-3 flex-shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-70"
-            >
-              {loading ? (
-                <RefreshCw size={16} className="animate-spin mx-auto" />
-              ) : application ? (
-                "Update"
-              ) : (
-                "Create"
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // ===================== DOCUMENT UPLOAD MODAL =====================
 function CounsellorDocumentModal({
   isOpen,
@@ -982,29 +465,6 @@ function CounsellorDocumentModal({
           </p>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Document Type *
-            </label>
-            <select
-              required
-              value={formData.doc_type}
-              onChange={(e) =>
-                setFormData({ ...formData, doc_type: e.target.value })
-              }
-              className={`w-full border ${errors.doc_type ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-            >
-              {DOC_TYPES.map((type) => (
-                <option key={type.key} value={type.key}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-            {errors.doc_type && (
-              <p className="text-red-500 text-xs mt-1">{errors.doc_type}</p>
-            )}
-          </div> */}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Document Type *
@@ -1067,27 +527,6 @@ function CounsellorDocumentModal({
               placeholder="Add notes for the student..."
             />
           </div>
-
-          {/* <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700"
-            >
-              {loading ? (
-                <RefreshCw size={16} className="animate-spin mx-auto" />
-              ) : (
-                "Share Document"
-              )}
-            </button>
-          </div> */}
 
           <div className="flex gap-3 pt-4">
             <button
@@ -1162,6 +601,7 @@ export const CounsellorApplication = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1218,18 +658,6 @@ export const CounsellorApplication = () => {
               });
             });
 
-            // allApps.push({
-            //   id: app.id || app._id,
-            //   target_university: app.target_university,
-            //   course: app.course,
-            //   status: app.status,
-            //   created_at: app.created_at,
-            //   student_name: student.name,
-            //   student_email: student.email,
-            //   student_id: student.id,
-            //   user_id: student.user_id || student.id,
-            //   documents: appDocuments,
-            // });
             allApps.push({
               id: app.id || app._id,
               target_university: app.target_university,
@@ -1370,7 +798,7 @@ export const CounsellorApplication = () => {
   // Leads eligible for creating a new application (counsellor only)
   const eligibleForNewApp = useMemo(() => {
     if (isAdmin) return allAssignedStudents;
-    const allowedStatuses = ["new", "contacted", "counseling"]; // ✅ only these three
+    const allowedStatuses = ["new", "contacted", "counseling"];
     return allAssignedStudents.filter((s) =>
       allowedStatuses.includes(s.status?.toLowerCase()),
     );
@@ -1662,7 +1090,7 @@ export const CounsellorApplication = () => {
                     <tr>
                       <td colSpan="6" className="text-center py-8">
                         <RefreshCw size={20} className="animate-spin mx-auto" />
-                      </td>
+                       </td>
                     </tr>
                   ) : applications.length === 0 ? (
                     <tr>
@@ -1677,7 +1105,7 @@ export const CounsellorApplication = () => {
                             Click "New Application" to create one
                           </p>
                         </div>
-                      </td>
+                       </td>
                     </tr>
                   ) : (
                     applications.map((app) => {
@@ -1701,20 +1129,20 @@ export const CounsellorApplication = () => {
                             <p className="text-xs text-gray-500">
                               {app.student_email || "No email"}
                             </p>
-                          </td>
+                           </td>
                           <td className="px-4 py-3 text-sm">
                             {app.target_university || "—"}
-                          </td>
+                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {app.course || "—"}{" "}
-                          </td>
+                            {app.course || "—"} 
+                           </td>
                           <td className="px-4 py-3">
                             <span
                               className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(app.status)}`}
                             >
                               {getStatusLabel(app.status)}
                             </span>
-                          </td>
+                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1">
                               {pendingDocs > 0 && (
@@ -1733,7 +1161,7 @@ export const CounsellorApplication = () => {
                                 </span>
                               )}
                             </div>
-                          </td>
+                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2">
                               <button
@@ -1769,18 +1197,19 @@ export const CounsellorApplication = () => {
                               >
                                 <Upload size={14} className="text-teal-600" />
                               </button>
-                              {/* <button
+                              {/* Change Status Button */}
+                              <button
                                 onClick={() => {
                                   setSelectedApplication(app);
-                                  setShowDeleteModal(true);
+                                  setShowStatusModal(true);
                                 }}
-                                className="p-1.5 rounded-lg hover:bg-red-50 transition"
-                                title="Delete"
+                                className="p-1.5 rounded-lg hover:bg-purple-50 transition"
+                                title="Change Status"
                               >
-                                <Trash2 size={14} className="text-red-500" />
-                              </button> */}
+                                <Clock size={14} className="text-purple-600" />
+                              </button>
                             </div>
-                          </td>
+                           </td>
                         </tr>
                       );
                     })
@@ -1803,8 +1232,20 @@ export const CounsellorApplication = () => {
         onVerify={handleVerifyDocument}
         onReject={handleRejectDocument}
       />
+      
+      {/* Status Change Modal */}
+      <ApplicationStatusModal
+        isOpen={showStatusModal}
+        onClose={() => {
+          setShowStatusModal(false);
+          setSelectedApplication(null);
+        }}
+        application={selectedApplication}
+        onSuccess={() => fetchData()}
+      />
 
-      <ApplicationModal
+      {/* Create Application Modal */}
+      <CreateApplicationModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => fetchData()}
@@ -1812,7 +1253,8 @@ export const CounsellorApplication = () => {
         selectedStudentForCreate={selectedStudent}
       />
 
-      <ApplicationModal
+      {/* Edit Application Modal */}
+      <EditApplicationModal
         isOpen={showEditModal}
         onClose={() => {
           setShowEditModal(false);
@@ -1821,7 +1263,6 @@ export const CounsellorApplication = () => {
         onSuccess={() => fetchData()}
         application={selectedApplication}
         students={eligibleForNewApp}
-        selectedStudentForCreate={null}
       />
 
       {/* Share Document Modal */}

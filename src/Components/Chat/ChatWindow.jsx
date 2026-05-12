@@ -112,14 +112,21 @@ useEffect(() => {
   loadMessages();
 }, [convId]);
 
-  function markRead() {
-    fetch(`${BASE_URL}/chat/messages/read/${convId}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-    }).catch(() => {});
-  }
+function markRead() {
+  fetch(`${BASE_URL}/chat/messages/read/${convId}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+    },
+  })
+  .then(() => {
+    dispatch(markConversationRead({
+      conversationId: convId,
+      role: user.role
+    }));
+  })
+  .catch(() => {});
+}
 
 // Replace sendMessage:
 async function sendMessage() {

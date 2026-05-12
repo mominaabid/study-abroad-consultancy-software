@@ -11,12 +11,13 @@ const chatSlice = createSlice({
     totalUnread:          0,
   },
   reducers: {
-    setConversations(state, action) {
-      state.conversations = action.payload;
-      state.totalUnread   = action.payload.reduce((sum, c) => {
-        return sum + (c.student_unread || 0) + (c.counsellor_unread || 0);
-      }, 0);
-    },
+setConversations(state, action) {
+  state.conversations = action.payload;
+
+  state.totalUnread = action.payload.reduce((sum, c) => {
+    return sum + (c.counsellor_unread || 0);
+  }, 0);
+},
 
     setActiveConversation(state, action) {
       state.activeConversationId = action.payload;
@@ -58,15 +59,30 @@ const chatSlice = createSlice({
       state.onlineUsers = action.payload;
     },
 
-    markConversationRead(state, action) {
-      const { conversationId, role } = action.payload;
-      const conv = state.conversations.find(c => c._id === conversationId);
+  markConversationRead(state, action) {
+  const { conversationId, role } = action.payload;
 
-      if (conv) {
-        if (role === 'student')    conv.student_unread    = 0;
-        if (role === 'counsellor') conv.counsellor_unread = 0;
-      }
-    },
+  const conv = state.conversations.find(
+    c => c._id === conversationId
+  );
+
+  if (conv) {
+ if (role?.toLowerCase() === 'student') {
+  conv.student_unread = 0;
+}
+
+if (
+  role?.toLowerCase() === 'counsellor' ||
+  role?.toLowerCase() === 'counselor'
+) {
+  conv.counsellor_unread = 0;
+}
+  }
+
+state.totalUnread = state.conversations.reduce((sum, c) => {
+  return sum + (c.counsellor_unread || 0);
+}, 0);
+},
   },
 });
 
