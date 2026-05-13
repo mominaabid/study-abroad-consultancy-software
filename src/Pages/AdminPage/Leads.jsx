@@ -6,6 +6,8 @@ import "./Leads.css";
 import { FiUsers, FiTrendingUp, FiCheckCircle } from "react-icons/fi";
 import { useDispatch } from "react-redux";
 import { addNotification } from "../../redux/slices/notificationSlice";
+import { useSelector } from "react-redux";
+import { selectRole } from "../../redux/slices/authSlice";
 // ── Component imports from Components/LeadsComponents ──────────────────────────
 import {
   STAGES,
@@ -51,6 +53,7 @@ function StatCard({ label, value, icon, color }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function Leads() {
+  const userRole = useSelector(selectRole); 
   // ── State ──────────────────────────────────────────────────────────────────
   const [leads, setLeads] = useState([]);
   const [counsellors, setCounsellors] = useState([]);
@@ -58,9 +61,13 @@ export default function Leads() {
   const [view, setView] = useState("kanban");
   const [search, setSearch] = useState("");
   const [filterCountry, setFilterCountry] = useState("All Countries");
+  const [filterCounsellor, setFilterCounsellor] = useState("All Counsellors");
   const [countrySearch, setCountrySearch] = useState("");
+  const [counsellorSearch, setCounsellorSearch] = useState("");
   const [countryFilterOpen, setCountryFilterOpen] = useState(false);
+  const [counsellorFilterOpen, setCounsellorFilterOpen] = useState(false);
   const countryFilterRef = useRef(null);
+  const counsellorFilterRef = useRef(null);
   const [filterStatus, setFilterStatus] = useState("All Status");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -107,26 +114,14 @@ export default function Leads() {
       setLoading(false);
     }
   }, []);
+  
   // New Handler for Assign Counsellor
-
   const onAssignCounsellor = (lead) => {
     setEditLead({ ...lead, _assignOnly: true });
     setModalOpen(true);
   };
+  
   // ── Fetch Counsellors ──────────────────────────────────────────────────────
-  // const fetchCounsellors = useCallback(async () => {
-  //   try {
-  //     const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
-  //       headers: { "Content-Type": "application/json" },
-  //     });
-  //     const data = await res.json();
-  //     setCounsellors(Array.isArray(data) ? data : data.data || []);
-  //   } catch (err) {
-  //     console.error("Failed to fetch counsellors:", err);
-  //     setCounsellors([]);
-  //   }
-  // }, []);
-
   const fetchCounsellors = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
@@ -157,6 +152,7 @@ export default function Leads() {
   useEffect(() => {
     fetchLeads(1);
   }, [fetchLeads]);
+  
   useEffect(() => {
     const handler = (e) => {
       if (
@@ -170,6 +166,21 @@ export default function Leads() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+  
+  useEffect(() => {
+    const handler = (e) => {
+      if (
+        counsellorFilterRef.current &&
+        !counsellorFilterRef.current.contains(e.target)
+      ) {
+        setCounsellorFilterOpen(false);
+        setCounsellorSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+  
   useEffect(() => {
     fetchCounsellors();
   }, [fetchCounsellors]);
@@ -240,10 +251,13 @@ export default function Leads() {
     }
   }
 
+  // In handleAssign, improve the success message
   async function handleAssign(leadId, counsellor_id) {
-    if (!counsellor_id) return;
     const token = localStorage.getItem("token");
     if (!token) return;
+    
+    const isUnassigning = !counsellor_id || counsellor_id === null || counsellor_id === "";
+    
     try {
       const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/assign`, {
         method: "PUT",
@@ -251,13 +265,21 @@ export default function Leads() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ counsellor_id: Number(counsellor_id) }),
+        body: JSON.stringify({ 
+          counsellor_id: isUnassigning ? null : Number(counsellor_id)
+        }),
       });
-      if (!res.ok) throw new Error();
-      toast.success("Counsellor assigned");
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message);
+      }
+      
+      toast.success(isUnassigning ? "Counsellor unassigned successfully" : "Counsellor assigned successfully");
       fetchLeads();
-    } catch {
-      toast.error("Failed to assign counsellor");
+    } catch (error) {
+      console.error("Assignment error:", error);
+      toast.error("Failed to update counsellor assignment: " + error.message);
       fetchLeads();
     }
   }
@@ -279,7 +301,7 @@ export default function Leads() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status, note }), // ✅ send note
+        body: JSON.stringify({ status, note }),
       });
       if (!res.ok) throw new Error();
     } catch {
@@ -343,23 +365,31 @@ export default function Leads() {
   }
 
   // ── Derived data ───────────────────────────────────────────────────────────
-
   const filteredLeads = leads.filter((lead) => {
     const matchSearch =
       !search ||
       lead.name?.toLowerCase().includes(search.toLowerCase()) ||
       lead.email?.toLowerCase().includes(search.toLowerCase()) ||
       lead.phone?.includes(search);
+    
     const matchCountry =
       filterCountry === "All Countries" ||
       lead.preferred_country
         ?.split(",")
         .map((c) => c.trim())
         .includes(filterCountry);
+    
     const matchStatus =
       filterStatus === "All Status" || lead.status === filterStatus;
-    return matchSearch && matchCountry && matchStatus;
+    
+    const matchCounsellor =
+      filterCounsellor === "All Counsellors" ||
+      (filterCounsellor === "Unassigned" && !lead.counsellor_id) ||
+      (filterCounsellor !== "Unassigned" && lead.counsellor?.name === filterCounsellor);
+    
+    return matchSearch && matchCountry && matchStatus && matchCounsellor;
   });
+  
   const handleAddNoteOnly = async (leadId, note) => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -384,7 +414,6 @@ export default function Leads() {
 
       toast.success("Note added successfully!");
 
-      // Refresh if needed
       if (drawerLead?.id === leadId) {
         fetchLeads(currentPage);
       }
@@ -393,6 +422,7 @@ export default function Leads() {
       toast.error(error.message || "Failed to add note");
     }
   };
+  
   const leadsByStage = STAGES.reduce((acc, s) => {
     acc[s.key] = filteredLeads.filter((l) => l.status === s.key);
     return acc;
@@ -403,7 +433,7 @@ export default function Leads() {
       label: "Total Leads",
       value: leads.filter((l) => l.status === "new").length,
       icon: <FiUsers />,
-      color: "#3b82f6", // blue
+      color: "#3b82f6",
     },
     {
       label: "In Progress",
@@ -411,17 +441,17 @@ export default function Leads() {
         (l) => !["new", "success", "rejected"].includes(l.status),
       ).length,
       icon: <FiTrendingUp />,
-      color: "#f59e0b", // orange
+      color: "#f59e0b",
     },
     {
       label: "Conversions",
-
       value: leads.filter((l) => l.status !== "new" && l.status !== "contacted")
         .length,
       icon: <FiCheckCircle />,
-      color: "#10b981", // green
+      color: "#10b981",
     },
   ];
+  
   // ── View buttons config ────────────────────────────────────────────────────
   const viewButtons = [
     {
@@ -464,13 +494,13 @@ export default function Leads() {
     },
   ];
 
+  // Get unique counsellors for filter
+  const counsellorOptions = ["All Counsellors", "Unassigned", ...counsellors.map(c => c.name)];
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
-      {/* ── Top Header ── */}
-      {/* ── Stats Bar ── */}
-
       {/* ── Stats Bar ── */}
       {!loading && (
         <div className="flex-shrink-0 grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:px-6">
@@ -480,7 +510,7 @@ export default function Leads() {
         </div>
       )}
 
-      <div className="flex-shrink-0  backdrop-blur-sm  px-6 py-4">
+      <div className="flex-shrink-0 backdrop-blur-sm px-6 py-4 relative z-[60]">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           {/* Title */}
           <div>
@@ -512,7 +542,97 @@ export default function Leads() {
               />
             </div>
 
-            {/* Country filter */}
+            {/* Counsellor Filter */}
+            <div className="relative" ref={counsellorFilterRef}>
+              <button
+                onClick={() => {
+                  setCounsellorFilterOpen((p) => !p);
+                  setCounsellorSearch("");
+                }}
+                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[150px]"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-gray-400"
+                >
+                  <path d="M12 6v6l4 2" />
+                  <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                </svg>
+                <span className="truncate max-w-[100px]">
+                  {filterCounsellor === "All Counsellors" 
+                    ? "All Counsellors" 
+                    : filterCounsellor === "Unassigned"
+                    ? "Unassigned"
+                    : filterCounsellor}
+                </span>
+              </button>
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+
+              {counsellorFilterOpen && (
+                <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                  <div className="p-2 border-b border-gray-100">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={counsellorSearch}
+                      onChange={(e) => setCounsellorSearch(e.target.value)}
+                      placeholder="Search counsellor..."
+                      className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+                    />
+                  </div>
+                  <div className="max-h-52 overflow-y-auto py-1">
+                    {counsellorOptions
+                      .filter(opt => 
+                        opt.toLowerCase().includes(counsellorSearch.toLowerCase())
+                      )
+                      .map((opt) => (
+                        <div
+                          key={opt}
+                          onClick={() => {
+                            setFilterCounsellor(opt);
+                            setCounsellorFilterOpen(false);
+                            setCounsellorSearch("");
+                          }}
+                          className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-2
+                            ${filterCounsellor === opt ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+                        >
+                          {opt === "Unassigned" && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                          )}
+                          {opt !== "All Counsellors" && opt !== "Unassigned" && (
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold">
+                              {opt.charAt(0)}
+                            </div>
+                          )}
+                          <span>{opt}</span>
+                          {filterCounsellor === opt && (
+                            <span className="ml-auto text-teal-500 text-xs">✓</span>
+                          )}
+                        </div>
+                      ))}
+                    {counsellorOptions.filter(opt => 
+                      opt.toLowerCase().includes(counsellorSearch.toLowerCase())
+                    ).length === 0 && counsellorSearch && (
+                      <div className="px-4 py-3 text-[13px] text-gray-400">
+                        No counsellors found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Country filter */}
             <div className="relative" ref={countryFilterRef}>
               <button
@@ -529,21 +649,13 @@ export default function Leads() {
                 </span>
               </button>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
 
               {countryFilterOpen && (
                 <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-                  {/* Search */}
                   <div className="p-2 border-b border-gray-100">
                     <input
                       autoFocus
@@ -554,10 +666,7 @@ export default function Leads() {
                       className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
                     />
                   </div>
-
-                  {/* List */}
                   <div className="max-h-52 overflow-y-auto py-1">
-                    {/* All Countries option */}
                     <div
                       onClick={() => {
                         setFilterCountry("All Countries");
@@ -565,28 +674,18 @@ export default function Leads() {
                         setCountrySearch("");
                       }}
                       className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
-            ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+                        ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
                     >
                       All Countries
                     </div>
-
-                    {/* Filtered country list — use COUNTRIES from constants */}
-                    {/* Filtered country list — built from actual lead data */}
-                    {[
-                      ...new Set(
-                        leads.flatMap((l) =>
-                          l.preferred_country
-                            ? l.preferred_country
-                                .split(",")
-                                .map((c) => c.trim())
-                                .filter(Boolean)
-                            : [],
-                        ),
+                    {[...new Set(
+                      leads.flatMap((l) =>
+                        l.preferred_country
+                          ? l.preferred_country.split(",").map((c) => c.trim()).filter(Boolean)
+                          : []
                       ),
-                    ]
-                      .filter((c) =>
-                        c.toLowerCase().includes(countrySearch.toLowerCase()),
-                      )
+                    )]
+                      .filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase()))
                       .map((c) => (
                         <div
                           key={c}
@@ -596,31 +695,11 @@ export default function Leads() {
                             setCountrySearch("");
                           }}
                           className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
-        ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+                            ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
                         >
                           {c}
                         </div>
                       ))}
-
-                    {[
-                      ...new Set(
-                        leads.flatMap((l) =>
-                          l.preferred_country
-                            ? l.preferred_country
-                                .split(",")
-                                .map((c) => c.trim())
-                                .filter(Boolean)
-                            : [],
-                        ),
-                      ),
-                    ].filter((c) =>
-                      c.toLowerCase().includes(countrySearch.toLowerCase()),
-                    ).length === 0 &&
-                      countrySearch && (
-                        <div className="px-4 py-3 text-[13px] text-gray-400">
-                          No countries found
-                        </div>
-                      )}
                   </div>
                 </div>
               )}
@@ -641,14 +720,7 @@ export default function Leads() {
                 ))}
               </select>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
@@ -674,14 +746,7 @@ export default function Leads() {
               onClick={handleExport}
               className="flex items-center gap-1.5 h-9 px-4 border border-gray-200 rounded-xl text-[12.5px] text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
@@ -697,14 +762,7 @@ export default function Leads() {
               }}
               className="flex items-center gap-1.5 h-9 px-4 bg-teal-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M12 5v14M5 12h14" />
               </svg>
               Add Lead
@@ -724,10 +782,7 @@ export default function Leads() {
       {/* ── Kanban View ── */}
       {!loading && view === "kanban" && (
         <div className="flex-1 min-h-0 overflow-x-auto pb-4">
-          <div
-            className="flex gap-3 h-full px-6 pt-1"
-            style={{ minWidth: "max-content" }}
-          >
+          <div className="flex gap-3 h-full px-6 pt-1" style={{ minWidth: "max-content" }}>
             {STAGES.map((stage) => (
               <KanbanColumn
                 key={stage.key}
@@ -740,12 +795,17 @@ export default function Leads() {
                     setModalOpen(true);
                   }
                   if (action === "delete") setDeleteConfirm(l);
+                  if (action === "assign") {
+                    setEditLead({ ...l, _assignOnly: true });
+                    setModalOpen(true);
+                  }
                 }}
                 onDrop={async (leadId, newStatus) => {
                   setDraggingLeadId(null);
                   await handleStage(leadId, newStatus);
                 }}
                 draggingLeadId={draggingLeadId}
+                userRole={userRole}
               />
             ))}
           </div>
@@ -763,7 +823,7 @@ export default function Leads() {
             setModalOpen(true);
           }}
           onDelete={setDeleteConfirm}
-          onAssignCounsellor={onAssignCounsellor} // ← Add this line
+          onAssignCounsellor={onAssignCounsellor}
           actionMenu={actionMenu}
           setActionMenu={setActionMenu}
           pagination={pagination}
@@ -772,6 +832,7 @@ export default function Leads() {
             setCurrentPage(page);
             fetchLeads(page);
           }}
+          userRole={userRole}
         />
       )}
 
@@ -784,21 +845,21 @@ export default function Leads() {
         message={`Are you sure you want to delete ${deleteConfirm?.name}? This action cannot be undone.`}
       />
 
-  <LeadModal
-  open={modalOpen}
-  onClose={() => {
-    setModalOpen(false);
-    setEditLead(null);
-  }}
-  onSave={
-    editLead?._assignOnly
-      ? (form) => handleAssign(editLead.id, form.counsellor_id)
-      : handleSave
-  }
-  counsellors={counsellors}
-  editLead={editLead}
-  assignMode={editLead?._assignOnly === true}
-/>
+      <LeadModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditLead(null);
+        }}
+        onSave={
+          editLead?._assignOnly
+            ? (form) => handleAssign(editLead.id, form.counsellor_id)
+            : handleSave
+        }
+        counsellors={counsellors}
+        editLead={editLead}
+        assignMode={editLead?._assignOnly === true}
+      />
 
       <LeadDrawer
         lead={drawerLead}
@@ -810,7 +871,7 @@ export default function Leads() {
         counsellors={counsellors}
         onAssign={handleAssign}
         onStage={handleStage}
-        onAddNoteOnly={handleAddNoteOnly} // ADD THIS LINE
+        onAddNoteOnly={handleAddNoteOnly}
       />
     </div>
   );

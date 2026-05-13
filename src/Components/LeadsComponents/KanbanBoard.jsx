@@ -15,6 +15,7 @@ export function KanbanCard({
   onDragStart,
   onDragEnd,
   isDragging,
+  userRole, // Add userRole prop
 }) {
   const [menu, setMenu] = useState(false);
 
@@ -70,47 +71,74 @@ export function KanbanCard({
         {/* Dropdown menu */}
         {menu && (
           <div
-            className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-2 px-2 animate-in fade-in slide-in-from-top-2 duration-200"
+            className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-2 px-2 animate-in fade-in slide-in-from-top-2 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-col gap-2">
-              {/* View Option */}
+            <div className="flex flex-col gap-1.5">
+              {/* View Option - Always visible */}
               <div
-                className="flex items-center justify-between hover:bg-slate-50 p-1 rounded-md transition-colors cursor-pointer"
+                className="flex items-center justify-between hover:bg-slate-50 p-2 rounded-md transition-colors cursor-pointer"
                 onClick={() => {
                   setMenu(false);
                   onOpen(lead);
                 }}
               >
-                <span className="text-sm text-slate-600">View</span>
+                <span className="text-sm text-slate-600">View Details</span>
                 <ViewIcon handleView={null} />
               </div>
 
-              {/* Edit Option */}
+              {/* Edit Option - Always visible */}
               <div
-                className="flex items-center justify-between hover:bg-slate-50 p-1 rounded-md transition-colors cursor-pointer"
+                className="flex items-center justify-between hover:bg-slate-50 p-2 rounded-md transition-colors cursor-pointer"
                 onClick={() => {
                   setMenu(false);
                   onMenuAction("edit", lead);
                 }}
               >
-                <span className="text-sm text-slate-600">Edit</span>
+                <span className="text-sm text-slate-600">Edit Lead</span>
                 <EditIcon handleUpdate={null} />
               </div>
 
-              <hr className="border-slate-100" />
+              {/* Assign Counsellor Option - Only show for admin (not counsellor) */}
+              {userRole !== 'counsellor' && (
+                <div
+                  className="flex items-center justify-between hover:bg-indigo-50 p-2 rounded-md transition-colors cursor-pointer"
+                  onClick={() => {
+                    setMenu(false);
+                    onMenuAction("assign", lead);
+                  }}
+                >
+                  <span className="text-sm text-indigo-600">Assign Counsellor</span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="text-indigo-500"
+                  >
+                    <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+              )}
 
-              {/* Delete Optionsss */}
-              <div
-                className="flex items-center justify-between hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer"
-                onClick={() => {
-                  setMenu(false);
-                  onMenuAction("delete", lead);
-                }}
-              >
-                <span className="text-sm text-red-600">Delete</span>
-                <DeleteIcon handleDelete={null} />
-              </div>
+              {/* Delete Option - Only show for admin (not counsellor) */}
+              {userRole !== 'counsellor' && (
+                <>
+                  <hr className="border-slate-100 my-1" />
+                  <div
+                    className="flex items-center justify-between hover:bg-red-50 p-2 rounded-md transition-colors cursor-pointer"
+                    onClick={() => {
+                      setMenu(false);
+                      onMenuAction("delete", lead);
+                    }}
+                  >
+                    <span className="text-sm text-red-600">Delete Lead</span>
+                    <DeleteIcon handleDelete={null} />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -137,27 +165,25 @@ export function KanbanCard({
         )}
       </div>
 
-      {/* Footer */}
+      {/* Footer - Show Counsellor Info */}
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
         <span className="text-[11px] text-gray-400">
           {timeAgo(lead.createdAt)}
         </span>
-        {/* {lead.counsellor ? (
+        
+        {/* Counsellor assignment badge */}
+        {lead.counsellor ? (
           <span className="text-[11px] text-teal-600 font-semibold bg-teal-50 px-2 py-0.5 rounded-full">
             {lead.counsellor.name.split(" ")[0]}
           </span>
-        ) : (
-          <span className="text-[11px] text-gray-300">Unassigned</span>
-        )} */}
-
-        {lead.counsellor ? (
-          <span className="...">{lead.counsellor.name.split(" ")[0]}</span>
         ) : lead.counsellor_id ? (
-          <span className="... text-gray-500">
-            Assigned (counsellor data not loaded)
+          <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+            Assigned
           </span>
         ) : (
-          <span className="...">Unassigned</span>
+          <span className="text-[11px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+            Unassigned
+          </span>
         )}
       </div>
     </div>
@@ -173,6 +199,7 @@ export function KanbanColumn({
   onMenuAction,
   onDrop,
   draggingLeadId,
+  userRole, // Add userRole prop and pass it to KanbanCard
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -255,6 +282,7 @@ export function KanbanColumn({
               onOpen={onOpen}
               onMenuAction={onMenuAction}
               isDragging={draggingLeadId === lead.id}
+              userRole={userRole} // Pass userRole to KanbanCard
             />
           ))
         )}

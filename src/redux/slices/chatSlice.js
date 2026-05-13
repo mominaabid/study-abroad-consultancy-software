@@ -5,19 +5,22 @@ const chatSlice = createSlice({
   initialState: {
     conversations:        [],
     activeConversationId: null,
-    messages:             {},     // { conversationId: [messages] }
-    typingUsers:          {},     // { conversationId: { userId, userName } }
-    onlineUsers:          [],     // still kept (can be set via Ably presence later)
+    messages:             {},
+    typingUsers:          {},
+    onlineUsers:          [],
     totalUnread:          0,
   },
   reducers: {
-setConversations(state, action) {
-  state.conversations = action.payload;
-
-  state.totalUnread = action.payload.reduce((sum, c) => {
-    return sum + (c.counsellor_unread || 0);
-  }, 0);
-},
+    setConversations(state, action) {
+      state.conversations = action.payload;
+      
+      // Fix: Calculate total unread based on current user's role
+      // We'll calculate this dynamically in the selector instead
+      state.totalUnread = action.payload.reduce((sum, conv) => {
+        // You need to know user role here - better to calculate in selector
+        return sum;
+      }, 0);
+    },
 
     setActiveConversation(state, action) {
       state.activeConversationId = action.payload;
@@ -28,21 +31,71 @@ setConversations(state, action) {
       state.messages[conversationId] = messages;
     },
 
- addMessage(state, action) {
+addMessage(state, action) {
   const msg = action.payload;
-
-  const convId =
-    msg.conversation_id ||
-    msg.conversationId ||
-    msg.conversation;
-
+  const convId = msg.conversation_id || msg.conversationId || msg.conversation;
   if (!convId) return;
 
   state.messages[convId] = state.messages[convId] || [];
 
-  const exists = state.messages[convId].find(m => m._id === msg._id);
-  if (!exists) state.messages[convId].push(msg);
+  // Strict dedup — never add if _id already exists
+  const msgId = msg._id?.toString();
+  const exists = state.messages[convId].some(m => m._id?.toString() === msgId);
+  if (exists) {
+    console.log('🔕 Duplicate blocked:', msgId);
+    return;
+  }
+
+  state.messages[convId].push(msg);
+
+  const conv = state.conversations.find(c => c._id?.toString() === convId?.toString());
+  if (conv) {
+    conv.last_message = msg.content;
+    conv.last_message_at = msg.createdAt || new Date().toISOString();
+  }
 },
+replaceMessage(state, action) {
+  const { tempId, message } = action.payload;
+  const convId = message.conversation_id;
+  if (!state.messages[convId]) return;
+
+  const idx = state.messages[convId].findIndex(m => m._id === tempId);
+  if (idx !== -1) {
+    // Check the real ID doesn't already exist elsewhere before replacing
+    const realExists = state.messages[convId].some(
+      (m, i) => i !== idx && m._id?.toString() === message._id?.toString()
+    );
+    if (realExists) {
+      // Real message already added, just remove the temp
+      state.messages[convId].splice(idx, 1);
+    } else {
+      state.messages[convId][idx] = message;
+    }
+  }
+},
+
+removeMessage(state, action) {
+  const { tempId, conversationId } = action.payload;
+  if (!state.messages[conversationId]) return;
+  state.messages[conversationId] = state.messages[conversationId]
+    .filter(m => m._id !== tempId);
+},
+
+    updateConversationAfterMessage(state, action) {
+      const { conversationId, lastMessage, lastMessageAt, unreadCount, role } = action.payload;
+      const conversation = state.conversations.find(c => c._id === conversationId);
+      
+      if (conversation) {
+        conversation.last_message = lastMessage;
+        conversation.last_message_at = lastMessageAt;
+        
+        if (role === 'student') {
+          conversation.student_unread = unreadCount;
+        } else {
+          conversation.counsellor_unread = unreadCount;
+        }
+      }
+    },
 
     setTyping(state, action) {
       const { conversationId, userId, userName, role } = action.payload;
@@ -54,43 +107,32 @@ setConversations(state, action) {
       delete state.typingUsers[conversationId];
     },
 
-    // ✅ Keep this (you can use it with Ably presence later)
     setOnlineUsers(state, action) {
       state.onlineUsers = action.payload;
     },
 
-  markConversationRead(state, action) {
-  const { conversationId, role } = action.payload;
-
-  const conv = state.conversations.find(
-    c => c._id === conversationId
-  );
-
-  if (conv) {
- if (role?.toLowerCase() === 'student') {
-  conv.student_unread = 0;
-}
-
-if (
-  role?.toLowerCase() === 'counsellor' ||
-  role?.toLowerCase() === 'counselor'
-) {
-  conv.counsellor_unread = 0;
-}
-  }
-
-state.totalUnread = state.conversations.reduce((sum, c) => {
-  return sum + (c.counsellor_unread || 0);
-}, 0);
-},
+    markConversationRead(state, action) {
+      const { conversationId, role } = action.payload;
+      const conv = state.conversations.find(c => c._id === conversationId);
+      
+      if (conv) {
+        if (role?.toLowerCase() === 'student') {
+          conv.student_unread = 0;
+        } else if (role?.toLowerCase() === 'counsellor' || role?.toLowerCase() === 'counselor') {
+          conv.counsellor_unread = 0;
+        }
+      }
+    },
   },
 });
 
 export const {
   setConversations,
   setActiveConversation,
+  replaceMessage, removeMessage,
   setMessages,
   addMessage,
+  updateConversationAfterMessage,
   setTyping,
   clearTyping,
   setOnlineUsers,
@@ -99,10 +141,23 @@ export const {
 
 export default chatSlice.reducer;
 
-// ── Selectors ──────────────────────────────────────────────────────────────────
-export const selectConversations         = s => s.chat.conversations;
+// Fixed Selectors
+export const selectConversations = s => s.chat.conversations;
 export const selectActiveConversationId = s => s.chat.activeConversationId;
-export const selectMessages             = conversationId => s => s.chat.messages[conversationId] || [];
-export const selectTypingUser           = conversationId => s => s.chat.typingUsers[conversationId];
-export const selectOnlineUsers          = s => s.chat.onlineUsers;
-export const selectTotalUnread          = s => s.chat.totalUnread;
+export const selectMessages = conversationId => s => s.chat.messages[conversationId] || [];
+export const selectTypingUser = conversationId => s => s.chat.typingUsers[conversationId];
+export const selectOnlineUsers = s => s.chat.onlineUsers;
+
+// Fix: Calculate total unread based on user role
+export const selectTotalUnread = (userRole) => (state) => {
+  const conversations = state.chat.conversations;
+  if (!conversations || !userRole) return 0;
+  
+  return conversations.reduce((sum, conv) => {
+    if (userRole === 'student') {
+      return sum + (conv.student_unread || 0);
+    } else {
+      return sum + (conv.counsellor_unread || 0);
+    }
+  }, 0);
+};

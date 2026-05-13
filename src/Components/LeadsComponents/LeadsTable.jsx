@@ -15,6 +15,7 @@ export default function LeadsTable({
   pagination,
   currentPage,
   onPageChange,
+   userRole, 
 }) {
   function openActionMenu(e, lead) {
     e.stopPropagation();
@@ -289,6 +290,8 @@ export default function LeadsTable({
       </div>
 
       {/* Floating Action Menu */}
+         {/* Floating Action Menu */}
+          {/* Floating Action Menu */}
       {actionMenu && (
         <>
           {/* Backdrop */}
@@ -355,53 +358,60 @@ export default function LeadsTable({
               Edit Lead
             </button>
 
-            <button
-              onClick={() => {
-                onAssignCounsellor(actionMenu.lead);
-                setActionMenu(null);
-              }}
-              className="w-full px-3 py-2 text-xs font-medium text-indigo-600 hover:bg-gray-50 text-left flex items-center gap-2 transition-all duration-150"
-            >
-              <svg
-                className="w-3.5 h-3.5 text-indigo-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {/* Only show Assign Counsellor for admin (not counsellor) */}
+            {userRole !== 'counsellor' && (
+              <button
+                onClick={() => {
+                  onAssignCounsellor(actionMenu.lead);
+                  setActionMenu(null);
+                }}
+                className="w-full px-3 py-2 text-xs font-medium text-indigo-600 hover:bg-gray-50 text-left flex items-center gap-2 transition-all duration-150"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                />
-              </svg>
-              Assign Counsellor
-            </button>
+                <svg
+                  className="w-3.5 h-3.5 text-indigo-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
+                </svg>
+                Assign Counsellor
+              </button>
+            )}
 
-            <div className="my-1 border-t border-gray-100" />
-
-            <button
-              onClick={() => {
-                onDelete(actionMenu.lead);
-                setActionMenu(null);
-              }}
-              className="w-full px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 text-left flex items-center gap-2 transition-all duration-150"
-            >
-              <svg
-                className="w-3.5 h-3.5 text-red-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-              Delete
-            </button>
+            {/* Only show Delete for admin (not counsellor) */}
+            {userRole !== 'counsellor' && (
+              <>
+                <div className="my-1 border-t border-gray-100" />
+                <button
+                  onClick={() => {
+                    onDelete(actionMenu.lead);
+                    setActionMenu(null);
+                  }}
+                  className="w-full px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 text-left flex items-center gap-2 transition-all duration-150"
+                >
+                  <svg
+                    className="w-3.5 h-3.5 text-red-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         </>
       )}

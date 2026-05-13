@@ -32,7 +32,6 @@ const SOURCE_ICONS = {
 };
 
 // ─── Searchable Dropdown Component ───────────────────────────────────────────
-// ─── Searchable Dropdown Component (FIXED - No duplicate icon) ──────────────────
 function SearchableDropdown({ 
   options = [], 
   value, 
@@ -114,7 +113,6 @@ function SearchableDropdown({
                     className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm transition-colors
                       ${isSelected ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-slate-50 text-slate-700"}`}
                   >
-                    {/* REMOVED: {opt.icon && <span className="text-base">{opt.icon}</span>} */}
                     <span>{opt.label}</span>
                     {isSelected && (
                       <span className="ml-auto text-blue-500 text-xs">✓ Selected</span>
@@ -132,17 +130,29 @@ function SearchableDropdown({
   );
 }
 
-// ─── Searchable Counsellor Select ───────────────────────────────────────────
+// ─── Searchable Counsellor Select (with Unassigned option) ──────────────────
 function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  const selected = counsellors.find(
-    (c) => String(c.user?.id || c.id) === String(value)
-  );
+  // Add "Unassigned" option at the beginning
+  const counsellorsWithUnassigned = [
+    { id: "unassigned", name: "Unassigned", user: { id: "unassigned" } },
+    ...counsellors
+  ];
 
-  const filtered = counsellors.filter((c) =>
+  // Find selected option - treat null/undefined/empty as "unassigned"
+  const selected = counsellorsWithUnassigned.find((c) => {
+    const cId = String(c.user?.id || c.id);
+    // If value is falsy (null, undefined, empty string, false, 0), show Unassigned
+    if (!value || value === "" || value === "null" || value === null) {
+      return cId === "unassigned";
+    }
+    return cId === String(value);
+  });
+
+  const filtered = counsellorsWithUnassigned.filter((c) =>
     c.name?.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -156,7 +166,10 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }
 
   const handleSelect = (c) => {
     const id = String(c.user?.id || c.id);
-    onChange({ target: { name: "counsellor_id", value: id } });
+    // Send null for unassigned, otherwise send the ID
+    const newValue = id === "unassigned" ? null : id;
+    console.log("Setting counsellor_id to:", newValue); // Debug log
+    onChange({ target: { name: "counsellor_id", value: newValue } });
     setQuery("");
     setOpen(false);
   };
@@ -164,7 +177,7 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }
   return (
     <div ref={ref} className="relative">
       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-        Assign Counsellor *
+        Assign Counsellor (Optional)
       </label>
 
       <div
@@ -175,8 +188,8 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }
         <Search size={15} className="text-slate-400 shrink-0" />
         <input
           type="text"
-          className="flex-1 outline-none bg-transparent text-slate-700 placeholder:text-slate-400"
-          placeholder={selected ? selected.name : "Search counsellor..."}
+          className="flex-1 outline-none bg-transparent text-slate-700 placeholder:text-slate-400 cursor-pointer"
+          placeholder="Select counsellor or 'Unassigned'..."
           value={open ? query : selected ? selected.name : ""}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -195,12 +208,16 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }
           <div className="max-h-52 overflow-y-auto py-1">
             {filtered.length === 0 ? (
               <div className="px-4 py-3 text-sm text-slate-400 text-center">
-                No counsellors found
+                No options found
               </div>
             ) : (
               filtered.map((c) => {
                 const id = String(c.user?.id || c.id);
-                const isSelected = String(value) === id;
+                const isSelected = (!value || value === "" || value === "null" || value === null) 
+                  ? id === "unassigned" 
+                  : String(value) === id;
+                const isUnassigned = id === "unassigned";
+                
                 return (
                   <div
                     key={id}
@@ -208,10 +225,21 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange, error }
                     className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm transition-colors
                       ${isSelected ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-slate-50 text-slate-700"}`}
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {c.name?.charAt(0)?.toUpperCase()}
+                    {!isUnassigned ? (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {c.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 text-xs font-bold shrink-0">
+                        <User size={14} />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span>{c.name}</span>
+                      {isUnassigned && (
+                        <span className="text-[10px] text-slate-400">Remove assignment</span>
+                      )}
                     </div>
-                    <span>{c.name}</span>
                     {isSelected && (
                       <span className="ml-auto text-blue-500 text-xs">✓ Selected</span>
                     )}
@@ -298,6 +326,18 @@ export default function LeadModal({
         ? editLead.preferred_country.split(",").map((s) => s.trim()).filter(Boolean)
         : [];
       setSelectedCountries(countries);
+      
+      // CRITICAL FIX: Check if counsellor_id exists and is not null/empty
+      let counsellorValue = null;
+      if (editLead.counsellor_id && 
+          editLead.counsellor_id !== "" && 
+          editLead.counsellor_id !== "null" &&
+          editLead.counsellor_id !== null) {
+        counsellorValue = String(editLead.counsellor_id);
+      }
+      
+      console.log("Loading lead with counsellor_id:", counsellorValue); // Debug log
+      
       setForm({
         name: editLead.name || "",
         email: editLead.email || "",
@@ -305,12 +345,12 @@ export default function LeadModal({
         source: editLead.source || "walkin",
         preferred_country: editLead.preferred_country || "",
         study_level: editLead.study_level || "",
-        counsellor_id: editLead.counsellor_id ? String(editLead.counsellor_id) : "",
+        counsellor_id: counsellorValue,
       });
     } else {
       setSelectedCountries([]);
       setCountrySearchTerm("");
-      setForm({ ...EMPTY_FORM, source: "walkin", study_level: "" });
+      setForm({ ...EMPTY_FORM, source: "walkin", study_level: "", counsellor_id: null });
     }
 
     setErrors({});
@@ -329,10 +369,12 @@ export default function LeadModal({
 
   const validate = () => {
     const e = {};
+    
+    // In assignMode, counsellor is optional - no validation needed
     if (assignMode) {
-      if (!form.counsellor_id) e.counsellor_id = "Counsellor is required";
       return e;
     }
+    
     if (!form.name?.trim()) e.name = "Name is required";
     if (!form.phone?.trim()) {
       e.phone = "Phone number is required";
@@ -356,7 +398,17 @@ export default function LeadModal({
     }
     setSaving(true);
     try {
-      await onSave(form);
+      // Create a copy of form data to submit
+      const submitData = { ...form };
+      
+      // Ensure counsellor_id is properly set (null for unassigned)
+      if (!submitData.counsellor_id || submitData.counsellor_id === "" || submitData.counsellor_id === "null") {
+        submitData.counsellor_id = null;
+      }
+      
+      console.log("Submitting form with counsellor_id:", submitData.counsellor_id); // Debug log
+      
+      await onSave(submitData);
       onClose();
     } catch (err) {
       console.error(err);
@@ -367,8 +419,11 @@ export default function LeadModal({
 
   const handleCustomChange = (e) => {
     const { name, value } = e.target;
-    if (value.startsWith(" ")) return;
+    if (value && value.startsWith(" ")) return;
     if (name === "name" && /\d/.test(value)) return;
+    
+    console.log("Changing", name, "to:", value); // Debug log
+    
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {

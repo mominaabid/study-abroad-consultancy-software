@@ -585,52 +585,63 @@ const countryFilterRef = useRef(null);
       )}
 
       {/* ── Kanban View ── */}
-      {!loading && view === "kanban" && (
-        <div className="flex-1 min-h-0 overflow-x-auto pb-4">
-          <div
-            className="flex gap-3 h-full px-6 pt-1"
-            style={{ minWidth: "max-content" }}
-          >
-            {STAGES.map((stage) => (
-              <KanbanColumn
-                key={stage.key}
-                stage={stage}
-                leads={leadsByStage[stage.key] || []}
-                onOpen={setDrawerLead}
-                onMenuAction={(action, l) => {
-                  if (action === "edit") setDrawerLead(l);
-                  if (action === "delete") handleDelete(l);
-                }}
-                onDrop={async (leadId, newStatus) => {
-                  setDraggingLeadId(null);
-                  await handleStage(leadId, newStatus);
-                }}
-                draggingLeadId={draggingLeadId}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+ {/* ── Kanban View ── */}
+{!loading && view === "kanban" && (
+  <div className="flex-1 min-h-0 overflow-x-auto pb-4">
+    <div
+      className="flex gap-3 h-full px-6 pt-1"
+      style={{ minWidth: "max-content" }}
+    >
+      {STAGES.map((stage) => (
+        <KanbanColumn
+          key={stage.key}
+          stage={stage}
+          leads={leadsByStage[stage.key] || []}
+          onOpen={setDrawerLead}
+          onMenuAction={(action, l) => {
+            if (action === "edit") {
+              setEditLead(l);
+              setModalOpen(true);
+            }
+            if (action === "delete") handleDelete(l);
+            // Remove assign action for counsellor
+          }}
+          onDrop={async (leadId, newStatus) => {
+            setDraggingLeadId(null);
+            await handleStage(leadId, newStatus);
+          }}
+          draggingLeadId={draggingLeadId}
+          userRole="counsellor" // Pass counsellor role
+        />
+      ))}
+    </div>
+  </div>
+)}
 
       {/* ── Table View ── */}
-      {!loading && view === "table" && (
-        <LeadsTable
-          filteredLeads={filteredLeads}
-          counsellors={[]}
-          onRowClick={setDrawerLead}
-          onEdit={(l) => setDrawerLead(l)}
-          onDelete={handleDelete}
-          onAssign={null}
-          actionMenu={actionMenu}
-          setActionMenu={setActionMenu}
-          pagination={pagination}
-          currentPage={currentPage}
-          onPageChange={(page) => {
-            setCurrentPage(page);
-            fetchLeads(page);
-          }}
-        />
-      )}
+  {/* ── Table View ── */}
+{!loading && view === "table" && (
+  <LeadsTable
+    filteredLeads={filteredLeads}
+    counsellors={[]}
+    onRowClick={setDrawerLead}
+    onEdit={(l) => {
+      setEditLead(l);
+      setModalOpen(true);
+    }}
+    onDelete={handleDelete}
+    onAssignCounsellor={null} // Set to null - no assign functionality for counsellor
+    actionMenu={actionMenu}
+    setActionMenu={setActionMenu}
+    pagination={pagination}
+    currentPage={currentPage}
+    onPageChange={(page) => {
+      setCurrentPage(page);
+      fetchLeads(page);
+    }}
+    userRole="counsellor" // Pass the role explicitly
+  />
+)}
 
       {/* ── Lead Drawer ── */}
       <LeadDrawer
