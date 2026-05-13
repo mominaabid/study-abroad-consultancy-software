@@ -471,34 +471,7 @@ function ApplicationModal({
     return newErrors;
   };
 
-  // const handleFieldChange = (e) => {
-  //   const { name, value } = e.target;
-  //   if (value.startsWith(" ")) return;
 
-  //   if (
-  //     (name === "target_university" ||
-  //       name === "course" ||
-  //       name === "target_country" ||
-  //       name === "full_name") &&
-  //     /\d/.test(value)
-  //   )
-  //     return;
-  //   if (name === "cgpa") {
-  //     if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
-  //   }
-  //   if (name === "test_score") {
-  //     if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
-  //   }
-
-  //   setFormData((prev) => ({ ...prev, [name]: value }));
-  //   if (errors[name]) {
-  //     setErrors((prev) => {
-  //       const newErrs = { ...prev };
-  //       delete newErrs[name];
-  //       return newErrs;
-  //     });
-  //   }
-  // };
 
   const handleFieldChange = (e) => {
     const { name, value } = e.target;
@@ -982,29 +955,6 @@ function CounsellorDocumentModal({
           </p>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Document Type *
-            </label>
-            <select
-              required
-              value={formData.doc_type}
-              onChange={(e) =>
-                setFormData({ ...formData, doc_type: e.target.value })
-              }
-              className={`w-full border ${errors.doc_type ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
-            >
-              {DOC_TYPES.map((type) => (
-                <option key={type.key} value={type.key}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-            {errors.doc_type && (
-              <p className="text-red-500 text-xs mt-1">{errors.doc_type}</p>
-            )}
-          </div> */}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Document Type *
@@ -1067,27 +1017,6 @@ function CounsellorDocumentModal({
               placeholder="Add notes for the student..."
             />
           </div>
-
-          {/* <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700"
-            >
-              {loading ? (
-                <RefreshCw size={16} className="animate-spin mx-auto" />
-              ) : (
-                "Share Document"
-              )}
-            </button>
-          </div> */}
 
           <div className="flex gap-3 pt-4">
             <button

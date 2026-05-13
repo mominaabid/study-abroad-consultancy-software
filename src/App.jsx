@@ -69,60 +69,60 @@ export default function App() {
         newestOnTop={true}
       />
 
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
+      <SSEInitializer>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-        <Route path="/setup-password" element={<SetupPassword />} />
-        <Route
-          path="/counsellor/setup-password"
-          element={<SetupCounsellorPassword />}
-        />
+          <Route path="/setup-password" element={<SetupPassword />} />
+          <Route
+            path="/counsellor/setup-password"
+            element={<SetupCounsellorPassword />}
+          />
 
-        {/* Admin routes */}
-        <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
-          <Route path="/admin" element={<PrivateLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="leads" element={<Leads />} />
-            <Route path="counsellors" element={<Counsellor />} />
-            <Route path="chats" element={<AdminChatPage />} />
-            <Route path="payments" element={<AdminPayments />} />
-            <Route path="applications" element={<CounsellorApplication />} />
-            <Route path="profile" element={<AdminProfile />} />
+          {/* Admin routes */}
+          <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin" element={<PrivateLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="leads" element={<Leads />} />
+              <Route path="counsellors" element={<Counsellor />} />
+              <Route path="chats" element={<AdminChatPage />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="applications" element={<CounsellorApplication />} />
+              <Route path="profile" element={<AdminProfile />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Counsellor routes */}
-        <Route element={<PrivateRoute allowedRoles={["counsellor"]} />}>
-          <Route path="/counsellor" element={<PrivateLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<CounsellorDashboard />} />
-            <Route path="leads" element={<CounsellorLeads />} />
-            <Route path="chats" element={<CounsellorChat />} />
-            <Route path="documents" element={<CounsellorDocuments />} />
-            <Route path="applications" element={<CounsellorApplication />} />
-            <Route path="profile" element={<CounsellorProfile />} />
+          {/* Counsellor routes */}
+          <Route element={<PrivateRoute allowedRoles={["counsellor"]} />}>
+            <Route path="/counsellor" element={<PrivateLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<CounsellorDashboard />} />
+              <Route path="leads" element={<CounsellorLeads />} />
+              <Route path="chats" element={<CounsellorChat />} />
+              <Route path="documents" element={<CounsellorDocuments />} />
+              <Route path="applications" element={<CounsellorApplication />} />
+              <Route path="profile" element={<CounsellorProfile />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Student routes */}
-        <Route element={<PrivateRoute allowedRoles={["student"]} />}>
-          <Route path="/student" element={<PrivateLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<StudentDashboard />} />
-            <Route path="application" element={<StudentApplication />} />
-            <Route path="documents" element={<StudentDocuments />} />
-            <Route path="chats" element={<StudentChat />} />
-            <Route path="profile" element={<StudentProfile />} />
-            <Route path="payments" element={<StudentPayments />} />
+          {/* Student routes */}
+          <Route element={<PrivateRoute allowedRoles={["student"]} />}>
+            <Route path="/student" element={<PrivateLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<StudentDashboard />} />
+              <Route path="application" element={<StudentApplication />} />
+              <Route path="documents" element={<StudentDocuments />} />
+              <Route path="chats" element={<StudentChat />} />
+              <Route path="profile" element={<StudentProfile />} />
+              <Route path="payments" element={<StudentPayments />} />
+            </Route>
           </Route>
-        </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </SSEInitializer>
     </BrowserRouter>
   );
 }
-
-

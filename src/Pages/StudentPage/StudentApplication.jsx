@@ -1,4 +1,3 @@
-// src/components/student/StudentApplication.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";

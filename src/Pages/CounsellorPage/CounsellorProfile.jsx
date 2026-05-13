@@ -31,6 +31,7 @@ export const CounsellorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     father_name: "",
@@ -53,7 +54,6 @@ export const CounsellorProfile = () => {
 
   const formatDate = (date) => {
     if (!date) return "N/A";
-
     return new Date(date).toLocaleDateString("en-GB").replace(/\//g, "-");
   };
 
@@ -85,6 +85,56 @@ export const CounsellorProfile = () => {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // Handle profile picture upload
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WEBP images are allowed");
+      return;
+    }
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("profileImage", file);
+
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `${BASE_URL}/counsellor/upload-profile-image`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      // Update profile with new image URL
+      setProfile((prev) => ({
+        ...prev,
+        profile_image: response.data.profilePicturePath,
+        profilePictureUrl: response.data.profilePictureUrl,
+      }));
+      toast.success("Profile picture updated successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(error?.response?.data?.message || "Failed to upload image");
+    } finally {
+      setUploading(false);
+      // Reset file input value so same file can be uploaded again if needed
+      event.target.value = "";
+    }
+  };
 
   // Handle form input changes (for name, father_name, cnic, address only)
   const handleChange = (e) => {
@@ -168,7 +218,7 @@ export const CounsellorProfile = () => {
         payload,
         {
           headers: { Authorization: `Bearer ${token}` },
-        },
+        }
       );
 
       setProfile(response.data);
@@ -237,15 +287,36 @@ export const CounsellorProfile = () => {
                 <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
                   <div className="relative">
                     <div className="w-28 h-28 bg-white rounded-full p-1 shadow-lg">
-                      <div className="w-full h-full bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center">
-                        <span className="text-4xl font-bold text-teal-700">
-                          {profile.name?.charAt(0).toUpperCase() || "C"}
-                        </span>
-                      </div>
+                      {profile.profilePictureUrl ? (
+                        <img
+                          src={profile.profilePictureUrl}
+                          alt={profile.name}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center">
+                          <span className="text-4xl font-bold text-teal-700">
+                            {profile.name?.charAt(0).toUpperCase() || "C"}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <button className="absolute bottom-0 right-0 bg-teal-600 p-1.5 rounded-full text-white shadow-md hover:bg-teal-700 transition">
+                    <label
+                      htmlFor="profile-upload"
+                      className={`absolute bottom-0 right-0 bg-teal-600 p-1.5 rounded-full text-white shadow-md hover:bg-teal-700 transition cursor-pointer ${
+                        uploading ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
                       <Camera size={14} />
-                    </button>
+                    </label>
+                    <input
+                      id="profile-upload"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                    />
                   </div>
                 </div>
               </div>
@@ -471,21 +542,6 @@ export const CounsellorProfile = () => {
                     <p className="text-xs text-gray-400 mt-1">
                       Format: #####-#######-# (13 digits)
                     </p>
-                  </div>
-
-                  {/* Role (Read-only) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Role
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={profile.role || "counsellor"}
-                        disabled
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-500"
-                      />
-                    </div>
                   </div>
 
                   {/* Address - Full Width */}

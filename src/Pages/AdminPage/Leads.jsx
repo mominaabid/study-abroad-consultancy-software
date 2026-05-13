@@ -113,19 +113,6 @@ export default function Leads() {
     setEditLead({ ...lead, _assignOnly: true });
     setModalOpen(true);
   };
-  // ── Fetch Counsellors ──────────────────────────────────────────────────────
-  // const fetchCounsellors = useCallback(async () => {
-  //   try {
-  //     const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
-  //       headers: { "Content-Type": "application/json" },
-  //     });
-  //     const data = await res.json();
-  //     setCounsellors(Array.isArray(data) ? data : data.data || []);
-  //   } catch (err) {
-  //     console.error("Failed to fetch counsellors:", err);
-  //     setCounsellors([]);
-  //   }
-  // }, []);
 
   const fetchCounsellors = useCallback(async () => {
     try {
@@ -283,7 +270,7 @@ export default function Leads() {
       });
       if (!res.ok) throw new Error();
     } catch {
-      alert("Failed to update lead status");
+      // alert("Failed to update lead status");
       fetchLeads();
     }
   }
@@ -467,7 +454,7 @@ export default function Leads() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
+    <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-auto">
       {/* ── Top Header ── */}
       {/* ── Stats Bar ── */}
 
@@ -480,7 +467,7 @@ export default function Leads() {
         </div>
       )}
 
-      <div className="flex-shrink-0  backdrop-blur-sm  px-6 py-4">
+      <div className="flex-shrink-0  backdrop-blur-sm  px-6 py-4  relative z-[60]">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           {/* Title */}
           <div>
@@ -784,21 +771,21 @@ export default function Leads() {
         message={`Are you sure you want to delete ${deleteConfirm?.name}? This action cannot be undone.`}
       />
 
-  <LeadModal
-  open={modalOpen}
-  onClose={() => {
-    setModalOpen(false);
-    setEditLead(null);
-  }}
-  onSave={
-    editLead?._assignOnly
-      ? (form) => handleAssign(editLead.id, form.counsellor_id)
-      : handleSave
-  }
-  counsellors={counsellors}
-  editLead={editLead}
-  assignMode={editLead?._assignOnly === true}
-/>
+      <LeadModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditLead(null);
+        }}
+        onSave={
+          editLead?._assignOnly
+            ? (form) => handleAssign(editLead.id, form.counsellor_id)
+            : handleSave
+        }
+        counsellors={counsellors}
+        editLead={editLead}
+        assignMode={editLead?._assignOnly === true}
+      />
 
       <LeadDrawer
         lead={drawerLead}

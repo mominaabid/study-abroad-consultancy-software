@@ -302,11 +302,11 @@ export const StudentDashboard = () => {
   // ── Derived global calculations (optional) ─────────────────────────────────
   const verifiedDocs = documents.filter((d) => d.status === "verified").length;
   const totalUploaded = documents.length;
-  const totalRequired = applications.length * 9; // global required – kept for overall progress
-  const progressPct = Math.min(
-    100,
-    Math.round((verifiedDocs / totalRequired) * 100),
-  );
+  const totalRequired = applications.length * 9;
+  const progressPct =
+    totalRequired === 0
+      ? 0
+      : Math.min(100, Math.round((verifiedDocs / totalRequired) * 100));
 
   const counsellorName = "Not Assigned"; // placeholder
   const activeApplicationsCount = applications.filter(

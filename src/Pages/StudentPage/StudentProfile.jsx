@@ -24,8 +24,7 @@ import { BASE_URL } from "../../Content/Url";
 import { PHONE_COUNTRIES } from "../../constants/countries";
 import PhoneInputWithCountry from "../../Components/InputFields/PhoneInputWithCountry";
 
-
-// Helper: get country object from country name (e.g., "Pakistan" -> { name, code, iso })
+// Helper: get country object from country name
 const getCountryByName = (countryName) => {
   if (!countryName) return null;
   return PHONE_COUNTRIES.find(
@@ -33,13 +32,12 @@ const getCountryByName = (countryName) => {
   );
 };
 
-// Country selector component for preferred country (flag + code picker)
+// Country selector component
 const CountrySelector = ({ value, onChange, disabled, error }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
-  // Find selected country object based on stored country name
   const selectedCountry = getCountryByName(value);
 
   const filteredCountries = PHONE_COUNTRIES.filter(
@@ -60,7 +58,7 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
   }, []);
 
   const handleSelectCountry = (country) => {
-    onChange(country.name); // store country name (compatible with backend)
+    onChange(country.name);
     setDropdownOpen(false);
     setSearchTerm("");
   };
@@ -162,6 +160,8 @@ export const StudentProfile = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [profilePictureUrl, setProfilePictureUrl] = useState(null);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -194,6 +194,15 @@ export const StudentProfile = () => {
         preferred_country: data.preferred_country || "",
         study_level: data.study_level || "",
       });
+      // Set profile picture URL from backend response
+      if (data.profilePictureUrl) {
+        setProfilePictureUrl(data.profilePictureUrl);
+      } else if (data.profile_picture) {
+        // Fallback: construct full URL
+        setProfilePictureUrl(`${BASE_URL}/${data.profile_picture}`);
+      } else {
+        setProfilePictureUrl(null);
+      }
     } catch (err) {
       console.error("Profile fetch error:", err);
       toast.error(err?.response?.data?.message || "Failed to load profile");
@@ -220,7 +229,6 @@ export const StudentProfile = () => {
     }
 
     if (name === "phone") {
-      // Phone is now handled by PhoneInputWithCountry, so we keep raw value
       if (value.length > 20) return;
       formattedValue = value;
     }
@@ -230,12 +238,10 @@ export const StudentProfile = () => {
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
-  // Handle phone change from custom component
   const handlePhoneChange = (phoneValue) => {
     setFormData((prev) => ({ ...prev, phone: phoneValue }));
   };
 
-  // Handle country change from selector
   const handleCountryChange = (countryName) => {
     setFormData((prev) => ({ ...prev, preferred_country: countryName }));
   };
@@ -301,6 +307,51 @@ export const StudentProfile = () => {
     });
   };
 
+  // Handle image upload
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, or WEBP images are allowed");
+      return;
+    }
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    const uploadFormData = new FormData();
+    uploadFormData.append("profileImage", file);
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `${BASE_URL}/student/upload-profile-picture`,
+        uploadFormData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      toast.success("Profile picture updated!");
+      setProfilePictureUrl(res.data.profilePictureUrl);
+      // Refresh profile to keep data consistent
+      fetchProfile();
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error(err?.response?.data?.message || "Failed to upload image");
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current.click();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">
@@ -350,15 +401,39 @@ export const StudentProfile = () => {
                 <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
                   <div className="relative">
                     <div className="w-28 h-28 bg-white rounded-full p-1 shadow-lg">
-                      <div className="w-full h-full bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center">
-                        <span className="text-4xl font-bold text-teal-700">
-                          {profile.name?.charAt(0).toUpperCase() || "S"}
-                        </span>
-                      </div>
+                      {profilePictureUrl ? (
+                        <img
+                          src={profilePictureUrl}
+                          alt="Profile"
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center">
+                          <span className="text-4xl font-bold text-teal-700">
+                            {profile.name?.charAt(0).toUpperCase() || "S"}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <button className="absolute bottom-0 right-0 bg-teal-600 p-1.5 rounded-full text-white shadow-md hover:bg-teal-700 transition">
+                    <button
+                      type="button"
+                      onClick={triggerFileUpload}
+                      className="absolute bottom-0 right-0 bg-teal-600 p-1.5 rounded-full text-white shadow-md hover:bg-teal-700 transition"
+                    >
                       <Camera size={14} />
                     </button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      style={{ display: "none" }}
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleImageUpload(e.target.files[0]);
+                        }
+                        e.target.value = ""; // allow re-upload same file
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -370,20 +445,6 @@ export const StudentProfile = () => {
                   <Shield size={14} />
                   Student
                 </p>
-                <div className="mt-3 flex justify-center">
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
-                      profile.status === "active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    <CheckCircle size={12} />
-                    {profile.status === "active"
-                      ? "Active Account"
-                      : profile.status || "Pending"}
-                  </span>
-                </div>
               </div>
               <div className="border-t border-gray-100 px-6 py-4 space-y-3">
                 <div className="flex items-center gap-3 text-sm">
@@ -526,7 +587,7 @@ export const StudentProfile = () => {
                     </div>
                   </div>
 
-                  {/* Phone Number - using PhoneInputWithCountry */}
+                  {/* Phone Number */}
                   <div>
                     <PhoneInputWithCountry
                       value={formData.phone}
@@ -540,7 +601,7 @@ export const StudentProfile = () => {
                     />
                   </div>
 
-                  {/* Preferred Country with flag & code selector */}
+                  {/* Preferred Country */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Preferred Country <span className="text-red-500">*</span>
@@ -610,21 +671,6 @@ export const StudentProfile = () => {
                             : "bg-gray-50 border-gray-100 text-gray-600"
                         }`}
                         placeholder="e.g., Bachelor, Master, PhD"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Role (read-only) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Role
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value="Student"
-                        disabled
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-500"
                       />
                     </div>
                   </div>
