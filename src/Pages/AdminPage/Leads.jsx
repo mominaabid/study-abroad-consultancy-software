@@ -63,6 +63,7 @@ export default function Leads() {
   const [filterCountry, setFilterCountry] = useState("All Countries");
   const [filterCounsellor, setFilterCounsellor] = useState("All Counsellors");
   const [countrySearch, setCountrySearch] = useState("");
+  
   const [counsellorSearch, setCounsellorSearch] = useState("");
   const [countryFilterOpen, setCountryFilterOpen] = useState(false);
   const [counsellorFilterOpen, setCounsellorFilterOpen] = useState(false);
@@ -861,18 +862,16 @@ export default function Leads() {
         assignMode={editLead?._assignOnly === true}
       />
 
-      <LeadDrawer
-        lead={drawerLead}
-        onClose={() => setDrawerLead(null)}
-        onEdit={(l) => {
-          setEditLead(l);
-          setModalOpen(true);
-        }}
-        counsellors={counsellors}
-        onAssign={handleAssign}
-        onStage={handleStage}
-        onAddNoteOnly={handleAddNoteOnly}
-      />
+   {/* Only render drawer when there is a lead */}
+{drawerLead && (
+  <LeadDrawer
+    lead={drawerLead}
+    onClose={() => setDrawerLead(null)}
+    onStage={handleStage}
+    onAddNoteOnly={handleAddNoteOnly}
+    // Remove onEdit if not used in LeadDrawer
+  />
+)}
     </div>
   );
 }
