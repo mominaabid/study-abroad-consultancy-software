@@ -55,7 +55,8 @@ const authSlice = createSlice({
     user: null,        // { id, name, email, role }
     token: null,
     isAuthenticated: false,
-    loading: false,// true on app load — waiting for loadUser
+   loading: false,
+authChecked: false,
     error: null,
   },
   reducers: {
@@ -92,21 +93,23 @@ const authSlice = createSlice({
 
     // ── loadUser ──
     builder
-      .addCase(loadUser.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(loadUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.isAuthenticated = true;
-        state.token = action.payload.token;
-        state.user = action.payload.user;
-      })
-      .addCase(loadUser.rejected, (state) => {
-        state.loading = false;
-        state.isAuthenticated = false;
-        state.user = null;
-        state.token = null;
-      });
+   .addCase(loadUser.pending, (state) => {
+  state.authChecked = false;
+})
+
+.addCase(loadUser.fulfilled, (state, action) => {
+  state.authChecked = true;
+  state.isAuthenticated = true;
+  state.token = action.payload.token;
+  state.user = action.payload.user;
+})
+
+.addCase(loadUser.rejected, (state) => {
+  state.authChecked = true;
+  state.isAuthenticated = false;
+  state.user = null;
+  state.token = null;
+});
   },
 });
 

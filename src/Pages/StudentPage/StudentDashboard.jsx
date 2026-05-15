@@ -1,4 +1,3 @@
-// StudentDashboard.jsx - With per‑application document verification counts
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";

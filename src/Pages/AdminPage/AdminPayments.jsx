@@ -35,7 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
-
+import SearchableSelect from "../../Components/SearchableSelect";
 function getToken() {
   return localStorage.getItem("token") || "";
 }
@@ -194,34 +194,32 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Scholarship Type
-                </label>
-                <select
-                  value={formData.scholarship_type}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      scholarship_type: e.target.value,
-                    })
-                  }
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400"
-                >
-                  <option value="">Select type (optional)</option>
-                  <option value="Merit Scholarship">Merit Scholarship</option>
-                  <option value="Need-based Scholarship">
-                    Need-based Scholarship
-                  </option>
-                  <option value="Sports Scholarship">Sports Scholarship</option>
-                  <option value="Academic Excellence">
-                    Academic Excellence
-                  </option>
-                  <option value="Early Admission">Early Admission</option>
-                  <option value="Sibling Discount">Sibling Discount</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
+           <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Scholarship Type
+  </label>
+  <SearchableSelect
+    name="scholarship_type"
+    value={formData.scholarship_type}
+    onChange={(e) =>
+      setFormData({
+        ...formData,
+        scholarship_type: e.target.value,
+      })
+    }
+    options={[
+      { value: "", label: "Select type (optional)" },
+      { value: "Merit Scholarship", label: "Merit Scholarship" },
+      { value: "Need-based Scholarship", label: "Need-based Scholarship" },
+      { value: "Sports Scholarship", label: "Sports Scholarship" },
+      { value: "Academic Excellence", label: "Academic Excellence" },
+      { value: "Early Admission", label: "Early Admission" },
+      { value: "Sibling Discount", label: "Sibling Discount" },
+      { value: "Other", label: "Other" },
+    ]}
+    placeholder="Search or select scholarship type..."
+  />
+</div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -460,45 +458,48 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Type
-              </label>
-              <select
-                value={formData.payment_type}
-                onChange={(e) =>
-                  setFormData({ ...formData, payment_type: e.target.value })
-                }
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400 text-sm"
-              >
-                <option value="application_fee">Application Fee</option>
-                <option value="tuition_deposit">Tuition Deposit</option>
-                <option value="visa_fee">Visa Fee</option>
-                <option value="consultancy_fee">Consultancy Fee</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+        <div className="grid grid-cols-2 gap-3">
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Payment Type
+    </label>
+    <SearchableSelect
+      name="payment_type"
+      value={formData.payment_type}
+      onChange={(e) =>
+        setFormData({ ...formData, payment_type: e.target.value })
+      }
+      options={[
+        { value: "application_fee", label: "Application Fee" },
+        { value: "tuition_deposit", label: "Tuition Deposit" },
+        { value: "visa_fee", label: "Visa Fee" },
+        { value: "consultancy_fee", label: "Consultancy Fee" },
+        { value: "other", label: "Other" },
+      ]}
+      placeholder="Search payment type..."
+    />
+  </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Mode *
-              </label>
-              <select
-                required
-                value={formData.mode}
-                onChange={(e) =>
-                  setFormData({ ...formData, mode: e.target.value })
-                }
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400 text-sm"
-              >
-                <option value="cash">Cash</option>
-                <option value="bank">Bank Transfer</option>
-                <option value="online">Online Payment</option>
-              </select>
-            </div>
-          </div>
-
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Payment Mode *
+    </label>
+    <SearchableSelect
+      name="mode"
+      value={formData.mode}
+      onChange={(e) =>
+        setFormData({ ...formData, mode: e.target.value })
+      }
+      options={[
+        { value: "cash", label: "Cash" },
+        { value: "bank", label: "Bank Transfer" },
+        { value: "online", label: "Online Payment" },
+      ]}
+      placeholder="Search payment mode..."
+      required={true}
+    />
+  </div>
+</div>
           {/* Reference fields - with auto-generation for cash mode */}
           <div className="grid grid-cols-2 gap-3">
             <div>

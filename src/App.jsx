@@ -8,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
 import { selectUser } from "./redux/slices/authSlice";
 import useSSE from "./redux/hooks/useSSE";
-
+import { connectAbly } from "./services/ablyService";
 import "./App.css";
 
 import PrivateRoute from "./Components/PrivateRouteHOC/PrivateRoute";
@@ -51,7 +51,22 @@ const SSEInitializer = ({ children }) => {
   useSSE();
   return children;
 };
+const AblyInitializer = () => {
+  const user = useSelector(selectUser);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    console.log('🔌 Initializing Ably for user:', user.id, user.role);
+    connectAbly(token)
+      .then(() => console.log('✅ Ably ready'))
+      .catch(err => console.error('❌ Ably init failed:', err));
+  }, [user?.id]); // re-runs if user changes (login/logout)
+
+  return null; // renders nothing
+};
 export default function App() {
   const dispatch = useDispatch();
 
@@ -61,6 +76,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+     <AblyInitializer />
       <ToastContainer
         position="top-center"
         autoClose={3000}
