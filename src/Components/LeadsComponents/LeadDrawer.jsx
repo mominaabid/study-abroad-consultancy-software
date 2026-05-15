@@ -3,486 +3,601 @@ import { STAGES, formatDate } from "./LeadsConstants";
 import { BASE_URL } from "../../Content/Url";
 import { toast } from "react-toastify";
 
-import {
-  FaEnvelope,
-  FaPhone,
-  FaGlobe,
-  FaHashtag,
-  FaCalendarAlt,
-} from "react-icons/fa";
-
-import { XCircleIcon } from "lucide-react";
-
-// ── Activity Log Constants ──
-const LOG_COLORS = {
-  stage_changed: "bg-purple-500",
-  note_added: "bg-teal-500",
-  counsellor_assigned: "bg-amber-500",
-  lead_created: "bg-blue-500",
-  student_account_created: "bg-green-500",
-  setup_email_sent: "bg-pink-500",
-  lead_updated: "bg-gray-500",
-  password_set: "bg-emerald-500",
-};
-
-const LOG_TITLES = {
-  stage_changed: "Stage Changed",
-  note_added: "Note Added",
-  counsellor_assigned: "Counsellor Assigned",
-  lead_created: "Lead Created",
-  student_account_created: "Student Account Created",
-  setup_email_sent: "Setup Email Sent",
-  lead_updated: "Lead Updated",
-  password_set: "Password Set",
-};
-
-const LOG_ICONS = {
-  stage_changed: "⇄",
-  note_added: "✎",
-  counsellor_assigned: "👤",
-  lead_created: "+",
-  student_account_created: "★",
-  setup_email_sent: "✉",
-  password_set: "🔑",
-};
+import { FaEnvelope, FaPhone, FaGlobe, FaHashtag, FaCalendarAlt } from "react-icons/fa";
+import { XCircleIcon, AlertTriangle, Clock, History, ArrowRightCircle } from "lucide-react";
 
 function formatDateTime(date) {
   return new Date(date).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
   });
 }
 
-export default function LeadDrawer({ lead, onClose, onStage, onAddNoteOnly }) {
+function groupLogs(logs) {
+  const groups = [];
+  let i = 0;
+  while (i < logs.length) {
+    const log = logs[i];
+    if (log.action_type === "stage_changed") {
+      const next = logs[i + 1];
+      const paired = next &&
+        next.action_type === "note_added" &&
+        next.performed_by_name === log.performed_by_name &&
+        Math.abs(new Date(next.created_at) - new Date(log.created_at)) < 60000;
+      groups.push({ type: "stage_with_note", stage: log, note: paired ? next : null });
+      i += paired ? 2 : 1;
+    } else {
+      groups.push({ type: "note_only", note: log });
+      i++;
+    }
+  }
+  return groups;
+}
+
+function cleanNote(note) {
+  if (!note) return "";
+  return note.replace(/^\[.+?\]\s*/g, "").trim();
+}
+
+export default function LeadDrawer({ lead, onClose, onStage }) {
   const [stageNote, setStageNote] = useState("");
   const [activeTab, setActiveTab] = useState("details");
   const [logs, setLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
-  const [selectedHistoryStage, setSelectedHistoryStage] = useState(null);
-  const [historicalNote, setHistoricalNote] = useState("");
   const [stageNotes, setStageNotes] = useState({});
+  const [showHistory, setShowHistory] = useState(false);
+  const [showStageModal, setShowStageModal] = useState(false);
+  const [targetStage, setTargetStage] = useState(null);
+  const [isBackward, setIsBackward] = useState(false);
 
-  const stageOrder = STAGES.map((s) => s.key);
+  if (!lead || !lead.id) {
+    return (
+      <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-black/60">
+        <div className="bg-white rounded-2xl p-10 flex flex-col items-center shadow-xl">
+          <div className="animate-spin h-10 w-10 border-4 border-[#00A78E] border-t-transparent rounded-full" />
+          <p className="mt-5 text-base font-medium text-slate-600">Loading lead...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const fetchHistoricalNotes = async () => {
+  const stageOrder = STAGES.map(s => s.key);
+  const currentIndex = stageOrder.indexOf(lead.status);
+  const currentStageLabel = STAGES.find(s => s.key === lead.status)?.label || lead.status;
+
+  const fetchNotes = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${BASE_URL}/admin/leads/${lead.id}/logs`, {
+      const res = await fetch(`${BASE_URL}/admin/leads/${lead.id}/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        const notesByStage = {};
-
-        data.forEach((log) => {
-          if (log.action_type === "note_added" || log.action_type === "stage_changed") {
-            let stageKey = lead.status;
-
-            if (log.note) {
-              const match = log.note.match(/^\[(.+?)\]/);
-              if (match) {
-                const found = STAGES.find(s => s.label === match[1].trim());
-                if (found) stageKey = found.key;
-              }
-            }
-
-            if (!notesByStage[stageKey]) notesByStage[stageKey] = [];
-
-            notesByStage[stageKey].push({
-              content: log.note,
-              author: log.performed_by_name,
-              createdAt: log.created_at,
-              type: log.action_type,
-            });
+      if (res.ok) {
+        const data = await res.json();
+        const grouped = {};
+        data.forEach(log => {
+          if (!log.note && !log.stage_to) return;
+          let stageKey = null;
+          if (log.stage_to) {
+            const found = STAGES.find(s =>
+              s.key === log.stage_to ||
+              s.label.toLowerCase() === log.stage_to.toLowerCase()
+            );
+            if (found) stageKey = found.key;
           }
+          if (!stageKey && log.note) {
+            const match = log.note.match(/^\[(.+?)\]/);
+            if (match) {
+              const extracted = match[1].trim();
+              const found = STAGES.find(s =>
+                s.label.toLowerCase() === extracted.toLowerCase() ||
+                s.key.toLowerCase() === extracted.toLowerCase()
+              );
+              if (found) stageKey = found.key;
+            }
+          }
+          if (!stageKey) stageKey = lead.status;
+          if (!grouped[stageKey]) grouped[stageKey] = [];
+          grouped[stageKey].push({
+            content: log.note?.replace(/^\[.+?\]\s*/, "") || "",
+            author: log.performed_by_name || "System",
+            createdAt: log.created_at,
+          });
         });
-
-        setStageNotes(notesByStage);
+        setStageNotes(grouped);
       }
-    } catch (error) {
-      console.error("Error fetching stage notes:", error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  useEffect(() => {
-    if (lead?.id) fetchHistoricalNotes();
-  }, [lead?.id]);
+  useEffect(() => { fetchNotes(); }, [lead.id]);
 
   useEffect(() => {
-    if (activeTab === "logs" && lead?.id) {
+    if (activeTab === "logs" && lead.id) {
       setLogsLoading(true);
       fetch(`${BASE_URL}/admin/leads/${lead.id}/logs`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
-        .then((r) => r.json())
-        .then((data) =>
-          setLogs(Array.isArray(data) ? data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) : [])
-        )
+        .then(r => r.json())
+        .then(data => setLogs(Array.isArray(data) ? data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) : []))
         .finally(() => setLogsLoading(false));
     }
-  }, [activeTab, lead?.id]);
+  }, [activeTab, lead.id]);
 
-  const handleAddHistoricalNote = async (stageKey) => {
-    if (!historicalNote.trim()) return;
-
-    const stageLabel = STAGES.find((s) => s.key === stageKey)?.label || stageKey;
-
-    if (onAddNoteOnly) {
-      await onAddNoteOnly(lead.id, `[${stageLabel}] ${historicalNote}`);
-      setHistoricalNote("");
-      setSelectedHistoryStage(null);
-      setTimeout(fetchHistoricalNotes, 800);
-      toast.success(`Note added to ${stageLabel}`);
+  const openStageModal = (stage) => {
+    const ti = stageOrder.indexOf(stage.key);
+    if ((stage.key === "success" || stage.key === "rejected") && lead.status !== "visa") {
+      toast.error(`Must reach "Visa" stage before marking as ${stage.label}.`);
+      return;
     }
+    const SEQUENTIAL = ["new", "contacted", "counseling", "evaluated", "applied", "visa"];
+    if (ti > currentIndex + 1 && SEQUENTIAL.includes(stage.key)) {
+      toast.error(`Complete "${STAGES[currentIndex + 1]?.label}" first before skipping ahead.`);
+      return;
+    }
+    setTargetStage(stage);
+    setIsBackward(ti < currentIndex);
+    setShowStageModal(true);
   };
 
-  if (!lead) return null;
+  const handleStageConfirm = () => {
+    if (!stageNote.trim()) return toast.error("Note is required!");
+    const finalNote = `[${targetStage.label}] ${stageNote}`;
+    onStage(lead.id, targetStage.key, finalNote);
+    setStageNote("");
+    setShowStageModal(false);
+    toast.success(`Moved to ${targetStage.label}`);
+    setTimeout(fetchNotes, 700);
+  };
 
-  const detailItem = (icon, label, value) => (
-    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border">
-      <div className="text-teal-600 bg-teal-50 p-2 rounded-lg">{icon}</div>
-      <div>
-        <p className="text-[10px] text-slate-500 uppercase font-bold">{label}</p>
-        <p className="text-sm font-medium">{value || "—"}</p>
-      </div>
-    </div>
-  );
-
-  // Group logs that are note_added and stage_changed with same timestamp
-  const getGroupedLogs = () => {
-    const grouped = [];
-    const processedIndices = new Set();
-
-    for (let i = 0; i < logs.length; i++) {
-      if (processedIndices.has(i)) continue;
-
-      const currentLog = logs[i];
-      
-      // If it's a stage_changed, check for a note_added with same timestamp
-      if (currentLog.action_type === "stage_changed") {
-        const sameTimeNote = logs.find((log, idx) => 
-          idx !== i && 
-          !processedIndices.has(idx) &&
-          log.action_type === "note_added" && 
-          new Date(log.created_at).getTime() === new Date(currentLog.created_at).getTime()
-        );
-        
-        if (sameTimeNote) {
-          // Combine stage_changed and note_added into one row
-          processedIndices.add(i);
-          processedIndices.add(logs.indexOf(sameTimeNote));
-          grouped.push({
-            id: `${currentLog.id}-combined`,
-            action_type: "stage_changed_with_note",
-            created_at: currentLog.created_at,
-            performed_by_name: currentLog.performed_by_name,
-            stage_from: currentLog.stage_from,
-            stage_to: currentLog.stage_to,
-            note: sameTimeNote.note,
-            original_stage_log: currentLog,
-            original_note_log: sameTimeNote
-          });
-          continue;
-        }
-      }
-      
-      // For note_added or stage_changed without matching partner, add as is
-      if (!processedIndices.has(i)) {
-        grouped.push({ ...currentLog, isStandalone: true });
-        processedIndices.add(i);
-      }
-    }
-    
-    // Sort grouped logs by date
-    return grouped.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  // Source badge color
+  const sourceColors = {
+    website: "bg-blue-50 text-blue-700",
+    walkin: "bg-teal-50 text-teal-700",
+    whatsapp: "bg-green-50 text-green-700",
+    email: "bg-violet-50 text-violet-700",
+    facebook: "bg-indigo-50 text-indigo-700",
+    referral: "bg-orange-50 text-orange-700",
+    google_ads: "bg-red-50 text-red-600",
+    linkedin: "bg-sky-50 text-sky-700",
+    agent: "bg-amber-50 text-amber-700",
   };
 
   return (
-    <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-black/50">
-      <div className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden">
-        {/* HEADER */}
-        <div className="flex justify-between items-center p-4 bg-[#00A78E] text-white">
-          <h2 className="font-bold">{lead.name}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <XCircleIcon size={20} className="text-gray-500" />
+    <div className="fixed inset-0 z-[1500] flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl">
+
+        {/* Header */}
+        <div className="bg-[#00A78E] px-5 py-4 flex justify-between items-center">
+          <div>
+            <p className="text-teal-100 text-xs mb-0.5">Lead details</p>
+            <h2 className="text-white text-lg font-semibold">{lead.name}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="bg-white/20 hover:bg-white/30 rounded-full w-8 h-8 flex items-center justify-center transition-all"
+          >
+            <XCircleIcon size={18} className="text-white" />
           </button>
         </div>
 
-        {/* TABS */}
-        <div className="flex border-b">
-          {["details", "logs"].map((t) => (
+        {/* Tabs */}
+        <div className="flex border-b border-slate-100">
+          {["details", "logs"].map(t => (
             <button
               key={t}
               onClick={() => setActiveTab(t)}
-              className={`px-4 py-2 text-sm ${activeTab === t ? "border-b-2 border-[#00A78E] text-[#00A78E]" : "text-gray-400"}`}
+              className={`flex-1 py-3 text-sm font-medium transition-all border-b-2 ${
+                activeTab === t
+                  ? "border-[#00A78E] text-[#00A78E]"
+                  : "border-transparent text-slate-400 hover:text-slate-600"
+              }`}
             >
-              {t === "logs" ? "Activity Log" : "Details"}
+              {t === "details" ? "Details & Notes" : "Activity Log"}
             </button>
           ))}
         </div>
 
-        <div className="p-4 max-h-[70vh] overflow-y-auto">
+        <div className="p-5 max-h-[74vh] overflow-y-auto">
           {activeTab === "details" && (
             <>
-              <div className="grid grid-cols-2 gap-3">
-                {detailItem(<FaEnvelope />, "Email", lead.email)}
-                {detailItem(<FaPhone />, "Phone", lead.phone)}
-                {detailItem(<FaGlobe />, "Country", lead.preferred_country)}
-                {detailItem(<FaHashtag />, "Source", lead.source)}
-                {detailItem(<FaCalendarAlt />, "Date", formatDate(lead.createdAt))}
+              {/* ── Lead Info Card ── */}
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-5">
+                {/* Top row: source + study level + date */}
+                <div className="flex items-center gap-2 flex-wrap mb-3">
+                  {lead.source && (
+                    <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full capitalize ${sourceColors[lead.source] || "bg-slate-100 text-slate-600"}`}>
+                      {lead.source.replace("_", " ")}
+                    </span>
+                  )}
+                  {lead.study_level && (
+                    <span className="text-[11px] font-medium bg-violet-50 text-violet-700 px-2.5 py-1 rounded-full">
+                      {lead.study_level}
+                    </span>
+                  )}
+                  {lead.created_at && (
+                    <span className="text-[11px] text-slate-400 ml-auto flex items-center gap-1">
+                      <FaCalendarAlt size={10} />
+                      {formatDate(lead.created_at)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Info grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  {lead.email && (
+                    <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
+                      <FaEnvelope size={11} className="text-slate-400 flex-shrink-0" />
+                      <span className="text-[12px] text-slate-600 truncate">{lead.email}</span>
+                    </div>
+                  )}
+                  {lead.phone && (
+                    <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
+                      <FaPhone size={11} className="text-slate-400 flex-shrink-0" />
+                      <span className="text-[12px] text-slate-600 truncate">{lead.phone}</span>
+                    </div>
+                  )}
+                  {lead.preferred_country && (
+                    <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
+                      <FaGlobe size={11} className="text-slate-400 flex-shrink-0" />
+                      <span className="text-[12px] text-slate-600 truncate">{lead.preferred_country}</span>
+                    </div>
+                  )}
+                  {lead.counsellor?.name && (
+                    <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
+                      <FaHashtag size={11} className="text-slate-400 flex-shrink-0" />
+                      <span className="text-[12px] text-slate-600 truncate">{lead.counsellor.name}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* STAGE SECTION */}
-              <div className="mt-5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">
-                  Pipeline Stage
-                </p>
-
-                {/* Stepper */}
-                <div className="flex items-start mb-5 overflow-x-auto pb-1">
+              {/* ── Pipeline Stepper ── */}
+              <div className="mb-6">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-4">Pipeline stages</p>
+                <div className="flex flex-col">
                   {STAGES.map((s, i) => {
-                    const currentIndex = stageOrder.indexOf(lead.status);
-                    const isDone = i < currentIndex;
-                    const isActive = i === currentIndex;
+                    const ti = stageOrder.indexOf(s.key);
+                    const isDone = ti < currentIndex;
+                    const isCurrent = ti === currentIndex;
+
+                    const canMove = (() => {
+                      if (isCurrent) return { ok: false };
+                      if (ti < currentIndex) return { ok: true, warn: true, msg: "You're reverting to a previous stage." };
+                      if ((s.key === "success" || s.key === "rejected") && lead.status !== "visa") {
+                        return { ok: false, msg: `Must reach "Visa" before marking as ${s.label}.` };
+                      }
+                      const SEQUENTIAL = ["new", "contacted", "counseling", "evaluated", "applied", "visa"];
+                      if (ti > currentIndex + 1 && SEQUENTIAL.includes(s.key)) {
+                        return { ok: false, msg: `Complete "${STAGES[currentIndex + 1]?.label}" first.` };
+                      }
+                      return { ok: true, warn: false };
+                    })();
+
+                    const isLocked = !isCurrent && !canMove.ok;
+                    const isBack = ti < currentIndex;
+                    const isNext = ti === currentIndex + 1;
+                    const isLast = i === STAGES.length - 1;
 
                     return (
-                      <div key={s.key} className="flex flex-col items-center flex-1 min-w-[60px] relative">
-                        {i < STAGES.length - 1 && (
-                          <div className="absolute top-4 left-1/2 right-[-50%] h-0.5 z-0" style={{ background: isDone ? "#00A78E" : "#e2e8f0" }} />
-                        )}
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 relative border-2 transition-all duration-200"
-                          style={isDone ? { background: "#00A78E", color: "#fff", borderColor: "#00A78E" }
-                            : isActive ? { background: "#fff", color: "#00A78E", borderColor: "#00A78E", boxShadow: "0 0 0 4px #00A78E22" }
-                            : { background: "#f1f5f9", color: "#94a3b8", borderColor: "#e2e8f0" }}
-                        >
-                          {isDone ? "✓" : i + 1}
+                      <div key={s.key} className="flex items-stretch gap-3">
+                        <div className="flex flex-col items-center w-8 flex-shrink-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-medium border-2 transition-all flex-shrink-0 z-10
+                            ${isDone ? "bg-[#00A78E] border-[#00A78E] text-white" : ""}
+                            ${isCurrent ? "bg-white border-[#00A78E] text-[#00A78E]" : ""}
+                            ${isLocked ? "bg-slate-50 border-slate-200 text-slate-300 cursor-not-allowed" : ""}
+                            ${!isDone && !isCurrent && !isLocked ? "bg-white border-slate-200 text-slate-400 cursor-pointer hover:border-[#00A78E] hover:text-[#00A78E]" : ""}
+                          `}>
+                            {isDone
+                              ? <span className="text-[13px]">✓</span>
+                              : <span className="text-[11px] font-semibold">{i + 1}</span>
+                            }
+                          </div>
+                          {!isLast && (
+                            <div className={`w-0.5 flex-1 min-h-[12px] my-1 ${isDone ? "bg-[#00A78E]" : "bg-slate-200"}`} />
+                          )}
                         </div>
-                        <span className="text-[9px] font-semibold mt-1.5 text-center leading-tight"
-                          style={{ color: isActive ? "#00A78E" : isDone ? "#00A78E" : "#94a3b8", opacity: isDone ? 0.7 : 1 }}>
-                          {s.label}
-                        </span>
+
+                        <div className={`flex-1 pb-4 min-w-0 ${isLast ? "pb-0" : ""}`}>
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className={`text-[13px] font-medium ${isLocked ? "text-slate-300" : "text-slate-800"}`}>
+                              {s.label}
+                            </span>
+                            {isCurrent && (
+                              <span className="text-[10px] font-medium bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full">Current</span>
+                            )}
+                            {isLocked && (
+                              <span className="text-[10px] font-medium bg-red-50 text-red-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                🔒 Locked
+                              </span>
+                            )}
+                          </div>
+
+                          <p className={`text-[11px] mb-1.5 ${isLocked ? "text-red-400" : "text-slate-400"}`}>
+                            {isCurrent ? "Lead is currently at this stage"
+                              : isDone ? "Completed"
+                              : isLocked ? canMove.msg
+                              : isNext ? "Next stage — ready to advance"
+                              : isBack ? "Revert to this stage"
+                              : "Advance to this stage"}
+                          </p>
+
+                          {!isCurrent && !isLocked && (
+                            <button
+                              onClick={() => openStageModal(s)}
+                              className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-all
+                                ${isBack
+                                  ? "border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-400 hover:text-white hover:border-amber-400"
+                                  : "border-teal-300 text-teal-700 bg-teal-50 hover:bg-[#00A78E] hover:text-white hover:border-[#00A78E]"
+                                }`}
+                            >
+                              {isBack ? "Revert here" : "Move here"}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
+              </div>
 
-                {/* Stage Buttons */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {STAGES.map((s) => {
-                    const currentIndex = stageOrder.indexOf(lead.status);
-                    const targetIndex = stageOrder.indexOf(s.key);
-                    const isSameStage = lead.status === s.key;
-                    const isNext = targetIndex === currentIndex + 1;
-
-                    return (
-                      <button
-                        key={s.key}
-                        onClick={() => {
-                          if (!stageNote.trim()) {
-                            toast.error("📝 Please add a note first!");
-                            return;
-                          }
-                          if (isSameStage || targetIndex < currentIndex) {
-                            onAddNoteOnly(lead.id, stageNote);
-                            setStageNote("");
-                            toast.success("Note added!");
-                          } else if (isNext) {
-                            onStage(lead.id, s.key, stageNote);
-                            setStageNote("");
-                          } else {
-                            toast.error("You can only move forward one stage at a time.");
-                          }
-                        }}
-                        className="px-3.5 py-1.5 rounded-full text-xs font-semibold border-[1.5px] transition-all duration-150"
-                        style={isSameStage ? {
-                          background: "#00A78E", color: "#fff", borderColor: "#00A78E", boxShadow: "0 0 0 3px #00A78E22"
-                        } : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }}
-                      >
-                        {s.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="relative mb-6">
-                  <textarea
-                    value={stageNote}
-                    onChange={(e) => setStageNote(e.target.value)}
-                    placeholder="Add a note before moving stage..."
-                    rows={3}
-                    className="w-full border-[1.5px] border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 placeholder-slate-400 resize-none focus:outline-none focus:border-[#00A78E] transition-colors bg-white"
-                  />
-                  {stageNote && <span className="absolute bottom-2.5 right-3 text-[10px] text-slate-400">{stageNote.length} chars</span>}
-                </div>
-
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-200"></div>
+              {/* ── Stage Notes ── */}
+              <div className="border-t border-slate-100 pt-5">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
+                    <Clock size={15} className="text-[#00A78E]" />
+                    <span className="text-[13px] font-medium text-slate-600">Stage notes</span>
                   </div>
-                  <div className="relative flex justify-center text-xs">
-                    <span className="px-2 bg-slate-50 text-slate-400"> Notes </span>
-                  </div>
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="text-[#00A78E] hover:underline flex items-center gap-1 text-xs"
+                  >
+                    <History size={14} /> Full history
+                  </button>
                 </div>
 
-                <div className="mt-2">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-                    Add Notes to Previous Stages
-                  </p>
-
+                {(stageNotes[lead.status] || []).length > 0 ? (
                   <div className="space-y-3">
-                    {STAGES.map((stage) => {
-                      const notes = stageNotes[stage.key] || [];
-                      const isCurrentStage = lead.status === stage.key;
-                      const isPastStage = stageOrder.indexOf(stage.key) < stageOrder.indexOf(lead.status);
-
-                      if (!isPastStage && !isCurrentStage) return null;
-
-                      return (
-                        <div key={stage.key} className="border rounded-lg overflow-hidden">
-                          <div className={`px-3 py-2 flex justify-between items-center cursor-pointer transition-colors ${isCurrentStage ? "bg-teal-50 border-l-4 border-teal-500" : "bg-amber-50 border-l-4 border-amber-400"}`}
-                            onClick={() => setSelectedHistoryStage(selectedHistoryStage === stage.key ? null : stage.key)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className={`text-xs font-semibold ${isCurrentStage ? "text-teal-700" : "text-amber-700"}`}>{stage.label}</span>
-                              {isCurrentStage && <span className="text-[10px] bg-teal-200 text-teal-800 px-1.5 py-0.5 rounded">Current</span>}
-                              {isPastStage && <span className="text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">Completed</span>}
-                              <span className="text-[10px] text-gray-400">({notes.length} notes)</span>
-                            </div>
-                            <svg className={`w-4 h-4 transition-transform ${selectedHistoryStage === stage.key ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </div>
-
-                          {selectedHistoryStage === stage.key && (
-                            <div className="p-3 bg-white">
-                              <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
-                                {notes.length === 0 ? (
-                                  <p className="text-xs text-gray-400 italic p-2 text-center">No notes for this stage</p>
-                                ) : (
-                                  notes.map((note, idx) => (
-                                    <div key={idx} className="bg-gray-50 p-2 rounded text-xs">
-                                      <p className="text-gray-700">{note.content}</p>
-                                      <p className="text-gray-400 text-[10px] mt-1">{note.author} • {formatDateTime(note.createdAt)}</p>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-
-                              <div className="mt-2">
-                                <textarea
-                                  value={historicalNote}
-                                  onChange={(e) => setHistoricalNote(e.target.value)}
-                                  placeholder={`Add a note to ${stage.label} stage...`}
-                                  rows="2"
-                                  className="w-full text-xs border rounded-lg p-2 resize-none focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                                />
-                                <div className="flex justify-end mt-2">
-                                  <button onClick={() => handleAddHistoricalNote(stage.key)} disabled={!historicalNote.trim()}
-                                    className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                                    Add Note to {stage.label}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {stageNotes[lead.status].map((note, i) => (
+                      <div key={i} className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                        <p className="text-[13px] text-slate-700 leading-relaxed">{note.content}</p>
+                        <p className="text-[11px] text-slate-400 mt-2">
+                          {note.author} · {formatDateTime(note.createdAt)}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center">
+                    <p className="text-[13px] text-slate-400">No notes yet for this stage</p>
+                  </div>
+                )}
               </div>
             </>
           )}
 
-          {/* ==================== ACTIVITY LOG - GROUPED ROWS ==================== */}
           {activeTab === "logs" && (
-            <div className="space-y-4">
+            <div>
               {logsLoading ? (
-                <p className="text-center text-gray-400 py-10">Loading activity...</p>
+                <p className="text-center py-12 text-slate-400 text-sm">Loading activity...</p>
               ) : logs.length === 0 ? (
-                <p className="text-center text-gray-400 py-10">No activity yet</p>
+                <p className="text-center py-12 text-slate-400 text-sm">No activity yet</p>
               ) : (
-                getGroupedLogs().map((log) => (
-                  <div key={log.id} className="flex gap-3">
-                    <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center text-white ${
-                      log.action_type === "stage_changed_with_note" 
-                        ? "bg-purple-500" 
-                        : LOG_COLORS[log.action_type] || "bg-gray-400"
-                    }`}>
-                      {log.action_type === "stage_changed_with_note" ? "⇄" : (LOG_ICONS[log.action_type] || "•")}
-                    </div>
+                <div className="flex flex-col">
+                  {groupLogs(logs).map((g, gi) => {
+                    const isLast = gi === groupLogs(logs).length - 1;
 
-                    <div className="flex-1 border rounded-xl p-4">
-                      <div className="flex justify-between items-start">
-                        <p className="font-semibold">
-                          {log.action_type === "stage_changed_with_note" 
-                            ? "Stage Changed & Note Added" 
-                            : (LOG_TITLES[log.action_type] || log.action_type)}
-                        </p>
-                        <p className="text-xs text-gray-400">{formatDateTime(log.created_at)}</p>
-                      </div>
+                    if (g.type === "stage_with_note") {
+                      const s = g.stage;
+                      const n = g.note;
+                      const STAGE_ORDER = ["new", "contacted", "counseling", "evaluated", "applied", "visa", "success", "rejected"];
+                      const isBack = s.stage_from && s.stage_to &&
+                        STAGE_ORDER.indexOf(s.stage_to) < STAGE_ORDER.indexOf(s.stage_from);
 
-                      {/* Combined Stage Change + Note */}
-                      {log.action_type === "stage_changed_with_note" && (
-                        <>
-                          <div className="mt-3 p-4 bg-purple-50 border border-purple-300 rounded-xl">
-                            <p className="text-purple-700 font-medium">
-                              Stage Changed
-                            </p>
+                      return (
+                        <div key={s.id} className="flex gap-3">
+                          <div className="flex flex-col items-center w-8 flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0 z-10">
+                              <ArrowRightCircle size={15} className="text-teal-600" />
+                            </div>
+                            {!isLast && <div className="w-px flex-1 bg-slate-100 my-1 min-h-[12px]" />}
                           </div>
-                          {log.note && (
-                            <p className="mt-3 text-gray-700 text-[15px] leading-relaxed">{log.note}</p>
-                          )}
-                        </>
-                      )}
 
-                      {/* Standalone Stage Change (without note at same time) */}
-                      {log.action_type === "stage_changed" && log.isStandalone && (
-                        <div className="mt-3 p-4 bg-purple-50 border border-purple-300 rounded-xl">
-                          <p className="text-purple-700 font-medium">
-                            Stage Changed
-                          </p>
+                          <div className={`flex-1 min-w-0 ${!isLast ? "pb-4" : ""}`}>
+                            <div className="border border-slate-100 rounded-xl overflow-hidden bg-white">
+                              <div className="flex items-center gap-2 px-4 py-3">
+                                <span className="text-[10px] font-medium bg-teal-50 text-teal-700 px-2.5 py-1 rounded-full">
+                                  Stage changed
+                                </span>
+                                <span className="text-[11px] text-slate-400 ml-auto">{formatDateTime(s.created_at)}</span>
+                              </div>
+
+                              {s.stage_from && s.stage_to && (
+                                <div className="flex items-center gap-2 px-4 pb-3">
+                                  <span className="text-[11px] font-medium bg-slate-100 text-slate-500 px-3 py-1 rounded-full capitalize">
+                                    {s.stage_from}
+                                  </span>
+                                  <span className="text-slate-300 text-xs">→</span>
+                                  <span className={`text-[11px] font-medium px-3 py-1 rounded-full capitalize ${
+                                    isBack
+                                      ? "bg-amber-50 text-amber-700 border border-amber-100"
+                                      : "bg-teal-50 text-teal-700 border border-teal-100"
+                                  }`}>
+                                    {s.stage_to}
+                                  </span>
+                                </div>
+                              )}
+
+                              {n && cleanNote(n.note) && (
+                                <div className="border-t border-slate-100 px-4 py-3 flex gap-2.5">
+                                  <div className="w-0.5 rounded-full bg-[#00A78E] flex-shrink-0 self-stretch min-h-[16px]" />
+                                  <p className="text-[12px] text-slate-600 leading-relaxed">
+                                    {cleanNote(n.note)}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="border-t border-slate-100 px-4 py-2 flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-teal-50 flex items-center justify-center text-[9px] font-medium text-teal-700">
+                                  {s.performed_by_name?.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                                </div>
+                                <span className="text-[11px] text-slate-400">{s.performed_by_name}</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      
-                      {/* Standalone Stage Change note (if any note field exists on the log itself) */}
-                      {log.action_type === "stage_changed" && log.isStandalone && log.note && (
-                        <p className="mt-3 text-gray-700 text-[15px] leading-relaxed">{log.note}</p>
-                      )}
+                      );
+                    }
 
-                      {/* Standalone Note Added */}
-                      {log.action_type === "note_added" && log.isStandalone && log.note && (
-                        <p className="mt-3 text-gray-700 text-[15px] leading-relaxed">{log.note}</p>
-                      )}
+                    const n = g.note;
+                    return (
+                      <div key={n.id} className="flex gap-3">
+                        <div className="flex flex-col items-center w-8 flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center flex-shrink-0 z-10">
+                            <Clock size={14} className="text-violet-500" />
+                          </div>
+                          {!isLast && <div className="w-px flex-1 bg-slate-100 my-1 min-h-[12px]" />}
+                        </div>
 
-                      {/* Other activity types */}
-                      {log.action_type !== "stage_changed_with_note" && 
-                       log.action_type !== "stage_changed" && 
-                       log.action_type !== "note_added" && 
-                       log.note && (
-                        <p className="mt-3 text-gray-700 text-[15px] leading-relaxed">{log.note}</p>
-                      )}
+                        <div className={`flex-1 min-w-0 ${!isLast ? "pb-4" : ""}`}>
+                          <div className="border border-slate-100 rounded-xl overflow-hidden bg-white">
+                            <div className="flex items-center gap-2 px-4 py-3">
+                              <span className="text-[10px] font-medium bg-violet-50 text-violet-700 px-2.5 py-1 rounded-full">
+                                Note added
+                              </span>
+                              {n.stage_to && (
+                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full capitalize">
+                                  {n.stage_to}
+                                </span>
+                              )}
+                              <span className="text-[11px] text-slate-400 ml-auto">{formatDateTime(n.created_at)}</span>
+                            </div>
 
-                      <p className="text-xs text-gray-500 mt-3">by {log.performed_by_name}</p>
-                    </div>
-                  </div>
-                ))
+                            <div className="px-4 pb-3 flex gap-2.5">
+                              <div className="w-0.5 rounded-full bg-violet-400 flex-shrink-0 self-stretch min-h-[16px]" />
+                              <p className="text-[12px] text-slate-600 leading-relaxed">{cleanNote(n.note)}</p>
+                            </div>
+
+                            <div className="border-t border-slate-100 px-4 py-2 flex items-center gap-2">
+                              <div className="w-5 h-5 rounded-full bg-violet-50 flex items-center justify-center text-[9px] font-medium text-violet-700">
+                                {n.performed_by_name?.split(" ").map(w => w[0]).join("").slice(0, 2)}
+                              </div>
+                              <span className="text-[11px] text-slate-400">{n.performed_by_name}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           )}
         </div>
-
-        <div className="p-4 border-t text-right">
-          <button onClick={onClose} className="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
-            Close
-          </button>
-        </div>
       </div>
+
+      {/* Stage Change Modal */}
+      {showStageModal && targetStage && (
+        <div className="fixed inset-0 z-[1600] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full overflow-hidden shadow-2xl">
+            <div className="px-5 pt-5 pb-4 border-b border-slate-100">
+              <p className="text-[15px] font-semibold text-slate-800 mb-3">Move lead to stage</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                  {currentStageLabel}
+                </span>
+                <span className="text-slate-300 text-sm">→</span>
+                <span className={`text-[12px] font-medium px-3 py-1 rounded-full ${
+                  isBackward
+                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                    : "bg-teal-50 text-teal-700 border border-teal-200"
+                }`}>
+                  {targetStage.label}
+                </span>
+              </div>
+            </div>
+
+            {isBackward && (
+              <div className="mx-4 mt-4 flex items-center gap-2 bg-amber-50 border border-amber-100 text-amber-700 text-xs px-3 py-2.5 rounded-lg">
+                <AlertTriangle size={14} className="flex-shrink-0" />
+                You're moving this lead to a previous stage.
+              </div>
+            )}
+
+            <div className="p-4">
+              <p className="text-xs font-medium text-slate-500 mb-2">
+                Note <span className="text-slate-300 font-normal">(required)</span>
+              </p>
+              <textarea
+                value={stageNote}
+                onChange={e => setStageNote(e.target.value)}
+                placeholder="Describe the reason for this stage change…"
+                rows={4}
+                className="w-full border border-slate-200 rounded-xl p-3 text-[13px] text-slate-700 placeholder-slate-300 focus:outline-none focus:border-[#00A78E] resize-none transition-all"
+              />
+            </div>
+
+            <div className="flex gap-2 px-4 pb-4">
+              <button
+                onClick={() => { setShowStageModal(false); setStageNote(""); }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-[13px] text-slate-600 hover:bg-slate-50 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStageConfirm}
+                disabled={!stageNote.trim()}
+                className="flex-1 py-2.5 rounded-xl bg-[#00A78E] text-white text-[13px] font-medium hover:bg-[#00865F] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                Confirm move
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-[1600] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-2xl">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-[15px] font-semibold text-slate-800">All stage history</h3>
+              <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-slate-600 transition-all">
+                <XCircleIcon size={20} />
+              </button>
+            </div>
+            <div className="p-5 overflow-auto max-h-[65vh] space-y-5">
+              {STAGES.map(s => (
+                <div key={s.key}>
+                  <p className="text-[12px] font-semibold text-slate-500 border-l-2 border-[#00A78E] pl-3 mb-2 uppercase tracking-wide">
+                    {s.label}
+                  </p>
+                  {(stageNotes[s.key] || []).length > 0 ? (
+                    stageNotes[s.key].map((n, i) => (
+                      <div key={i} className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl mb-2">
+                        <p className="text-[13px] text-slate-700">{n.content}</p>
+                        <p className="text-[11px] text-slate-400 mt-1.5">
+                          {n.author} · {formatDateTime(n.createdAt)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[12px] text-slate-300 pl-3">No notes</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="px-5 py-4 border-t border-slate-100">
+              <button
+                onClick={() => setShowHistory(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[13px] font-medium rounded-xl transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -644,17 +644,14 @@ const countryFilterRef = useRef(null);
 )}
 
       {/* ── Lead Drawer ── */}
-      <LeadDrawer
-        lead={drawerLead}
-        onClose={() => setDrawerLead(null)}
-        onEdit={(l) => {
-          setEditLead(l);
-          setModalOpen(true);
-        }}
-        counsellors={[]}
-        onAssign={null}
-        onStage={handleStage}
-      />
+        {/* ── Lead Drawer ── */}
+      {drawerLead && (
+        <LeadDrawer
+          lead={drawerLead}
+          onClose={() => setDrawerLead(null)}
+          onStage={handleStage}
+        />
+      )}
 
       {/* ── Add/Edit Lead Modal ── */}
       <LeadModal

@@ -318,26 +318,24 @@ export default function LeadModal({
     label: l,
   }));
 
+  // Reset form properly every time modal opens/closes or editLead changes
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      // Clear everything when modal closes
+      setForm({ ...EMPTY_FORM, source: "walkin", study_level: "", counsellor_id: null });
+      setSelectedCountries([]);
+      setCountrySearchTerm("");
+      setErrors({});
+      return;
+    }
 
     if (editLead) {
       const countries = editLead.preferred_country
         ? editLead.preferred_country.split(",").map((s) => s.trim()).filter(Boolean)
         : [];
+
       setSelectedCountries(countries);
-      
-      // CRITICAL FIX: Check if counsellor_id exists and is not null/empty
-      let counsellorValue = null;
-      if (editLead.counsellor_id && 
-          editLead.counsellor_id !== "" && 
-          editLead.counsellor_id !== "null" &&
-          editLead.counsellor_id !== null) {
-        counsellorValue = String(editLead.counsellor_id);
-      }
-      
-      console.log("Loading lead with counsellor_id:", counsellorValue); // Debug log
-      
+
       setForm({
         name: editLead.name || "",
         email: editLead.email || "",
@@ -345,12 +343,18 @@ export default function LeadModal({
         source: editLead.source || "walkin",
         preferred_country: editLead.preferred_country || "",
         study_level: editLead.study_level || "",
-        counsellor_id: counsellorValue,
+        counsellor_id: editLead.counsellor_id || null,
       });
     } else {
+      // Fresh Add Lead
       setSelectedCountries([]);
       setCountrySearchTerm("");
-      setForm({ ...EMPTY_FORM, source: "walkin", study_level: "", counsellor_id: null });
+      setForm({ 
+        ...EMPTY_FORM, 
+        source: "walkin", 
+        study_level: "", 
+        counsellor_id: null 
+      });
     }
 
     setErrors({});
