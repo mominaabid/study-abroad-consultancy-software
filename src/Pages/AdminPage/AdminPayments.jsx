@@ -194,32 +194,41 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                 </p>
               </div>
 
-           <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Scholarship Type
-  </label>
-  <SearchableSelect
-    name="scholarship_type"
-    value={formData.scholarship_type}
-    onChange={(e) =>
-      setFormData({
-        ...formData,
-        scholarship_type: e.target.value,
-      })
-    }
-    options={[
-      { value: "", label: "Select type (optional)" },
-      { value: "Merit Scholarship", label: "Merit Scholarship" },
-      { value: "Need-based Scholarship", label: "Need-based Scholarship" },
-      { value: "Sports Scholarship", label: "Sports Scholarship" },
-      { value: "Academic Excellence", label: "Academic Excellence" },
-      { value: "Early Admission", label: "Early Admission" },
-      { value: "Sibling Discount", label: "Sibling Discount" },
-      { value: "Other", label: "Other" },
-    ]}
-    placeholder="Search or select scholarship type..."
-  />
-</div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Scholarship Type
+                </label>
+                <SearchableSelect
+                  name="scholarship_type"
+                  value={formData.scholarship_type}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      scholarship_type: e.target.value,
+                    })
+                  }
+                  options={[
+                    { value: "", label: "Select type (optional)" },
+                    { value: "Merit Scholarship", label: "Merit Scholarship" },
+                    {
+                      value: "Need-based Scholarship",
+                      label: "Need-based Scholarship",
+                    },
+                    {
+                      value: "Sports Scholarship",
+                      label: "Sports Scholarship",
+                    },
+                    {
+                      value: "Academic Excellence",
+                      label: "Academic Excellence",
+                    },
+                    { value: "Early Admission", label: "Early Admission" },
+                    { value: "Sibling Discount", label: "Sibling Discount" },
+                    { value: "Other", label: "Other" },
+                  ]}
+                  placeholder="Search or select scholarship type..."
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -383,6 +392,7 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
           reference_no: formData.reference_no,
           transaction_id: formData.transaction_id,
           notes: formData.notes,
+          status: "completed",
         }),
       });
 
@@ -458,48 +468,48 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
             />
           </div>
 
-        <div className="grid grid-cols-2 gap-3">
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Payment Type
-    </label>
-    <SearchableSelect
-      name="payment_type"
-      value={formData.payment_type}
-      onChange={(e) =>
-        setFormData({ ...formData, payment_type: e.target.value })
-      }
-      options={[
-        { value: "application_fee", label: "Application Fee" },
-        { value: "tuition_deposit", label: "Tuition Deposit" },
-        { value: "visa_fee", label: "Visa Fee" },
-        { value: "consultancy_fee", label: "Consultancy Fee" },
-        { value: "other", label: "Other" },
-      ]}
-      placeholder="Search payment type..."
-    />
-  </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Payment Type
+              </label>
+              <SearchableSelect
+                name="payment_type"
+                value={formData.payment_type}
+                onChange={(e) =>
+                  setFormData({ ...formData, payment_type: e.target.value })
+                }
+                options={[
+                  { value: "application_fee", label: "Application Fee" },
+                  { value: "tuition_deposit", label: "Tuition Deposit" },
+                  { value: "visa_fee", label: "Visa Fee" },
+                  { value: "consultancy_fee", label: "Consultancy Fee" },
+                  { value: "other", label: "Other" },
+                ]}
+                placeholder="Search payment type..."
+              />
+            </div>
 
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Payment Mode *
-    </label>
-    <SearchableSelect
-      name="mode"
-      value={formData.mode}
-      onChange={(e) =>
-        setFormData({ ...formData, mode: e.target.value })
-      }
-      options={[
-        { value: "cash", label: "Cash" },
-        { value: "bank", label: "Bank Transfer" },
-        { value: "online", label: "Online Payment" },
-      ]}
-      placeholder="Search payment mode..."
-      required={true}
-    />
-  </div>
-</div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Payment Mode *
+              </label>
+              <SearchableSelect
+                name="mode"
+                value={formData.mode}
+                onChange={(e) =>
+                  setFormData({ ...formData, mode: e.target.value })
+                }
+                options={[
+                  { value: "cash", label: "Cash" },
+                  { value: "bank", label: "Bank Transfer" },
+                  { value: "online", label: "Online Payment" },
+                ]}
+                placeholder="Search payment mode..."
+                required={true}
+              />
+            </div>
+          </div>
           {/* Reference fields - with auto-generation for cash mode */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -722,8 +732,6 @@ function VerifyPaymentModal({ isOpen, onClose, onSuccess, payment }) {
   );
 }
 
-// ─── STUDENT DETAILS PANEL ─────────────────────────────────────────────────
-// ─── STUDENT DETAILS PANEL (FIXED) ─────────────────────────────────────────
 function StudentDetailsPanel({
   student,
   onClose,
@@ -738,22 +746,25 @@ function StudentDetailsPanel({
     if (student) {
       fetchStudentPayments();
     }
-  }, [student, fetch]);
+  }, [student]);
 
   const fetchStudentPayments = async () => {
     if (!student) return;
     setLoading(true);
     try {
       const res = await fetch(
-        `${BASE_URL}/admin/payments/student/${student.user_id}`,
+        `${BASE_URL}/admin/payments/student/${student.user_id}/application/${student.id}`,
         {
           headers: { Authorization: `Bearer ${getToken()}` },
         },
       );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setPayments(data.payments || []);
+      const paymentsArray = Array.isArray(data) ? data : data.payments || [];
+      setPayments(paymentsArray);
     } catch (err) {
       console.error("Fetch student payments error:", err);
+      toast.error(`Failed to load payment history: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -761,12 +772,13 @@ function StudentDetailsPanel({
 
   if (!student) return null;
 
-  // Calculate totals from payments
+  // Calculate totals using final_fees (after scholarship)
+  const totalFeesNet = student.final_fees || student.total_fees || 0;
   const totalPaid = parseFloat(student.total_paid) || 0;
-  // Use student.total_fees from the left sidebar data
-  const totalFees = student.total_fees || 0;
-  // Calculate remaining using the student's total_fees
-  const remainingAmount = totalFees - totalPaid;
+  const remainingAmount = student.remaining_amount ?? totalFeesNet - totalPaid;
+
+  // Determine overall payment status
+  const overallStatus = remainingAmount <= 0 ? "Complete" : "In Progress";
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -791,42 +803,67 @@ function StudentDetailsPanel({
       </div>
 
       <div className="p-5 space-y-4">
-        {/* Payment Summary - Using student data directly */}
-        <div className="bg-gray-50 rounded-xl p-4">
-          <h4 className="font-semibold text-gray-700 text-sm mb-3">
-            Payment Summary
-          </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Total Fees:</span>
-              <span className="font-semibold">
-                ${totalFees.toLocaleString()}
+        {/* Payment Summary - with overall status badge */}
+        {totalFeesNet > 0 ? (
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-semibold text-gray-700 text-sm">
+                Payment Summary
+              </h4>
+              <span
+                className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  overallStatus === "Complete"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-amber-100 text-amber-700"
+                }`}
+              >
+                {overallStatus}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Total Paid:</span>
-              <span className="font-semibold text-green-600">
-                ${totalPaid.toLocaleString()}
-              </span>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">
+                  Total Fees (after scholarship):
+                </span>
+                <span className="font-semibold">
+                  ${totalFeesNet.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Total Paid:</span>
+                <span className="font-semibold text-green-600">
+                  ${totalPaid.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between pt-2 border-t">
+                <span className="text-sm text-gray-600">Remaining:</span>
+                <span className="font-semibold text-amber-600">
+                  ${remainingAmount.toLocaleString()}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between pt-2 border-t">
-              <span className="text-sm text-gray-600">Remaining:</span>
-              <span className="font-semibold text-amber-600">
-                ${remainingAmount.toLocaleString()}
-              </span>
+            <div className="mt-3">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-teal-600 h-2 rounded-full transition-all"
+                  style={{
+                    width: `${(totalPaid / totalFeesNet) * 100}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-teal-600 h-2 rounded-full transition-all"
-                style={{
-                  width: `${totalFees > 0 ? (totalPaid / totalFees) * 100 : 0}%`,
-                }}
-              />
-            </div>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+            <AlertCircle size={20} className="text-amber-500 mx-auto mb-2" />
+            <p className="text-sm font-medium text-amber-700">
+              Fees not set yet
+            </p>
+            <p className="text-xs text-amber-600 mt-1">
+              Please set the total fees using the "Set Fees" button above.
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3">
@@ -870,19 +907,6 @@ function StudentDetailsPanel({
                         {formatDate(payment.paid_at)}
                       </p>
                     </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        payment.status === "completed"
-                          ? "bg-green-100 text-green-700"
-                          : payment.status === "awaiting_verification"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {payment.status === "awaiting_verification"
-                        ? "Pending"
-                        : payment.status}
-                    </span>
                   </div>
                   {payment.notes && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -922,6 +946,7 @@ export default function AdminPayments() {
     completed_count: 0,
     pending_count: 0,
     rejected_count: 0,
+    in_progress_count: 0,
   });
 
   const fetchOfferLetterStudents = useCallback(async () => {
@@ -953,6 +978,7 @@ export default function AdminPayments() {
           completed_count: 0,
           pending_count: 0,
           rejected_count: 0,
+          in_progress_count: 0,
         },
       );
     } catch (err) {
@@ -996,6 +1022,10 @@ export default function AdminPayments() {
       student.university_name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  const completedApplicationsCount = students.filter(
+    (s) => s.payment_status === "completed" && s.total_fees > 0,
+  ).length;
+
   return (
     <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
@@ -1019,7 +1049,7 @@ export default function AdminPayments() {
         <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
           <p className="text-xs text-gray-400">Completed</p>
           <p className="text-xl font-bold text-green-600">
-            {summary.completed_count || 0}
+            {completedApplicationsCount}
           </p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
@@ -1058,6 +1088,7 @@ export default function AdminPayments() {
         <button
           onClick={() => {
             setActiveTab("pending");
+
             setSelectedStudent(null);
           }}
           className={`px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap flex items-center gap-2 ${
@@ -1110,36 +1141,78 @@ export default function AdminPayments() {
                     No students found
                   </div>
                 ) : (
-                  filteredStudents.map((student) => (
-                    <div
-                      key={student.id}
-                      onClick={() => setSelectedStudent(student)}
-                      className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                        selectedStudent?.id === student.id
-                          ? "bg-teal-50 border-l-4 border-l-teal-500"
-                          : ""
-                      }`}
-                    >
-                      <p className="font-semibold text-gray-800">
-                        {student.student_name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {student.student_email}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {student.university_name}
-                      </p>
-                      <div className="flex justify-between mt-2 text-xs">
-                        <span className="text-green-600">
-                          Paid: ${student.total_paid?.toLocaleString() || "0"}
-                        </span>
-                        <span className="text-amber-600">
-                          Remaining: $
-                          {student.remaining_amount?.toLocaleString() || "0"}
-                        </span>
+                  filteredStudents.map((student) => {
+                    // Compute overall payment status on frontend for reliability
+                    const totalFees = student.total_fees || 0;
+                    const remaining =
+                      student.remaining_amount ??
+                      totalFees - (student.total_paid || 0);
+                    let statusText = "In Progress";
+                    let statusClass = "bg-amber-100 text-amber-700";
+
+                    if (totalFees === 0) {
+                      statusText = "Fees not set";
+                      statusClass = "bg-gray-100 text-gray-600";
+                    } else if (remaining <= 0) {
+                      statusText = "Complete";
+                      statusClass = "bg-green-100 text-green-700";
+                    } else {
+                      statusText = "In Progress";
+                      statusClass = "bg-amber-100 text-amber-700";
+                    }
+
+                    return (
+                      <div
+                        key={student.id}
+                        onClick={() => setSelectedStudent(student)}
+                        className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
+                          selectedStudent?.id === student.id
+                            ? "bg-teal-50 border-l-4 border-l-teal-500"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-gray-800">
+                              {student.student_name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {student.student_email}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {student.university_name}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${statusClass}`}
+                          >
+                            {statusText}
+                          </span>
+                        </div>
+                        <div className="flex justify-between mt-2 text-xs">
+                          {totalFees > 0 ? (
+                            <>
+                              <span className="text-green-600">
+                                Paid: $
+                                {(student.total_paid || 0).toLocaleString()}
+                              </span>
+                              <span className="text-amber-600">
+                                Remaining: $
+                                {(remaining > 0
+                                  ? remaining
+                                  : 0
+                                ).toLocaleString()}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-gray-400 italic">
+                              Fees not set
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -1310,7 +1383,7 @@ export default function AdminPayments() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span
+                        {/* <span
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
                             payment.status === "completed"
                               ? "bg-green-100 text-green-700"
@@ -1324,6 +1397,26 @@ export default function AdminPayments() {
                           {payment.status === "awaiting_verification"
                             ? "Pending"
                             : payment.status}
+                        </span> */}
+
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                            payment.status === "completed"
+                              ? "bg-green-100 text-green-700"
+                              : payment.status === "in-progress"
+                                ? "bg-amber-100 text-amber-700"
+                                : payment.status === "awaiting_verification"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : payment.status === "rejected"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {payment.status === "in-progress"
+                            ? "In Progress"
+                            : payment.status === "awaiting_verification"
+                              ? "Pending"
+                              : payment.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">

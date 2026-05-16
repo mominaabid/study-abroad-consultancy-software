@@ -598,113 +598,113 @@ export default function StudentDocuments() {
     setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
   };
 
-// ── Main Page ── Update the handleUpload function ────────────────────────────
-async function handleUpload(file, docType) {
-  setUploading(true);
+  // ── Main Page ── Update the handleUpload function ────────────────────────────
+  async function handleUpload(file, docType) {
+    setUploading(true);
 
-  // Find if there's an existing rejected document of this type
-  const existingRejectedDoc = documents.find(
-    (doc) => doc.doc_type === docType && doc.status === "rejected"
-  );
-
-  if (existingRejectedDoc) {
-    // Update existing document optimistically
-    const updatedDoc = {
-      ...existingRejectedDoc,
-      status: "review",
-      rejection_reason: null,
-      original_name: file.name,
-      file_size: file.size,
-      file_mime: file.type,
-      submitted_at: new Date().toISOString(),
-      file_url: null, // Will be updated after upload
-    };
-    
-    // Replace the old document with updated one
-    setDocuments((prevDocs) =>
-      prevDocs.map((doc) =>
-        doc.id === existingRejectedDoc.id ? updatedDoc : doc
-      )
+    // Find if there's an existing rejected document of this type
+    const existingRejectedDoc = documents.find(
+      (doc) => doc.doc_type === docType && doc.status === "rejected",
     );
-  } else {
-    // Create new optimistic document
-    const optimisticDoc = {
-      id: `temp-${Date.now()}`,
-      doc_type: docType,
-      status: "pending",
-      original_name: file.name,
-      file_size: file.size,
-      file_mime: file.type,
-      submitted_at: new Date().toISOString(),
-      reviewed_at: null,
-      rejection_reason: null,
-      file_url: null,
-    };
-    addDocumentToState(optimisticDoc);
-  }
 
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("doc_type", docType);
-
-    const res = await fetch(`${BASE_URL}/student/documents/upload`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${getToken()}` },
-      body: formData,
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message);
-
-    if (existingRejectedDoc && data.document) {
-      // Update the existing document with real data
-      setDocuments((prevDocs) =>
-        prevDocs.map((doc) =>
-          doc.id === existingRejectedDoc.id
-            ? {
-                ...data.document,
-                file_url: data.document.file_url,
-                submitted_at: data.document.submitted_at,
-              }
-            : doc
-        )
-      );
-    } else if (data.document) {
-      // Remove temp and add real document
-      removeDocumentFromState(optimisticDoc.id);
-      addDocumentToState({
-        ...data.document,
-        file_url: data.document.file_url,
-        submitted_at: data.document.submitted_at,
-      });
-    }
-
-    toast.success(
-      existingRejectedDoc
-        ? "Document re-uploaded successfully! Status changed to In Review."
-        : "Document uploaded successfully!"
-    );
-    setReuploadType("");
-    await fetchDocs(); // Refresh to ensure consistency
-  } catch (err) {
-    // Revert on error
     if (existingRejectedDoc) {
+      // Update existing document optimistically
+      const updatedDoc = {
+        ...existingRejectedDoc,
+        status: "review",
+        rejection_reason: null,
+        original_name: file.name,
+        file_size: file.size,
+        file_mime: file.type,
+        submitted_at: new Date().toISOString(),
+        file_url: null, // Will be updated after upload
+      };
+
+      // Replace the old document with updated one
       setDocuments((prevDocs) =>
         prevDocs.map((doc) =>
-          doc.id === existingRejectedDoc.id
-            ? { ...existingRejectedDoc }
-            : doc
-        )
+          doc.id === existingRejectedDoc.id ? updatedDoc : doc,
+        ),
       );
     } else {
-      removeDocumentFromState(optimisticDoc.id);
+      // Create new optimistic document
+      const optimisticDoc = {
+        id: `temp-${Date.now()}`,
+        doc_type: docType,
+        status: "pending",
+        original_name: file.name,
+        file_size: file.size,
+        file_mime: file.type,
+        submitted_at: new Date().toISOString(),
+        reviewed_at: null,
+        rejection_reason: null,
+        file_url: null,
+      };
+      addDocumentToState(optimisticDoc);
     }
-    toast.error(err.message || "Upload failed.");
-  } finally {
-    setUploading(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("doc_type", docType);
+
+      const res = await fetch(`${BASE_URL}/student/documents/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      if (existingRejectedDoc && data.document) {
+        // Update the existing document with real data
+        setDocuments((prevDocs) =>
+          prevDocs.map((doc) =>
+            doc.id === existingRejectedDoc.id
+              ? {
+                  ...data.document,
+                  file_url: data.document.file_url,
+                  submitted_at: data.document.submitted_at,
+                }
+              : doc,
+          ),
+        );
+      } else if (data.document) {
+        // Remove temp and add real document
+        removeDocumentFromState(optimisticDoc.id);
+        addDocumentToState({
+          ...data.document,
+          file_url: data.document.file_url,
+          submitted_at: data.document.submitted_at,
+        });
+      }
+
+      toast.success(
+        existingRejectedDoc
+          ? "Document re-uploaded successfully! Status changed to In Review."
+          : "Document uploaded successfully!",
+      );
+      setReuploadType("");
+      await fetchDocs(); // Refresh to ensure consistency
+    } catch (err) {
+      // Revert on error
+      if (existingRejectedDoc) {
+        setDocuments((prevDocs) =>
+          prevDocs.map((doc) =>
+            doc.id === existingRejectedDoc.id
+              ? { ...existingRejectedDoc }
+              : doc,
+          ),
+        );
+      } else {
+        removeDocumentFromState(optimisticDoc.id);
+      }
+      toast.error(err.message || "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
   }
-}
 
   async function handleDelete(doc) {
     removeDocumentFromState(doc.id);

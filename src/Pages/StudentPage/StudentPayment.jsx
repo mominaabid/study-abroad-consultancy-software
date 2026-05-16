@@ -394,6 +394,8 @@ export default function StudentPayments() {
     pending_count: 0,
     rejected_count: 0,
   });
+  // New state for fully paid applications count
+  const [fullyPaidCount, setFullyPaidCount] = useState(0);
 
   const fetchPayments = async () => {
     try {
@@ -416,6 +418,32 @@ export default function StudentPayments() {
       toast.error("Failed to load payment history");
     }
   };
+
+  const fetchPaymentStats = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/student/payments/stats`, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+
+    const data = await res.json();
+
+    setSummary(
+      data.stats || {
+        total_paid: 0,
+        total_pending: 0,
+        completed_count: 0,
+        rejected_count: 0,
+      },
+    );
+
+    // Sync fully paid count with completed_count
+    setFullyPaidCount(data.stats?.completed_count || 0);
+  } catch (err) {
+    console.error("Fetch payment stats error:", err);
+  }
+};
 
   const fetchApplications = async () => {
     try {
@@ -477,6 +505,13 @@ export default function StudentPayments() {
       });
 
       setApplications(appsWithSummary);
+
+      // Calculate fully paid applications count
+      const fullyPaidApps = appsWithSummary.filter(
+        (app) => app.remaining_amount <= 0,
+      ).length;
+      setFullyPaidCount(fullyPaidApps);
+
       setSummary(
         paymentsData.summary || {
           total_paid: 0,
@@ -497,6 +532,7 @@ export default function StudentPayments() {
 
   useEffect(() => {
     fetchPayments();
+    fetchPaymentStats();
   }, []);
 
   useEffect(() => {
@@ -593,11 +629,6 @@ export default function StudentPayments() {
     }
   };
 
-  // const offerLetterApplications = applications.filter(app => {
-  //   const status = (app.status || '').toLowerCase().trim();
-  //   return status === 'offer letter received';
-  // });
-
   const allowedStatuses = ["offer letter received", "visa filed", "approved"];
 
   const offerLetterApplications = applications.filter((app) => {
@@ -685,12 +716,13 @@ export default function StudentPayments() {
             </div>
           </div>
         </div>
+        {/* Completed Card - Now shows fully paid applications count */}
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium">Completed</p>
               <p className="text-2xl font-bold text-gray-800">
-                {summary.completed_count || 0}
+                {fullyPaidCount}
               </p>
             </div>
             <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
@@ -1022,6 +1054,8 @@ export default function StudentPayments() {
         onClose={() => setShowPaymentModal(false)}
         onSuccess={() => {
           refreshAllData();
+          fetchPaymentStats();
+
           toast.success("Payment submitted! Admin will verify it soon.");
         }}
         application={selectedApplication}

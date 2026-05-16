@@ -206,6 +206,7 @@ export const StudentDashboard = () => {
   const [docsLoading, setDocsLoading] = useState(true);
   const [appsLoading, setAppsLoading] = useState(true);
   const [showNotification, setShowNotification] = useState(null);
+  const [mobileDocs, setMobileDocs] = useState([]);
 
   // ── Helper: group documents per application and compute verified/total ──
   const applicationsWithDocStats = useMemo(() => {
@@ -278,6 +279,31 @@ export const StudentDashboard = () => {
     }
   };
 
+  // const fetchMobileDocs = async () => {
+  //   try {
+  //     const res = await fetch(`${BASE_URL}/student/documents/mobile-docs`, {
+  //       headers: { Authorization: `Bearer ${getToken()}` },
+  //     });
+  //     const data = await res.json();
+  //     console.log("Mobile docs:", data);
+  //     return data;
+  //   } catch (err) {
+  //     console.error("Error fetching mobile docs:", err);
+  //   }
+  // };
+
+  const fetchMobileDocs = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/student/documents/mobile-docs`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      const data = await res.json();
+      setMobileDocs(data.data || []);
+    } catch (err) {
+      console.error("Error fetching mobile docs:", err);
+    }
+  };
+
   const fetchApplications = async () => {
     setAppsLoading(true);
     try {
@@ -293,15 +319,26 @@ export const StudentDashboard = () => {
     }
   };
 
+  const fetchDocStats = async () => {
+    const res = await fetch(`${BASE_URL}/student/documents/stats`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    const data = await res.json();
+    console.log(data);
+  };
+
   useEffect(() => {
     fetchDocs();
+    fetchMobileDocs();
     fetchApplications();
+    fetchDocStats();
   }, []);
 
   // ── Derived global calculations (optional) ─────────────────────────────────
   const verifiedDocs = documents.filter((d) => d.status === "verified").length;
   const totalUploaded = documents.length;
-  const totalRequired = applications.length * 9;
+  // const totalRequired = applications.length * 9;
+  const totalRequired = applications.length * (mobileDocs.length || 0);
   const progressPct =
     totalRequired === 0
       ? 0
