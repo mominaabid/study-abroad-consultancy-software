@@ -1,4 +1,3 @@
-// LeadsComponents/KanbanBoard.jsx
 import { useState } from "react";
 import { timeAgo } from "./LeadsConstants";
 import { Avatar } from "./LeadAtoms";
@@ -6,7 +5,6 @@ import { ViewIcon } from "../CustomButtons/ViewIcon";
 import { EditIcon } from "../CustomButtons/EditIcon";
 import { DeleteIcon } from "../CustomButtons/DeleteIcon";
 
-// ─── Kanban Card ───────────────────────────────────────────────────────────────
 
 export function KanbanCard({
   lead,
@@ -15,7 +13,7 @@ export function KanbanCard({
   onDragStart,
   onDragEnd,
   isDragging,
-  userRole, // Add userRole prop
+  userRole, 
 }) {
   const [menu, setMenu] = useState(false);
 
@@ -52,7 +50,6 @@ export function KanbanCard({
           </div>
         </div>
 
-        {/* Menu button — visible on hover */}
         <button
           className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center
                      text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all flex-shrink-0"
@@ -190,7 +187,6 @@ export function KanbanCard({
   );
 }
 
-// ─── Kanban Column ─────────────────────────────────────────────────────────────
 
 export function KanbanColumn({
   stage,
@@ -199,7 +195,7 @@ export function KanbanColumn({
   onMenuAction,
   onDrop,
   draggingLeadId,
-  userRole, // Add userRole prop and pass it to KanbanCard
+  userRole, 
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -282,7 +278,7 @@ export function KanbanColumn({
               onOpen={onOpen}
               onMenuAction={onMenuAction}
               isDragging={draggingLeadId === lead.id}
-              userRole={userRole} // Pass userRole to KanbanCard
+              userRole={userRole} 
             />
           ))
         )}

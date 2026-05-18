@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, Globe } from "lucide-react";
-import { COUNTRIES } from "../../constants/countries";   // Adjust path if needed
+import { COUNTRIES } from "../../constants/countries";   
 import { ChevronDown } from "lucide-react";
 export default function CountrySelect({
   value = "",
@@ -57,7 +57,6 @@ export default function CountrySelect({
       </label>
 
       <div className="relative">
-        {/* Display Selected Country */}
         <div
           onClick={() => setIsOpen(!isOpen)}
           className={`w-full border ${error ? "border-red-400" : "border-gray-200"} 
@@ -72,10 +71,8 @@ export default function CountrySelect({
           <ChevronDown size={18} className="text-gray-400" />
         </div>
 
-        {/* Dropdown */}
         {isOpen && (
           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-            {/* Search Input */}
             <div className="p-3 border-b sticky top-0 bg-white">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -90,7 +87,6 @@ export default function CountrySelect({
               </div>
             </div>
 
-            {/* Country List */}
             <div className="max-h-64 overflow-auto py-1">
               {filteredCountries.length > 0 ? (
                 filteredCountries.map((c) => (

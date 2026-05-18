@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -6,9 +5,19 @@ import { Title } from "../Title";
 import SearchableSelect from "../SearchableSelect";
 import { BASE_URL } from "../../Content/Url";
 
-import { 
-  Plus, User, Mail, Phone, Building, BookOpen, 
-  MapPin, Calendar, Award, FileText, X, RefreshCw
+import {
+  Plus,
+  User,
+  Mail,
+  Phone,
+  Building,
+  BookOpen,
+  MapPin,
+  Calendar,
+  Award,
+  FileText,
+  X,
+  RefreshCw,
 } from "lucide-react";
 import PhoneInputWithCountry from "../../Components/InputFields/PhoneInputWithCountry";
 import UniversitySelect from "../../Components/InputFields/UniversitySelect";
@@ -21,7 +30,9 @@ const getToken = () => localStorage.getItem("token") || "";
 
 const authAxios = {
   post: (url, data) =>
-    axios.post(url, data, { headers: { Authorization: `Bearer ${getToken()}` } }),
+    axios.post(url, data, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    }),
 };
 
 const STATUS_OPTIONS = [
@@ -69,7 +80,9 @@ function InfoRow({ icon, label, value }) {
         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
           {label}
         </p>
-        <p className="text-sm font-medium text-slate-700 break-words">{value}</p>
+        <p className="text-sm font-medium text-slate-700 break-words">
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -104,7 +117,8 @@ export default function CreateApplicationModal({
   useEffect(() => {
     if (selectedStudentForCreate) {
       setFormData({
-        user_id: selectedStudentForCreate.user_id || selectedStudentForCreate.id || "",
+        user_id:
+          selectedStudentForCreate.user_id || selectedStudentForCreate.id || "",
         full_name: selectedStudentForCreate.name || "",
         email: selectedStudentForCreate.email || "",
         phone: selectedStudentForCreate.phone || "",
@@ -146,33 +160,39 @@ export default function CreateApplicationModal({
     if (!formData.target_university?.trim())
       newErrors.target_university = "University name is required";
     if (!formData.course?.trim()) newErrors.course = "Course name is required";
-    
+
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
-    
+
     if (formData.cgpa && formData.cgpa.trim() !== "") {
       const cgpaNum = parseFloat(formData.cgpa);
       if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
         newErrors.cgpa = "CGPA must be a number between 0 and 10";
-      } else if (formData.cgpa.includes(".") && formData.cgpa.split(".")[1]?.length > 2) {
+      } else if (
+        formData.cgpa.includes(".") &&
+        formData.cgpa.split(".")[1]?.length > 2
+      ) {
         newErrors.cgpa = "CGPA can have at most 2 decimal places";
       }
     }
-    
+
     if (formData.test_score && formData.test_score.trim() !== "") {
       const scoreNum = parseFloat(formData.test_score);
       if (isNaN(scoreNum) || scoreNum < 0) {
         newErrors.test_score = "Test score must be a positive number";
-      } else if (formData.test_score.includes(".") && formData.test_score.split(".")[1]?.length > 1) {
+      } else if (
+        formData.test_score.includes(".") &&
+        formData.test_score.split(".")[1]?.length > 1
+      ) {
         newErrors.test_score = "Score can have at most 1 decimal place";
       }
     }
-    
+
     if (formData.deadline && isNaN(new Date(formData.deadline).getTime())) {
       newErrors.deadline = "Invalid date format";
     }
-    
+
     return newErrors;
   };
 
@@ -186,8 +206,9 @@ export default function CreateApplicationModal({
         name === "target_country" ||
         name === "full_name") &&
       /\d/.test(value)
-    ) return;
-    
+    )
+      return;
+
     if (name === "cgpa") {
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
@@ -257,8 +278,11 @@ export default function CreateApplicationModal({
         counselor_notes: formData.counselor_notes,
       };
 
-      const res = await authAxios.post(`${BASE_URL}/counsellor/applications`, payload);
-      
+      const res = await authAxios.post(
+        `${BASE_URL}/counsellor/applications`,
+        payload,
+      );
+
       if (res.data.success) {
         toast.success("Application created successfully");
         onSuccess();
@@ -266,7 +290,9 @@ export default function CreateApplicationModal({
       }
     } catch (err) {
       console.error("Error:", err);
-      toast.error(err.response?.data?.message || "Failed to create application");
+      toast.error(
+        err.response?.data?.message || "Failed to create application",
+      );
     } finally {
       setLoading(false);
     }
@@ -279,70 +305,59 @@ export default function CreateApplicationModal({
       className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-    <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-  
-  {/* Header using Title component */}
-<Title setModal={onClose} >
-  Create New Application
-</Title>
-
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Header using Title component */}
+        <Title setModal={onClose}>Create New Application</Title>
 
         {/* Scrollable Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
-            
             {/* Basic Information Section */}
             <InfoSection title="Basic Information">
-             {/* Student Selection - Searchable */}
-<FormField label="Student" required error={errors.user_id}>
-  <SearchableSelect
-    name="user_id"
-    value={formData.user_id}
-    onChange={handleFieldChange}
-    options={students.map(s => ({
-      value: String(s.user_id || s.id),
-      label: `${s.name} - ${s.email}`,
-      icon: <User size={14} className="text-slate-400" />,
-    }))}
-    placeholder="Search student by name or email..."
-    required={true}
-    error={errors.user_id}
-  />
-</FormField>
+              {/* Student Selection - Searchable */}
+              <FormField label="Student" required error={errors.user_id}>
+                <SearchableSelect
+                  name="user_id"
+                  value={formData.user_id}
+                  onChange={handleFieldChange}
+                  options={students.map((s) => ({
+                    value: String(s.user_id || s.id),
+                    label: `${s.name} - ${s.email}`,
+                    icon: <User size={14} className="text-slate-400" />,
+                  }))}
+                  placeholder="Search student by name or email..."
+                  required={true}
+                  error={errors.user_id}
+                />
+              </FormField>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-                  <CountrySelect
-                    value={formData.target_country}
-                    onChange={handleFieldChange}
-                    name="target_country"
-                    placeholder="Select target country"
-                    required={false}
-                  />
-              
-                
-               
-                  <UniversitySelect
-                    value={formData.target_university}
-                    onChange={handleFieldChange}
-                    name="target_university"
-                    universities={universitieslist}
-                    required={true}
-                  />
-            
+                <CountrySelect
+                  value={formData.target_country}
+                  onChange={handleFieldChange}
+                  name="target_country"
+                  placeholder="Select target country"
+                  required={false}
+                />
+
+                <UniversitySelect
+                  value={formData.target_university}
+                  onChange={handleFieldChange}
+                  name="target_university"
+                  universities={universitieslist}
+                  required={true}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               
-                  <CourseSelect
-                    value={formData.course}
-                    onChange={handleFieldChange}
-                    name="course"
-                    courses={coursesList}
-                    required={true}
-                  />
-           
-                
+                <CourseSelect
+                  value={formData.course}
+                  onChange={handleFieldChange}
+                  name="course"
+                  courses={coursesList}
+                  required={true}
+                />
+
                 <FormField label="Deadline">
                   <input
                     type="date"
@@ -354,28 +369,37 @@ export default function CreateApplicationModal({
                 </FormField>
               </div>
 
-            {/* Status Selection - Searchable */}
-{/* Status Selection - Searchable */}
-<FormField label="Initial Status">
-  <SearchableSelect
-    name="status"
-    value={formData.status}
-    onChange={handleFieldChange}
-    options={STATUS_OPTIONS.map(opt => ({
-      value: opt.value,
-      label: opt.label,
-      icon: opt.value === "inquiry" ? "" :
-            opt.value === "evaluation" ? "" :
-            opt.value === "application submitted" ? "" :
-            opt.value === "offer letter received" ? "" :
-            opt.value === "offer letter not received" ? "" :
-            opt.value === "visa filed" ? "" :
-            opt.value === "approved" ? "" : "",
-    }))}
-    placeholder="Search or select status..."
-    required={false}
-  />
-</FormField>
+              {/* Status Selection - Searchable */}
+              {/* Status Selection - Searchable */}
+              <FormField label="Initial Status">
+                <SearchableSelect
+                  name="status"
+                  value={formData.status}
+                  onChange={handleFieldChange}
+                  options={STATUS_OPTIONS.map((opt) => ({
+                    value: opt.value,
+                    label: opt.label,
+                    icon:
+                      opt.value === "inquiry"
+                        ? ""
+                        : opt.value === "evaluation"
+                          ? ""
+                          : opt.value === "application submitted"
+                            ? ""
+                            : opt.value === "offer letter received"
+                              ? ""
+                              : opt.value === "offer letter not received"
+                                ? ""
+                                : opt.value === "visa filed"
+                                  ? ""
+                                  : opt.value === "approved"
+                                    ? ""
+                                    : "",
+                  }))}
+                  placeholder="Search or select status..."
+                  required={false}
+                />
+              </FormField>
             </InfoSection>
 
             {/* Student Details Section */}
@@ -391,7 +415,7 @@ export default function CreateApplicationModal({
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
-                
+
                 <FormField label="Email" error={errors.email}>
                   <input
                     type="email"

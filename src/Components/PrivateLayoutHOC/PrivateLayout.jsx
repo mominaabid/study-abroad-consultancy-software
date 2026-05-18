@@ -1,4 +1,3 @@
-// src/Components/PrivateLayoutHOC/PrivateLayout.jsx
 import { useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -7,7 +6,6 @@ import { Sidebar } from "../Sidebar";
 import Header from "../Header";
 import "./PrivateLayout.css";
 
-// Role → modules mapping
 const modulesByRole = {
   admin: [
     { label: "Dashboard", path: "dashboard" },
@@ -40,7 +38,6 @@ export default function PrivateLayout() {
   const role = useSelector(selectRole);
   const location = useLocation();
 
-  // While role is still loading, render nothing (or a simple placeholder)
   if (!role) {
     return (
       <div className="private-layout">
@@ -51,7 +48,6 @@ export default function PrivateLayout() {
 
   const modules = modulesByRole[role] || [];
 
-  // Determine if the current route is the Dashboard or any nested Dashboard page
   const dashboardBasePath = `/${role}/dashboard`;
   const isDashboardPage =
     location.pathname === dashboardBasePath ||

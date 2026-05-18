@@ -14,10 +14,8 @@ const chatSlice = createSlice({
     setConversations(state, action) {
       state.conversations = action.payload;
       
-      // Fix: Calculate total unread based on current user's role
-      // We'll calculate this dynamically in the selector instead
+      
       state.totalUnread = action.payload.reduce((sum, conv) => {
-        // You need to know user role here - better to calculate in selector
         return sum;
       }, 0);
     },
@@ -38,7 +36,6 @@ addMessage(state, action) {
 
   state.messages[convId] = state.messages[convId] || [];
 
-  // Strict dedup — never add if _id already exists
   const msgId = msg._id?.toString();
   const exists = state.messages[convId].some(m => m._id?.toString() === msgId);
   if (exists) {
@@ -61,12 +58,10 @@ replaceMessage(state, action) {
 
   const idx = state.messages[convId].findIndex(m => m._id === tempId);
   if (idx !== -1) {
-    // Check the real ID doesn't already exist elsewhere before replacing
     const realExists = state.messages[convId].some(
       (m, i) => i !== idx && m._id?.toString() === message._id?.toString()
     );
     if (realExists) {
-      // Real message already added, just remove the temp
       state.messages[convId].splice(idx, 1);
     } else {
       state.messages[convId][idx] = message;
@@ -148,7 +143,6 @@ export const selectMessages = conversationId => s => s.chat.messages[conversatio
 export const selectTypingUser = conversationId => s => s.chat.typingUsers[conversationId];
 export const selectOnlineUsers = s => s.chat.onlineUsers;
 
-// Fix: Calculate total unread based on user role
 export const selectTotalUnread = (userRole) => (state) => {
   const conversations = state.chat.conversations;
   if (!conversations || !userRole) return 0;

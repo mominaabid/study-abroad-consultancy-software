@@ -1,4 +1,3 @@
-// PhoneInputWithCountry.jsx
 import { useState, useEffect, useRef } from "react";
 import { Phone, ChevronDown, Search } from "lucide-react";
 import { PHONE_COUNTRIES } from "../../constants/countries";
@@ -76,7 +75,6 @@ export default function PhoneInputWithCountry({
         ${error ? "border-red-400" : "border-slate-300 focus-within:border-blue-500"}
         ${disabled ? "bg-slate-100 opacity-60" : ""}`}
       >
-        {/* ── Country picker with flag ── */}
         <div className="relative shrink-0" ref={dropdownRef}>
           <button
             type="button"
@@ -89,7 +87,6 @@ export default function PhoneInputWithCountry({
             className={`flex items-center gap-1.5 px-3 py-2.5 bg-slate-50 border-r border-slate-200 rounded-l-xl transition-colors h-full
               ${disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-slate-100"}`}
           >
-            {/* 🇺🇳 Flag */}
             <CountryFlag
               countryCode={selectedCountry.iso}
               svg
@@ -114,7 +111,6 @@ export default function PhoneInputWithCountry({
 
           {dropdownOpen && (
             <div className="absolute z-50 top-full left-0 mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
-              {/* Search box */}
               <div className="p-2 border-b border-slate-100">
                 <div className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50">
                   <Search size={13} className="text-slate-400 shrink-0" />

@@ -11,7 +11,6 @@ const notificationSlice = createSlice({
     addNotification: (state, action) => {
       const { message, type, metadata } = action.payload;
       
-      // Determine icon/color based on notification type
       let icon = '📢';
       let bgColor = 'bg-blue-50';
       let textColor = 'text-blue-700';

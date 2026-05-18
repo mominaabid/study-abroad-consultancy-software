@@ -534,7 +534,7 @@ export default function Leads() {
                 placeholder="Search leads..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-full"
+                className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-96"
               />
             </div>
 

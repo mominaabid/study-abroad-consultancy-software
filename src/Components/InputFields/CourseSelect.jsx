@@ -8,13 +8,12 @@ export default function CourseSelect({
   labelName = "Course / Program ",
   placeholder = "Select or type course name...",
   required = true,
-  courses = [], // array of strings
+  courses = [],
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -41,7 +40,7 @@ export default function CourseSelect({
   const handleInputChange = (e) => {
     const newValue = e.target.value;
     setSearchTerm(newValue);
-    onChange({ target: { name, value: newValue } }); // Allow free typing
+    onChange({ target: { name, value: newValue } }); 
   };
 
   return (
@@ -51,7 +50,6 @@ export default function CourseSelect({
       </label>
 
       <div className="relative">
-        {/* Main Input */}
         <div className="relative">
           <input
             type="text"

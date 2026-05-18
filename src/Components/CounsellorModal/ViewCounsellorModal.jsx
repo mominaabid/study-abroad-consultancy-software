@@ -33,12 +33,9 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        {/* Header with Background Pattern */}
         <Title setModal={onClose}>View Counselor Details</Title>
-        {/* Content */}
         <div className="p-6">
           <div className="space-y-6">
-            {/* Primary Info Grid */}
             <section>
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">
                 Personal Information
@@ -70,7 +67,6 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
               </div>
             </section>
 
-            {/* Performance Stats */}
             <section>
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">
                 Performance Overview
@@ -85,15 +81,6 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
                     Assigned Leads
                   </p>
                 </div>
-                {/* <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex flex-col items-center justify-center text-center">
-                  <TrendingUp className="text-orange-600 mb-2" size={24} />
-                  <p className="text-2xl font-bold text-slate-800">
-                    {counselor.conversion_rate || 0}%
-                  </p>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                    Conversion Rate
-                  </p>
-                </div> */}
 
                 <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex flex-col items-center justify-center text-center">
                   <TrendingUp className="text-orange-600 mb-2" size={24} />
@@ -112,7 +99,6 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end">
           <button
             onClick={onClose}

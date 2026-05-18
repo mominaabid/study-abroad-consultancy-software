@@ -30,7 +30,6 @@ export const CounselorCard = ({ counselor, onEdit, onView, onDelete }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Format percentage to one decimal place
   const formattedConvRate = counsellingConversionRate
     ? counsellingConversionRate.toFixed(1)
     : "0";

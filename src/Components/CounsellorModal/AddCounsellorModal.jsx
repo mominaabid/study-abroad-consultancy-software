@@ -37,7 +37,6 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
 
-  // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
       setFormData(INITIAL_STATE);
@@ -51,7 +50,6 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
 
     if (value.startsWith(" ")) return;
 
-    // Special handling for Phone (now comes with country code)
     if (name === "phone") {
       setFormData((prev) => ({ ...prev, [name]: value }));
       return;
@@ -96,7 +94,6 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
       return toast.error("Address must be at least 3 characters");
     }
 
-    // Updated phone validation (accepts +92 3001234567 format)
     if (!formData.phone || formData.phone.replace(/\D/g, "").length < 8) {
       return toast.error("Valid phone number is required");
     }

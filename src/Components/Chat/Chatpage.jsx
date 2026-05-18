@@ -20,7 +20,7 @@ export default function ChatPage() {
 
   const [activeConversation, setActive] = useState(null);
   const [loadingConvs, setLoadingConvs] = useState(true);
-  const ablyReadyRef = useRef(false); // track Ably state without re-renders
+  const ablyReadyRef = useRef(false); 
 const activeConversationRef = useRef(null);
 async function fetchConversations() {
   console.log('📋 Fetching conversations...');
@@ -40,12 +40,10 @@ async function fetchConversations() {
   }
 }
 
-  // Fetch conversations on mount — completely separate from Ably
   useEffect(() => {
     fetchConversations();
   }, []);
 
-  // Connect Ably separately — don't let it block conversation loading
   useEffect(() => {
     if (!user?.id) return;
 
@@ -68,7 +66,6 @@ async function fetchConversations() {
         );
       })
       .catch(err => {
-        // Ably failing should NOT affect conversation list loading
         console.error('Ably connection error:', err);
       });
 

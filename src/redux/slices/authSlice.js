@@ -1,67 +1,60 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import {BASE_URL }from '../../Content/Url';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { BASE_URL } from "../../Content/Url";
 
-// ─── Async Thunks ──────────────────────────────────────────────────────────────
-
-// Called on Login page submit
 export const loginUser = createAsyncThunk(
-  'auth/loginUser',
+  "auth/loginUser",
   async ({ email, password }, { rejectWithValue }) => {
     try {
       const res = await fetch(`${BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) return rejectWithValue(data.message || 'Login failed.');
+      if (!res.ok) return rejectWithValue(data.message || "Login failed.");
 
-      // Save token to localStorage
-      localStorage.setItem('token', data.token);
-      return data; // { token, user: { id, name, email, role } }
+      localStorage.setItem("token", data.token);
+      return data;
     } catch {
-      return rejectWithValue('Network error. Please try again.');
+      return rejectWithValue("Network error. Please try again.");
     }
-  }
+  },
 );
 
-// Called on every app load — verifies token is still valid
 export const loadUser = createAsyncThunk(
-  'auth/loadUser',
+  "auth/loadUser",
   async (_, { rejectWithValue }) => {
-    const token = localStorage.getItem('token');
-    if (!token) return rejectWithValue('No token found.');
+    const token = localStorage.getItem("token");
+    if (!token) return rejectWithValue("No token found.");
     try {
       const res = await fetch(`${BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (!res.ok) {
-        localStorage.removeItem('token');
-        return rejectWithValue('Session expired.');
+        localStorage.removeItem("token");
+        return rejectWithValue("Session expired.");
       }
       return { token, user: data.data };
     } catch {
-      return rejectWithValue('Network error.');
+      return rejectWithValue("Network error.");
     }
-  }
+  },
 );
 
-// ─── Slice ─────────────────────────────────────────────────────────────────────
-
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState: {
-    user: null,        // { id, name, email, role }
+    user: null,
     token: null,
     isAuthenticated: false,
-   loading: false,
-authChecked: false,
+    loading: false,
+    authChecked: false,
     error: null,
   },
   reducers: {
     logout(state) {
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
@@ -73,7 +66,6 @@ authChecked: false,
     },
   },
   extraReducers: (builder) => {
-    // ── loginUser ──
     builder
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
@@ -91,35 +83,33 @@ authChecked: false,
         state.error = action.payload;
       });
 
-    // ── loadUser ──
     builder
-   .addCase(loadUser.pending, (state) => {
-  state.authChecked = false;
-})
+      .addCase(loadUser.pending, (state) => {
+        state.authChecked = false;
+      })
 
-.addCase(loadUser.fulfilled, (state, action) => {
-  state.authChecked = true;
-  state.isAuthenticated = true;
-  state.token = action.payload.token;
-  state.user = action.payload.user;
-})
+      .addCase(loadUser.fulfilled, (state, action) => {
+        state.authChecked = true;
+        state.isAuthenticated = true;
+        state.token = action.payload.token;
+        state.user = action.payload.user;
+      })
 
-.addCase(loadUser.rejected, (state) => {
-  state.authChecked = true;
-  state.isAuthenticated = false;
-  state.user = null;
-  state.token = null;
-});
+      .addCase(loadUser.rejected, (state) => {
+        state.authChecked = true;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+      });
   },
 });
 
 export const { logout, clearError } = authSlice.actions;
 export default authSlice.reducer;
 
-// ─── Selectors ─────────────────────────────────────────────────────────────────
-export const selectUser          = (state) => state.auth.user;
-export const selectToken         = (state) => state.auth.token;
-export const selectIsAuth        = (state) => state.auth.isAuthenticated;
-export const selectAuthLoading   = (state) => state.auth.loading;
-export const selectAuthError     = (state) => state.auth.error;
+export const selectUser = (state) => state.auth.user;
+export const selectToken = (state) => state.auth.token;
+export const selectIsAuth = (state) => state.auth.isAuthenticated;
+export const selectAuthLoading = (state) => state.auth.loading;
+export const selectAuthError = (state) => state.auth.error;
 export const selectRole = (state) => state.auth?.user?.role || null;

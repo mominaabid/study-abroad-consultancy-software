@@ -1,7 +1,5 @@
-// LeadsComponents/LeadAtoms.jsx
 import { initials, avatarColor, STATUS_STYLES } from "./LeadsConstants";
 
-// ─── Avatar ────────────────────────────────────────────────────────────────────
 
 export function Avatar({ name = "", size = 36 }) {
   const bg = avatarColor(name);
@@ -16,7 +14,6 @@ export function Avatar({ name = "", size = 36 }) {
   );
 }
 
-// ─── StatusBadge-- ───────────────────────────────────────────────────────────────
 
 export function StatusBadge({ status }) {
   const s = STATUS_STYLES[status] || STATUS_STYLES.new;

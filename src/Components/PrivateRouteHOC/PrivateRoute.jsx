@@ -2,16 +2,13 @@ import { useSelector } from 'react-redux';
 import { Navigate, Outlet } from 'react-router-dom';
 import { selectIsAuth, selectAuthLoading, selectRole } from '../../redux/slices/authSlice';
  
-// Usage:
-//   <PrivateRoute allowedRoles={['admin']} />
-//   <PrivateRoute allowedRoles={['admin', 'counsellor']} />
+
  
 export default function PrivateRoute({ allowedRoles }) {
   const isAuthenticated = useSelector(selectIsAuth);
   const role = useSelector(selectRole);
   const authChecked = useSelector((state) => state.auth.authChecked);
 
-  // WAIT UNTIL AUTH IS VERIFIED
   if (!authChecked) {
     return (
       <div style={{

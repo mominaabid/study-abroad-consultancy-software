@@ -1,4 +1,3 @@
-// components/InputFields/MultiSelectCountries.jsx
 import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
 import { COUNTRIES } from "../../constants/countries";
@@ -10,8 +9,8 @@ export default function MultiSelectCountries({
   labelName = "Preferred Countries *",
   error,
   maxSelections = 5,
-  filteredCountries = [],           // ← Will come from LeadModal
-  onSearchChange,                   // ← Will come from LeadModal
+  filteredCountries = [],           
+  onSearchChange,                   
   searchTerm = "",
 }) {
   const [selected, setSelected] = useState([]);
@@ -25,7 +24,6 @@ export default function MultiSelectCountries({
         display: `${c.country} (${c.iso})`,
       }));
 
-  // Parse initial value
   useEffect(() => {
     if (value) {
       const initial = value.split(",").map(s => s.trim()).filter(Boolean);
