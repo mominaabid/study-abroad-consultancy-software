@@ -53,7 +53,7 @@ function StatCard({ label, value, icon, color }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function Leads() {
-  const userRole = useSelector(selectRole); 
+  const userRole = useSelector(selectRole);
   // ── State ──────────────────────────────────────────────────────────────────
   const [leads, setLeads] = useState([]);
   const [counsellors, setCounsellors] = useState([]);
@@ -63,7 +63,7 @@ export default function Leads() {
   const [filterCountry, setFilterCountry] = useState("All Countries");
   const [filterCounsellor, setFilterCounsellor] = useState("All Counsellors");
   const [countrySearch, setCountrySearch] = useState("");
-  
+
   const [counsellorSearch, setCounsellorSearch] = useState("");
   const [countryFilterOpen, setCountryFilterOpen] = useState(false);
   const [counsellorFilterOpen, setCounsellorFilterOpen] = useState(false);
@@ -115,13 +115,13 @@ export default function Leads() {
       setLoading(false);
     }
   }, []);
-  
+
   // New Handler for Assign Counsellor
   const onAssignCounsellor = (lead) => {
     setEditLead({ ...lead, _assignOnly: true });
     setModalOpen(true);
   };
-  
+
   // ── Fetch Counsellors ──────────────────────────────────────────────────────
   const fetchCounsellors = useCallback(async () => {
     try {
@@ -153,7 +153,7 @@ export default function Leads() {
   useEffect(() => {
     fetchLeads(1);
   }, [fetchLeads]);
-  
+
   useEffect(() => {
     const handler = (e) => {
       if (
@@ -167,7 +167,7 @@ export default function Leads() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-  
+
   useEffect(() => {
     const handler = (e) => {
       if (
@@ -181,7 +181,7 @@ export default function Leads() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-  
+
   useEffect(() => {
     fetchCounsellors();
   }, [fetchCounsellors]);
@@ -256,9 +256,10 @@ export default function Leads() {
   async function handleAssign(leadId, counsellor_id) {
     const token = localStorage.getItem("token");
     if (!token) return;
-    
-    const isUnassigning = !counsellor_id || counsellor_id === null || counsellor_id === "";
-    
+
+    const isUnassigning =
+      !counsellor_id || counsellor_id === null || counsellor_id === "";
+
     try {
       const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/assign`, {
         method: "PUT",
@@ -266,17 +267,21 @@ export default function Leads() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          counsellor_id: isUnassigning ? null : Number(counsellor_id)
+        body: JSON.stringify({
+          counsellor_id: isUnassigning ? null : Number(counsellor_id),
         }),
       });
-      
+
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message);
       }
-      
-      toast.success(isUnassigning ? "Counsellor unassigned successfully" : "Counsellor assigned successfully");
+
+      toast.success(
+        isUnassigning
+          ? "Counsellor unassigned successfully"
+          : "Counsellor assigned successfully",
+      );
       fetchLeads();
     } catch (error) {
       console.error("Assignment error:", error);
@@ -372,25 +377,26 @@ export default function Leads() {
       lead.name?.toLowerCase().includes(search.toLowerCase()) ||
       lead.email?.toLowerCase().includes(search.toLowerCase()) ||
       lead.phone?.includes(search);
-    
+
     const matchCountry =
       filterCountry === "All Countries" ||
       lead.preferred_country
         ?.split(",")
         .map((c) => c.trim())
         .includes(filterCountry);
-    
+
     const matchStatus =
       filterStatus === "All Status" || lead.status === filterStatus;
-    
+
     const matchCounsellor =
       filterCounsellor === "All Counsellors" ||
       (filterCounsellor === "Unassigned" && !lead.counsellor_id) ||
-      (filterCounsellor !== "Unassigned" && lead.counsellor?.name === filterCounsellor);
-    
+      (filterCounsellor !== "Unassigned" &&
+        lead.counsellor?.name === filterCounsellor);
+
     return matchSearch && matchCountry && matchStatus && matchCounsellor;
   });
-  
+
   const handleAddNoteOnly = async (leadId, note) => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -423,7 +429,7 @@ export default function Leads() {
       toast.error(error.message || "Failed to add note");
     }
   };
-  
+
   const leadsByStage = STAGES.reduce((acc, s) => {
     acc[s.key] = filteredLeads.filter((l) => l.status === s.key);
     return acc;
@@ -451,8 +457,20 @@ export default function Leads() {
       icon: <FiCheckCircle />,
       color: "#10b981",
     },
+    {
+      label: "Case Close Successfully",
+      value: leads.filter((l) => l.status === "success").length,
+      icon: <FiCheckCircle />,
+      color: "#10b981",
+    },
+    {
+      label: "Rejected",
+      value: leads.filter((l) => l.status === "rejected").length,
+      icon: <FiCheckCircle />,
+      color: "#10b981",
+    },
   ];
-  
+
   // ── View buttons config ────────────────────────────────────────────────────
   const viewButtons = [
     {
@@ -496,7 +514,11 @@ export default function Leads() {
   ];
 
   // Get unique counsellors for filter
-  const counsellorOptions = ["All Counsellors", "Unassigned", ...counsellors.map(c => c.name)];
+  const counsellorOptions = [
+    "All Counsellors",
+    "Unassigned",
+    ...counsellors.map((c) => c.name),
+  ];
 
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -504,7 +526,7 @@ export default function Leads() {
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
       {/* ── Stats Bar ── */}
       {!loading && (
-        <div className="flex-shrink-0 grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:px-6">
+        <div className="flex-shrink-0 grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 sm:px-6">
           {stats.map((s) => (
             <StatCard key={s.label} {...s} />
           ))}
@@ -560,15 +582,22 @@ export default function Leads() {
                   <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                 </svg>
                 <span className="truncate max-w-[100px]">
-                  {filterCounsellor === "All Counsellors" 
-                    ? "All Counsellors" 
+                  {filterCounsellor === "All Counsellors"
+                    ? "All Counsellors"
                     : filterCounsellor === "Unassigned"
-                    ? "Unassigned"
-                    : filterCounsellor}
+                      ? "Unassigned"
+                      : filterCounsellor}
                 </span>
               </button>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
@@ -587,8 +616,10 @@ export default function Leads() {
                   </div>
                   <div className="max-h-52 overflow-y-auto py-1">
                     {counsellorOptions
-                      .filter(opt => 
-                        opt.toLowerCase().includes(counsellorSearch.toLowerCase())
+                      .filter((opt) =>
+                        opt
+                          .toLowerCase()
+                          .includes(counsellorSearch.toLowerCase()),
                       )
                       .map((opt) => (
                         <div
@@ -602,28 +633,41 @@ export default function Leads() {
                             ${filterCounsellor === opt ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
                         >
                           {opt === "Unassigned" && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
                               <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                             </svg>
                           )}
-                          {opt !== "All Counsellors" && opt !== "Unassigned" && (
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold">
-                              {opt.charAt(0)}
-                            </div>
-                          )}
+                          {opt !== "All Counsellors" &&
+                            opt !== "Unassigned" && (
+                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold">
+                                {opt.charAt(0)}
+                              </div>
+                            )}
                           <span>{opt}</span>
                           {filterCounsellor === opt && (
-                            <span className="ml-auto text-teal-500 text-xs">✓</span>
+                            <span className="ml-auto text-teal-500 text-xs">
+                              ✓
+                            </span>
                           )}
                         </div>
                       ))}
-                    {counsellorOptions.filter(opt => 
-                      opt.toLowerCase().includes(counsellorSearch.toLowerCase())
-                    ).length === 0 && counsellorSearch && (
-                      <div className="px-4 py-3 text-[13px] text-gray-400">
-                        No counsellors found
-                      </div>
-                    )}
+                    {counsellorOptions.filter((opt) =>
+                      opt
+                        .toLowerCase()
+                        .includes(counsellorSearch.toLowerCase()),
+                    ).length === 0 &&
+                      counsellorSearch && (
+                        <div className="px-4 py-3 text-[13px] text-gray-400">
+                          No counsellors found
+                        </div>
+                      )}
                   </div>
                 </div>
               )}
@@ -645,7 +689,14 @@ export default function Leads() {
                 </span>
               </button>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
@@ -674,14 +725,21 @@ export default function Leads() {
                     >
                       All Countries
                     </div>
-                    {[...new Set(
-                      leads.flatMap((l) =>
-                        l.preferred_country
-                          ? l.preferred_country.split(",").map((c) => c.trim()).filter(Boolean)
-                          : []
+                    {[
+                      ...new Set(
+                        leads.flatMap((l) =>
+                          l.preferred_country
+                            ? l.preferred_country
+                                .split(",")
+                                .map((c) => c.trim())
+                                .filter(Boolean)
+                            : [],
+                        ),
                       ),
-                    )]
-                      .filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase()))
+                    ]
+                      .filter((c) =>
+                        c.toLowerCase().includes(countrySearch.toLowerCase()),
+                      )
                       .map((c) => (
                         <div
                           key={c}
@@ -716,7 +774,14 @@ export default function Leads() {
                 ))}
               </select>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
@@ -742,7 +807,14 @@ export default function Leads() {
               onClick={handleExport}
               className="flex items-center gap-1.5 h-9 px-4 border border-gray-200 rounded-xl text-[12.5px] text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
@@ -758,7 +830,14 @@ export default function Leads() {
               }}
               className="flex items-center gap-1.5 h-9 px-4 bg-teal-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
                 <path d="M12 5v14M5 12h14" />
               </svg>
               Add Lead
@@ -778,7 +857,10 @@ export default function Leads() {
       {/* ── Kanban View ── */}
       {!loading && view === "kanban" && (
         <div className="flex-1 min-h-0 overflow-x-auto pb-4">
-          <div className="flex gap-3 h-full px-6 pt-1" style={{ minWidth: "max-content" }}>
+          <div
+            className="flex gap-3 h-full px-6 pt-1"
+            style={{ minWidth: "max-content" }}
+          >
             {STAGES.map((stage) => (
               <KanbanColumn
                 key={stage.key}
@@ -857,16 +939,16 @@ export default function Leads() {
         assignMode={editLead?._assignOnly === true}
       />
 
-   {/* Only render drawer when there is a lead */}
-{drawerLead && (
-  <LeadDrawer
-    lead={drawerLead}
-    onClose={() => setDrawerLead(null)}
-    onStage={handleStage}
-    onAddNoteOnly={handleAddNoteOnly}
-    // Remove onEdit if not used in LeadDrawer
-  />
-)}
+      {/* Only render drawer when there is a lead */}
+      {drawerLead && (
+        <LeadDrawer
+          lead={drawerLead}
+          onClose={() => setDrawerLead(null)}
+          onStage={handleStage}
+          onAddNoteOnly={handleAddNoteOnly}
+          // Remove onEdit if not used in LeadDrawer
+        />
+      )}
     </div>
   );
 }

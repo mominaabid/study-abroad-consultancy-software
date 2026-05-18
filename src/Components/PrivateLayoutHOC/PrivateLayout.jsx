@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { selectRole } from "../../redux/slices/authSlice";
 import { Sidebar } from "../Sidebar";
 import Header from "../Header";
+import FloatingWhatsApp  from "../../Components/WhatsAppWidget/FloatingWhatsApp";
 import "./PrivateLayout.css";
 
 const modulesByRole = {
@@ -37,6 +38,7 @@ export default function PrivateLayout() {
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const role = useSelector(selectRole);
   const location = useLocation();
+  const isStudentRoute = location.pathname.startsWith("/student");
 
   if (!role) {
     return (
@@ -98,6 +100,7 @@ export default function PrivateLayout() {
         <main className="private-layout__content">
           <Outlet />
         </main>
+        {isStudentRoute && <FloatingWhatsApp />}
       </div>
     </div>
   );

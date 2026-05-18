@@ -32,7 +32,20 @@ export const SOURCES = [
   "referral","google_ads","linkedin","agent",
 ];
 
-export const STUDY_LEVELS = ["Bachelor","Master","PhD","Diploma","Short Course"];
+// export const STUDY_LEVELS = ["Bachelor","Master","PhD","Diploma","Short Course"];
+
+export const STUDY_LEVELS = [
+  "Matric",
+  "Inter (12 years)",
+  "DAE (3 years)",
+  "ADP (2 years)",
+  "Bachelors (14 years)",
+  "Bachelors (16 years)",
+  "Masters (18 years)",
+  "Post Graduate Diploma",
+  "PhD",
+  "Short Courses",
+];
 
 export const EMPTY_FORM = {
   name: "", email: "", phone: "",
