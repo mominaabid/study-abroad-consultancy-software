@@ -792,6 +792,10 @@ export const CounsellorApplication = () => {
       email: s.email,
       phone: s.phone || "",
       status: s.status,
+      last_degree: s.last_degree || "",
+      cgpa: s.cgpa || "",
+      english_test: s.english_test || "",
+      test_score: s.test_score || "",
     }));
   }, [students]);
 
@@ -1090,7 +1094,7 @@ export const CounsellorApplication = () => {
                     <tr>
                       <td colSpan="6" className="text-center py-8">
                         <RefreshCw size={20} className="animate-spin mx-auto" />
-                       </td>
+                      </td>
                     </tr>
                   ) : applications.length === 0 ? (
                     <tr>
@@ -1105,7 +1109,7 @@ export const CounsellorApplication = () => {
                             Click "New Application" to create one
                           </p>
                         </div>
-                       </td>
+                      </td>
                     </tr>
                   ) : (
                     applications.map((app) => {
@@ -1129,20 +1133,20 @@ export const CounsellorApplication = () => {
                             <p className="text-xs text-gray-500">
                               {app.student_email || "No email"}
                             </p>
-                           </td>
+                          </td>
                           <td className="px-4 py-3 text-sm">
                             {app.target_university || "—"}
-                           </td>
+                          </td>
                           <td className="px-4 py-3 text-sm">
-                            {app.course || "—"} 
-                           </td>
+                            {app.course || "—"}
+                          </td>
                           <td className="px-4 py-3">
                             <span
                               className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(app.status)}`}
                             >
                               {getStatusLabel(app.status)}
                             </span>
-                           </td>
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-1">
                               {pendingDocs > 0 && (
@@ -1161,7 +1165,7 @@ export const CounsellorApplication = () => {
                                 </span>
                               )}
                             </div>
-                           </td>
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2">
                               <button
@@ -1209,7 +1213,7 @@ export const CounsellorApplication = () => {
                                 <Clock size={14} className="text-purple-600" />
                               </button>
                             </div>
-                           </td>
+                          </td>
                         </tr>
                       );
                     })
@@ -1232,7 +1236,7 @@ export const CounsellorApplication = () => {
         onVerify={handleVerifyDocument}
         onReject={handleRejectDocument}
       />
-      
+
       {/* Status Change Modal */}
       <ApplicationStatusModal
         isOpen={showStatusModal}

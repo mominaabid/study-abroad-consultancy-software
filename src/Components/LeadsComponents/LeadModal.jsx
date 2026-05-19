@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 import { SOURCES, STUDY_LEVELS, EMPTY_FORM } from "./LeadsConstants";
 import { InputField } from "../InputFields/InputField";
-import { OptionField } from "../InputFields/OptionField";
 import { AddButton } from "../CustomButtons/AddButton";
 import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
 import { COUNTRIES } from "../../constants/countries";
-import { Title } from "../Title";
+import { BASE_URL } from "../../Content/Url";
 import {
   User,
   Mail,
-  BookOpen,
   X,
   Phone,
   Globe,
@@ -21,20 +21,11 @@ import {
   Heart,
   UserCircle,
   Home,
-  Award,
   CalendarDays,
   BarChart,
   School,
   FileText,
-  Mic,
-  Book,
-  PenTool,
-  Headphones,
-  Type,
-  Eye,
-  Edit3,
-  MessageSquare,
-  TrendingUp,
+  ArrowLeft,
 } from "lucide-react";
 
 const SOURCE_ICONS = {
@@ -49,7 +40,6 @@ const SOURCE_ICONS = {
   agent: "🏢",
 };
 
-// Marital Status Options
 const MARITAL_STATUS_OPTIONS = [
   { value: "single", label: "Single" },
   { value: "married", label: "Married" },
@@ -57,17 +47,14 @@ const MARITAL_STATUS_OPTIONS = [
   { value: "widowed", label: "Widowed" },
 ];
 
-// English Proficiency Test Options
 const ENGLISH_TEST_OPTIONS = [
   { value: "ielts", label: "IELTS" },
   { value: "toefl", label: "TOEFL" },
   { value: "pte", label: "PTE" },
   { value: "duolingo", label: "Duolingo" },
-  { value: "cambridge", label: "Cambridge" },
   { value: "none", label: "None" },
 ];
 
-// Helper function to calculate age from date of birth
 const calculateAge = (dob) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
@@ -102,7 +89,6 @@ function SearchableDropdown({
   const selectedOption = options.find(
     (opt) => String(opt.value) === String(value),
   );
-
   const filteredOptions = options.filter((opt) =>
     opt.label?.toLowerCase().includes(query.toLowerCase()),
   );
@@ -116,13 +102,7 @@ function SearchableDropdown({
   }, []);
 
   const handleSelect = (opt) => {
-    onChange({
-      target: {
-        // name: label.toLowerCase().replace(/\s/g, "_"),
-        name: name,
-        value: opt.value,
-      },
-    });
+    onChange({ target: { name, value: opt.value } });
     setQuery("");
     setOpen(false);
   };
@@ -132,7 +112,6 @@ function SearchableDropdown({
       <label className="block text-sm font-medium text-slate-700 mb-1">
         {label} {required && "*"}
       </label>
-
       <div
         className={`flex items-center gap-2 w-full px-4 py-2.5 border rounded-xl bg-white text-sm cursor-text transition-all
           ${error ? "border-red-400 ring-1 ring-red-200" : open ? "border-blue-500 ring-1 ring-blue-100" : "border-slate-300 hover:border-slate-400"}`}
@@ -156,7 +135,6 @@ function SearchableDropdown({
           className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </div>
-
       {open && (
         <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
           <div className="max-h-64 overflow-y-auto py-1">
@@ -187,13 +165,12 @@ function SearchableDropdown({
           </div>
         </div>
       )}
-
       {error && <p className="text-red-500 text-[10px] mt-1 ml-1">{error}</p>}
     </div>
   );
 }
 
-// ─── Searchable Counsellor Select (with Unassigned option) ──────────────────
+// ─── Searchable Counsellor Select (visible only for admin) ──────────────────────────
 function SearchableCounsellorSelect({
   counsellors = [],
   value,
@@ -204,19 +181,15 @@ function SearchableCounsellorSelect({
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  // Add "Unassigned" option at the beginning
   const counsellorsWithUnassigned = [
     { id: "unassigned", name: "Unassigned", user: { id: "unassigned" } },
     ...counsellors,
   ];
 
-  // Find selected option - treat null/undefined/empty as "unassigned"
   const selected = counsellorsWithUnassigned.find((c) => {
     const cId = String(c.user?.id || c.id);
-    // If value is falsy (null, undefined, empty string, false, 0), show Unassigned
-    if (!value || value === "" || value === "null" || value === null) {
+    if (!value || value === "" || value === "null" || value === null)
       return cId === "unassigned";
-    }
     return cId === String(value);
   });
 
@@ -234,9 +207,7 @@ function SearchableCounsellorSelect({
 
   const handleSelect = (c) => {
     const id = String(c.user?.id || c.id);
-    // Send null for unassigned, otherwise send the ID
     const newValue = id === "unassigned" ? null : id;
-    console.log("Setting counsellor_id to:", newValue); // Debug log
     onChange({ target: { name: "counsellor_id", value: newValue } });
     setQuery("");
     setOpen(false);
@@ -245,9 +216,8 @@ function SearchableCounsellorSelect({
   return (
     <div ref={ref} className="relative">
       <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-        Assign Counsellor (Optional)
+        Assign Counsellor
       </label>
-
       <div
         className={`flex items-center gap-2 w-full px-3.5 py-2.5 border rounded-xl bg-white text-sm cursor-text transition-all
           ${error ? "border-red-400 ring-1 ring-red-200" : open ? "border-blue-500 ring-1 ring-blue-100" : "border-slate-300 hover:border-slate-400"}`}
@@ -270,7 +240,6 @@ function SearchableCounsellorSelect({
           className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
       </div>
-
       {open && (
         <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
           <div className="max-h-52 overflow-y-auto py-1">
@@ -286,7 +255,6 @@ function SearchableCounsellorSelect({
                     ? id === "unassigned"
                     : String(value) === id;
                 const isUnassigned = id === "unassigned";
-
                 return (
                   <div
                     key={id}
@@ -323,7 +291,6 @@ function SearchableCounsellorSelect({
           </div>
         </div>
       )}
-
       {error && <p className="text-red-500 text-[10px] mt-1 ml-1">{error}</p>}
     </div>
   );
@@ -349,344 +316,39 @@ function InfoRow({ icon, label, value }) {
   );
 }
 
-// ─── Tab Button Component ──────────────────────────────────────────────────
-function TabButton({ active, onClick, label, icon }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all ${
-        active
-          ? "bg-blue-50 text-blue-700 shadow-sm"
-          : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
+// ─── Main Component ─────────────────────────────────────────────────────────
+export default function LeadModal() {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const location = useLocation();
 
-// ─── English Test Score Fields Component ───────────────────────────────────
-function EnglishTestScoreFields({ testType, scores, onScoreChange }) {
-  // Define field configurations based on test type
-  const getFieldsConfig = () => {
-    switch (testType) {
-      case "ielts":
-        return {
-          fields: [
-            {
-              name: "listening",
-              label: "Listening",
-              icon: Headphones,
-              min: 0,
-              max: 9,
-              step: 0.5,
-            },
-            {
-              name: "reading",
-              label: "Reading",
-              icon: Book,
-              min: 0,
-              max: 9,
-              step: 0.5,
-            },
-            {
-              name: "writing",
-              label: "Writing",
-              icon: PenTool,
-              min: 0,
-              max: 9,
-              step: 0.5,
-            },
-            {
-              name: "speaking",
-              label: "Speaking",
-              icon: Mic,
-              min: 0,
-              max: 9,
-              step: 0.5,
-            },
-          ],
-          computeTotal: (scores) => {
-            const values = Object.values(scores).filter(
-              (v) => v !== "" && !isNaN(parseFloat(v)),
-            );
-            if (values.length !== 4) return null;
-            const sum = values.reduce((a, b) => a + parseFloat(b), 0);
-            const avg = sum / 4;
-            return Math.round(avg); // Round to nearest integer
-          },
-          formatTotal: (total) => (total !== null ? total.toString() : "—"),
-        };
-      case "pte":
-        return {
-          fields: [
-            {
-              name: "listening",
-              label: "Listening",
-              icon: Headphones,
-              min: 10,
-              max: 90,
-              step: 1,
-            },
-            {
-              name: "reading",
-              label: "Reading",
-              icon: Book,
-              min: 10,
-              max: 90,
-              step: 1,
-            },
-            {
-              name: "writing",
-              label: "Writing",
-              icon: PenTool,
-              min: 10,
-              max: 90,
-              step: 1,
-            },
-            {
-              name: "speaking",
-              label: "Speaking",
-              icon: Mic,
-              min: 10,
-              max: 90,
-              step: 1,
-            },
-          ],
-          computeTotal: (scores) => {
-            const values = Object.values(scores).filter(
-              (v) => v !== "" && !isNaN(parseFloat(v)),
-            );
-            if (values.length !== 4) return null;
-            const sum = values.reduce((a, b) => a + parseFloat(b), 0);
-            const avg = sum / 4;
-            return Math.round(avg);
-          },
-          formatTotal: (total) => (total !== null ? total.toString() : "—"),
-        };
-      case "toefl":
-        return {
-          fields: [
-            {
-              name: "listening",
-              label: "Listening",
-              icon: Headphones,
-              min: 0,
-              max: 30,
-              step: 1,
-            },
-            {
-              name: "reading",
-              label: "Reading",
-              icon: Book,
-              min: 0,
-              max: 30,
-              step: 1,
-            },
-            {
-              name: "writing",
-              label: "Writing",
-              icon: PenTool,
-              min: 0,
-              max: 30,
-              step: 1,
-            },
-            {
-              name: "speaking",
-              label: "Speaking",
-              icon: Mic,
-              min: 0,
-              max: 30,
-              step: 1,
-            },
-          ],
-          computeTotal: (scores) => {
-            const values = Object.values(scores).filter(
-              (v) => v !== "" && !isNaN(parseFloat(v)),
-            );
-            if (values.length !== 4) return null;
-            const sum = values.reduce((a, b) => a + parseFloat(b), 0);
-            return sum;
-          },
-          formatTotal: (total) => (total !== null ? total.toString() : "—"),
-        };
-      case "duolingo":
-        return {
-          fields: [
-            {
-              name: "literacy",
-              label: "Literacy",
-              icon: Book,
-              min: 10,
-              max: 160,
-              step: 1,
-            },
-            {
-              name: "comprehension",
-              label: "Comprehension",
-              icon: Eye,
-              min: 10,
-              max: 160,
-              step: 1,
-            },
-            {
-              name: "conversation",
-              label: "Conversation",
-              icon: MessageSquare,
-              min: 10,
-              max: 160,
-              step: 1,
-            },
-            {
-              name: "production",
-              label: "Production",
-              icon: Edit3,
-              min: 10,
-              max: 160,
-              step: 1,
-            },
-          ],
-          computeTotal: (scores) => {
-            const values = Object.values(scores).filter(
-              (v) => v !== "" && !isNaN(parseFloat(v)),
-            );
-            if (values.length !== 4) return null;
-            const sum = values.reduce((a, b) => a + parseFloat(b), 0);
-            const avg = sum / 4;
-            return avg;
-          },
-          formatTotal: (total) => (total !== null ? total.toFixed(1) : "—"),
-        };
-      default:
-        return null;
-    }
-  };
+  const isCounsellor = location.pathname.includes("/counsellor");
+  let mode = "add";
+  if (location.pathname.includes("/edit")) mode = "edit";
+  else if (location.pathname.includes("/assign")) mode = "assign";
+  const isAssignMode = mode === "assign";
 
-  const config = getFieldsConfig();
-  if (!config) return null;
-
-  const total = config.computeTotal(scores);
-
-  return (
-    <div className="mt-4 space-y-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
-      <div className="flex items-center gap-2">
-        <TrendingUp size={16} className="text-blue-500" />
-        <h4 className="text-sm font-semibold text-slate-700">Module Scores</h4>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {config.fields.map((field) => (
-          <div key={field.name} className="space-y-1">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-              <field.icon size={14} className="text-slate-400" />
-              {field.label}
-            </label>
-            <input
-              type="number"
-              value={scores[field.name] || ""}
-              // onChange={(e) => {
-              //   let val = e.target.value;
-              //   if (val === "") {
-              //     onScoreChange(field.name, "");
-              //     return;
-              //   }
-              //   let num = parseFloat(val);
-              //   if (isNaN(num)) return;
-              //   // Enforce min/max
-              //   if (num < field.min) num = field.min;
-              //   if (num > field.max) num = field.max;
-              //   // For step 0.5, round to nearest 0.5
-              //   if (field.step === 0.5) {
-              //     num = Math.round(num * 2) / 2;
-              //   }
-              //   onScoreChange(field.name, num.toString());
-              // }}
-
-              onChange={(e) => {
-                const val = e.target.value;
-
-                if (val === "") {
-                  onScoreChange(field.name, "");
-                  return;
-                }
-
-                const num = Number(val);
-                if (isNaN(num)) return;
-
-                onScoreChange(field.name, val);
-              }}
-              step={field.step}
-              min={field.min}
-              max={field.max}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-white"
-              placeholder={`${field.min}-${field.max}`}
-            />
-            <p className="text-[10px] text-slate-400">
-              Range: {field.min}–{field.max}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div className="pt-2 border-t border-slate-200">
-        <div className="flex items-center justify-between bg-white rounded-lg p-3">
-          <span className="text-sm font-medium text-slate-600">
-            Total Score:
-          </span>
-          <span className="text-xl font-bold text-blue-600">
-            {total !== null ? total : "—"}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Modal ───────────────────────────────────────────────────────────────
-export default function LeadModal({
-  open,
-  onClose,
-  onSave,
-  counsellors = [],
-  editLead,
-  assignMode = false,
-}) {
-  const [activeTab, setActiveTab] = useState("personal"); // "personal" or "educational"
+  // ─── All state hooks (unconditional) ──────────────────────────────────────
   const [form, setForm] = useState({
     ...EMPTY_FORM,
     source: "walkin",
     study_level: "",
-    // Personal Information fields
     dob: "",
     marital_status: "",
     father_name: "",
     father_contact: "",
     home_address: "",
-    // Educational Information fields
     year_awarded: "",
     grades_cgpa: "",
     board_university: "",
     english_proficiency_test: "",
+    english_test_overall_score: "",
   });
-
-  // State for dynamic test scores
-  const [testScores, setTestScores] = useState({
-    ielts: { listening: "", reading: "", writing: "", speaking: "" },
-    pte: { listening: "", reading: "", writing: "", speaking: "" },
-    toefl: { listening: "", reading: "", writing: "", speaking: "" },
-    duolingo: {
-      literacy: "",
-      comprehension: "",
-      conversation: "",
-      production: "",
-    },
-  });
-
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
-
+  const [counsellors, setCounsellors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [editLead, setEditLead] = useState(null);
   const [countrySearchTerm, setCountrySearchTerm] = useState("");
   const [selectedCountries, setSelectedCountries] = useState([]);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
@@ -696,118 +358,109 @@ export default function LeadModal({
     (c) =>
       c.country.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
       c.iso.toLowerCase().includes(countrySearchTerm.toLowerCase()),
-  ).map((c) => ({
-    value: c.country,
-    display: `${c.country} (${c.iso})`,
-  }));
+  ).map((c) => ({ value: c.country, display: `${c.country} (${c.iso})` }));
 
-  // Prepare options for searchable dropdowns
   const sourceOptions = SOURCES.map((s) => ({
     value: s,
     label: `${SOURCE_ICONS[s.toLowerCase()] || "📍"} ${s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ")}`,
     icon: SOURCE_ICONS[s.toLowerCase()] || "📍",
   }));
 
-  const studyLevelOptions = STUDY_LEVELS.map((l) => ({
-    value: l,
-    label: l,
-  }));
+  const studyLevelOptions = STUDY_LEVELS.map((l) => ({ value: l, label: l }));
 
-  // Reset test scores when English test changes
-  useEffect(() => {
-    // No need to reset on every render, only when test changes
-  }, [form.english_proficiency_test]);
+  const getApiBaseUrl = useCallback(
+    () =>
+      isCounsellor ? `${BASE_URL}/counsellor/leads` : `${BASE_URL}/admin/leads`,
+    [isCounsellor],
+  );
 
-  // Reset form properly every time modal opens/closes or editLead changes
-  useEffect(() => {
-    if (!open) {
-      // Clear everything when modal closes
-      setForm({
-        ...EMPTY_FORM,
-        source: "walkin",
-        study_level: "",
-        counsellor_id: null,
-        dob: "",
-        marital_status: "",
-        father_name: "",
-        father_contact: "",
-        home_address: "",
-        year_awarded: "",
-        grades_cgpa: "",
-        board_university: "",
-        english_proficiency_test: "",
+  const fetchCounsellors = useCallback(async () => {
+    if (isCounsellor) return;
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setSelectedCountries([]);
-      setCountrySearchTerm("");
-      setErrors({});
-      setActiveTab("personal");
-      // Reset test scores
-      setTestScores({
-        ielts: { listening: "", reading: "", writing: "", speaking: "" },
-        pte: { listening: "", reading: "", writing: "", speaking: "" },
-        toefl: { listening: "", reading: "", writing: "", speaking: "" },
-        duolingo: {
-          literacy: "",
-          comprehension: "",
-          conversation: "",
-          production: "",
-        },
-      });
-      return;
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setCounsellors(Array.isArray(data) ? data : data.data || []);
+    } catch {
+      console.error("Failed to fetch counsellors");
     }
+  }, [isCounsellor]);
 
-    if (editLead) {
-      const countries = editLead.preferred_country
-        ? editLead.preferred_country
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [];
-
-      setSelectedCountries(countries);
-
-      setForm({
-        name: editLead.name || "",
-        email: editLead.email || "",
-        phone: editLead.phone || "",
-        source: editLead.source || "walkin",
-        preferred_country: editLead.preferred_country || "",
-        study_level: editLead.study_level || "",
-        counsellor_id: editLead.counsellor_id || null,
-        dob: editLead.dob || "",
-        marital_status: editLead.marital_status || "",
-        father_name: editLead.father_name || "",
-        father_contact: editLead.father_contact || "",
-        home_address: editLead.home_address || "",
-        year_awarded: editLead.year_awarded || "",
-        grades_cgpa: editLead.grades_cgpa || "",
-        board_university: editLead.board_university || "",
-        english_proficiency_test: editLead.english_proficiency_test || "",
-      });
-
-      // --- SAFE PARSE + NORMALIZE SCORES ---
-      let parsedScores = {};
-
+  const fetchLead = useCallback(
+    async (leadId) => {
+      setLoading(true);
       try {
-        parsedScores =
-          typeof editLead.english_test_scores === "string"
-            ? JSON.parse(editLead.english_test_scores)
-            : editLead.english_test_scores || {};
-      } catch (e) {
-        parsedScores = {};
+        const token = localStorage.getItem("token");
+        const baseUrl = getApiBaseUrl();
+        const res = await fetch(`${baseUrl}/${leadId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const lead = await res.json();
+        setEditLead(lead);
+
+        const countries = lead.preferred_country
+          ? lead.preferred_country
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [];
+        setSelectedCountries(countries);
+
+        setForm({
+          name: lead.name || "",
+          email: lead.email || "",
+          phone: lead.phone || "",
+          source: lead.source || "walkin",
+          preferred_country: lead.preferred_country || "",
+          study_level: lead.study_level || "",
+          counsellor_id: lead.counsellor_id || null,
+          dob: lead.dob || "",
+          marital_status: lead.marital_status || "",
+          father_name: lead.father_name || "",
+          father_contact: lead.father_contact || "",
+          home_address: lead.home_address || "",
+          year_awarded: lead.year_awarded || "",
+          grades_cgpa: lead.grades_cgpa || "",
+          board_university: lead.board_university || "",
+          english_proficiency_test: lead.english_proficiency_test || "",
+          english_test_overall_score: lead.english_test_overall_score || "",
+        });
+      } catch {
+        toast.error("Failed to load lead data");
+        navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads");
+      } finally {
+        setLoading(false);
       }
+    },
+    [getApiBaseUrl, isCounsellor, navigate],
+  );
 
-      setTestScores(normalizeScores(parsedScores));
+  // Auto-set counsellor_id for counsellor add mode
+  useEffect(() => {
+    if (isCounsellor && mode === "add") {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.id) setForm((prev) => ({ ...prev, counsellor_id: user.id }));
+    }
+  }, [isCounsellor, mode]);
+
+  // Initial data fetch and reset
+  useEffect(() => {
+    fetchCounsellors();
+    if (mode !== "add" && id) {
+      fetchLead(id);
     } else {
-      // Fresh Add Lead
-      setSelectedCountries([]);
-      setCountrySearchTerm("");
-
       setForm({
         ...EMPTY_FORM,
         source: "walkin",
         study_level: "",
-        counsellor_id: null,
+        counsellor_id: isCounsellor
+          ? JSON.parse(localStorage.getItem("user") || "{}").id || null
+          : null,
         dob: "",
         marital_status: "",
         father_name: "",
@@ -817,40 +470,14 @@ export default function LeadModal({
         grades_cgpa: "",
         board_university: "",
         english_proficiency_test: "",
+        english_test_overall_score: "",
       });
-
-      // Reset empty scores properly
-      setTestScores({
-        ielts: {
-          listening: "",
-          reading: "",
-          writing: "",
-          speaking: "",
-        },
-        pte: {
-          listening: "",
-          reading: "",
-          writing: "",
-          speaking: "",
-        },
-        toefl: {
-          listening: "",
-          reading: "",
-          writing: "",
-          speaking: "",
-        },
-        duolingo: {
-          literacy: "",
-          comprehension: "",
-          conversation: "",
-          production: "",
-        },
-      });
+      setSelectedCountries([]);
+      setErrors({});
     }
+  }, [mode, id, isCounsellor, fetchCounsellors, fetchLead]);
 
-    setErrors({});
-  }, [open, editLead]);
-
+  // Click outside handler for country dropdown
   useEffect(() => {
     const handler = (e) => {
       if (
@@ -863,36 +490,10 @@ export default function LeadModal({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  if (!open) return null;
-
+  // Validation
   const validate = () => {
     const e = {};
-
-    // In assignMode, counsellor is optional - no validation needed
-    if (assignMode) {
-      return e;
-    }
-
-    // if (!form.name?.trim()) e.name = "Name is required";
-    // if (!form.phone?.trim()) {
-    //   e.phone = "Phone number is required";
-    // } else if (form.phone.replace(/\D/g, "").length < 8) {
-    //   e.phone = "Phone number is too short";
-    // }
-    // if (!form.email?.trim()) e.email = "Email is required";
-    // if (!form.source?.trim()) e.source = "Source is required";
-    // if (!form.preferred_country?.trim())
-    //   e.preferred_country = "Preferred country is required";
-    // if (!form.study_level?.trim()) e.study_level = "Last Degree is required";
-
-    // // Age validation: if date of birth is provided, age must be > 16
-    // if (form.dob) {
-    //   const age = calculateAge(form.dob);
-    //   if (age !== null && age <= 16) {
-    //     e.dob = "Age must be greater than 16 years";
-    //   }
-    // }
-
+    if (isAssignMode) return e;
     if (!form.name?.trim()) e.name = "Name is required";
     if (!form.phone?.trim()) e.phone = "Phone number is required";
     if (!form.email?.trim()) e.email = "Email is required";
@@ -900,7 +501,15 @@ export default function LeadModal({
     if (!form.preferred_country?.trim())
       e.preferred_country = "Preferred country is required";
     if (!form.study_level?.trim()) e.study_level = "Last Degree is required";
-
+    if (
+      form.english_proficiency_test &&
+      form.english_proficiency_test !== "none" &&
+      (!form.english_test_overall_score ||
+        form.english_test_overall_score === "")
+    ) {
+      e.english_test_overall_score =
+        "Total score is required for selected test";
+    }
     return e;
   };
 
@@ -913,33 +522,60 @@ export default function LeadModal({
     }
     setSaving(true);
     try {
-      // Create a copy of form data to submit
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Not logged in");
+
+      let url, method;
+      const baseUrl = getApiBaseUrl();
       const submitData = { ...form };
 
-      // Ensure counsellor_id is properly set (null for unassigned)
-      if (
-        !submitData.counsellor_id ||
-        submitData.counsellor_id === "" ||
-        submitData.counsellor_id === "null"
-      ) {
-        submitData.counsellor_id = null;
+      if (isCounsellor && !submitData.counsellor_id) {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        submitData.counsellor_id = user.id;
       }
 
-      // Attach test scores to submission (optional, for future use)
-      const currentTest = form.english_proficiency_test;
-      if (currentTest && testScores[currentTest]) {
-        submitData.english_test_scores = testScores[currentTest];
+      if (mode === "add") {
+        url = baseUrl;
+        method = "POST";
+      } else if (mode === "edit") {
+        url = `${baseUrl}/${id}`;
+        method = "PUT";
+      } else {
+        url = `${BASE_URL}/admin/leads/${id}/assign`;
+        method = "PUT";
+        submitData.counsellor_id = form.counsellor_id
+          ? Number(form.counsellor_id)
+          : null;
       }
 
-      console.log(
-        "Submitting form with counsellor_id:",
-        submitData.counsellor_id,
-      ); // Debug log
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(
+          method === "PUT" && mode === "assign"
+            ? { counsellor_id: submitData.counsellor_id }
+            : submitData,
+        ),
+      });
 
-      await onSave(submitData);
-      onClose();
+      if (!res.ok)
+        throw new Error(
+          (await res.json().catch(() => ({}))).message || `HTTP ${res.status}`,
+        );
+
+      toast.success(
+        mode === "add"
+          ? "Lead added successfully"
+          : mode === "edit"
+            ? "Lead updated successfully"
+            : "Counsellor assigned successfully",
+      );
+      navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads");
     } catch (err) {
-      console.error(err);
+      toast.error("Failed to save: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -950,9 +586,6 @@ export default function LeadModal({
     if (value && value.startsWith(" ")) return;
     if (name === "name" && /\d/.test(value)) return;
 
-    console.log("Changing", name, "to:", value); // Debug log
-
-    // Age validation on the fly for dob field
     if (name === "dob") {
       if (value) {
         const age = calculateAge(value);
@@ -969,7 +602,6 @@ export default function LeadModal({
           });
         }
       } else {
-        // Clear dob error if date is cleared
         setErrors((prev) => {
           const newErrs = { ...prev };
           delete newErrs.dob;
@@ -1014,126 +646,303 @@ export default function LeadModal({
     setForm((prev) => ({ ...prev, preferred_country: updated.join(", ") }));
   };
 
-  const handleScoreChange = (testType, fieldName, value) => {
-    setTestScores((prev) => ({
-      ...prev,
-      [testType]: {
-        ...prev[testType],
-        [fieldName]: value,
-      },
-    }));
-  };
-
   const sourceLabel = editLead?.source
-    ? `${SOURCE_ICONS[editLead.source.toLowerCase()] || "📍"} ${
-        editLead.source.charAt(0).toUpperCase() +
-        editLead.source.slice(1).replace(/_/g, " ")
-      }`
+    ? `${SOURCE_ICONS[editLead.source.toLowerCase()] || "📍"} ${editLead.source.charAt(0).toUpperCase() + editLead.source.slice(1).replace(/_/g, " ")}`
     : "—";
 
-  const normalizeScores = (saved = {}) => ({
-    ielts: {
-      listening: "",
-      reading: "",
-      writing: "",
-      speaking: "",
-      ...saved.ielts,
-    },
-    pte: {
-      listening: "",
-      reading: "",
-      writing: "",
-      speaking: "",
-      ...saved.pte,
-    },
-    toefl: {
-      listening: "",
-      reading: "",
-      writing: "",
-      speaking: "",
-      ...saved.toefl,
-    },
-    duolingo: {
-      literacy: "",
-      comprehension: "",
-      conversation: "",
-      production: "",
-      ...saved.duolingo,
-    },
-  });
-
-  // ════════════════════════════════════════════════════════════════════════
-  // ASSIGN MODE
-  // ════════════════════════════════════════════════════════════════════════
-  if (assignMode) {
+  if (loading) {
     return (
-      <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-        onClick={(e) => e.target === e.currentTarget && onClose()}
-      >
-        <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[92vh]">
-          <Title setModal={onClose}>Assign Counsellor</Title>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-          <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                Lead Details
-              </p>
+  if (isAssignMode && editLead) {
+    const assignedCounsellor = counsellors.find(
+      (c) => String(c.user?.id || c.id) === String(editLead?.counsellor_id),
+    );
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4 md:p-6">
+        <div className="">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate("/admin/leads")}
+                className="p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm"
+              >
+                <ArrowLeft size={20} className="text-slate-600" />
+              </button>
 
-              <InfoRow
-                icon={<User size={15} />}
-                label="Applicant Name"
-                value={editLead?.name}
-              />
-              <InfoRow
-                icon={<Mail size={15} />}
-                label="Email"
-                value={editLead?.email}
-              />
-              <InfoRow
-                icon={<Phone size={15} />}
-                label="Phone"
-                value={editLead?.phone}
-              />
-              <InfoRow
-                icon={<Globe size={15} />}
-                label="Preferred Countries"
-                value={editLead?.preferred_country}
-              />
-              <InfoRow
-                icon={<GraduationCap size={15} />}
-                label="Last Degree"
-                value={editLead?.study_level}
-              />
-              <InfoRow
-                icon={<Radio size={15} />}
-                label="Source"
-                value={sourceLabel}
-              />
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                  Assign Counsellor
+                </h1>
+                <p className="text-sm text-slate-500 mt-1">
+                  Review lead details and assign a counsellor
+                </p>
+              </div>
             </div>
-
-            <SearchableCounsellorSelect
-              counsellors={counsellors}
-              value={form.counsellor_id}
-              onChange={handleCustomChange}
-              error={errors.counsellor_id}
-            />
           </div>
 
-          <div className="p-6 border-t border-slate-100 bg-white">
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
-              >
-                Close
-              </button>
-              <AddButton
-                label="Assign"
-                loading={saving}
-                handleClick={handleSubmit}
-              />
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* LEFT SIDE - Lead Information */}
+            <div className="xl:col-span-2">
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                {/* Top Banner */}
+                <div className="relative bg-[#009E99] px-6 py-8">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">
+                        {editLead?.name || "Unnamed Lead"}
+                      </h2>
+
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-medium backdrop-blur-sm">
+                          {editLead?.study_level || "No Degree"}
+                        </span>
+
+                        <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-medium backdrop-blur-sm">
+                          {sourceLabel}
+                        </span>
+
+                        {editLead?.preferred_country && (
+                          <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-medium backdrop-blur-sm">
+                            {editLead.preferred_country}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-bold shrink-0">
+                      {editLead?.name?.charAt(0)?.toUpperCase() || "L"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Information Sections */}
+                <div className="p-6 space-y-8">
+                  {/* Personal Information */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                        <User size={18} className="text-blue-600" />
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold text-slate-900">
+                          Personal Information
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Applicant basic details
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InfoRow
+                        icon={<Mail size={16} />}
+                        label="Email Address"
+                        value={editLead?.email}
+                      />
+
+                      <InfoRow
+                        icon={<Phone size={16} />}
+                        label="Phone Number"
+                        value={editLead?.phone}
+                      />
+
+                      <InfoRow
+                        icon={<Calendar size={16} />}
+                        label="Date of Birth"
+                        value={editLead?.dob}
+                      />
+
+                      <InfoRow
+                        icon={<Heart size={16} />}
+                        label="Marital Status"
+                        value={editLead?.marital_status}
+                      />
+
+                      <InfoRow
+                        icon={<UserCircle size={16} />}
+                        label="Father Name"
+                        value={editLead?.father_name}
+                      />
+
+                      <InfoRow
+                        icon={<Phone size={16} />}
+                        label="Father Contact"
+                        value={editLead?.father_contact}
+                      />
+                    </div>
+
+                    {editLead?.home_address && (
+                      <div className="mt-4">
+                        <InfoRow
+                          icon={<Home size={16} />}
+                          label="Home Address"
+                          value={editLead?.home_address}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Education */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-5">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                        <GraduationCap size={18} className="text-indigo-600" />
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold text-slate-900">
+                          Educational Information
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Academic background & test details
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InfoRow
+                        icon={<GraduationCap size={16} />}
+                        label="Last Degree"
+                        value={editLead?.study_level}
+                      />
+
+                      <InfoRow
+                        icon={<CalendarDays size={16} />}
+                        label="Year Awarded"
+                        value={editLead?.year_awarded}
+                      />
+
+                      <InfoRow
+                        icon={<BarChart size={16} />}
+                        label="Grades / CGPA"
+                        value={editLead?.grades_cgpa}
+                      />
+
+                      <InfoRow
+                        icon={<School size={16} />}
+                        label="Board / University"
+                        value={editLead?.board_university}
+                      />
+
+                      <InfoRow
+                        icon={<Globe size={16} />}
+                        label="Preferred Countries"
+                        value={editLead?.preferred_country}
+                      />
+
+                      {editLead?.english_proficiency_test &&
+                        editLead?.english_proficiency_test !== "none" && (
+                          <InfoRow
+                            icon={<FileText size={16} />}
+                            label="English Test"
+                            value={`${editLead.english_proficiency_test.toUpperCase()} • ${editLead.english_test_overall_score || "No score"}`}
+                          />
+                        )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT SIDE - Assignment Panel */}
+            <div className="xl:col-span-1">
+              <div className="sticky top-6">
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-200">
+                  <div className="p-6 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center">
+                        <UserCircle size={22} className="text-blue-600" />
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold text-slate-900">
+                          Counsellor Assignment
+                        </h3>
+                        <p className="text-sm text-slate-500">
+                          Select a counsellor for this lead
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6">
+                    {/* Current Status */}
+                    <div className="mb-5 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                        Current Assignment
+                      </p>
+
+                      {assignedCounsellor ? (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center font-semibold">
+                            {assignedCounsellor.name?.charAt(0)?.toUpperCase()}
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-slate-800">
+                              {assignedCounsellor.name}
+                            </p>
+
+                            <p className="text-xs text-emerald-600 font-medium">
+                              Currently Assigned
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center">
+                            <User size={18} />
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-slate-700">
+                              Unassigned
+                            </p>
+
+                            <p className="text-xs text-amber-600 font-medium">
+                              No counsellor assigned yet
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dropdown */}
+                    <div className="mb-6 relative z-50">
+                      <SearchableCounsellorSelect
+                        counsellors={counsellors}
+                        value={form.counsellor_id}
+                        onChange={handleCustomChange}
+                        error={errors.counsellor_id}
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => navigate("/admin/leads")}
+                        className="flex-1 px-4 py-2.5 rounded-xl font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+
+                      <AddButton
+                        label="Assign Counsellor"
+                        loading={saving}
+                        handleClick={handleSubmit}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1141,45 +950,40 @@ export default function LeadModal({
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // ADD / EDIT MODE with Tabs
-  // ════════════════════════════════════════════════════════════════════════
+  // Add / Edit Mode (full form)
   return (
-    <div
-      className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-        <Title setModal={onClose}>
-          {editLead ? "Edit Lead" : "Add New Lead"}
-        </Title>
-
-        {/* Tab Navigation */}
-        <div className="px-6 pt-2 border-b border-slate-100">
-          <div className="flex gap-2">
-            <TabButton
-              active={activeTab === "personal"}
-              onClick={() => setActiveTab("personal")}
-              label="Personal Information"
-              icon={<User size={16} />}
-            />
-            <TabButton
-              active={activeTab === "educational"}
-              onClick={() => setActiveTab("educational")}
-              label="Educational Information"
-              icon={<GraduationCap size={16} />}
-            />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <div className="">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() =>
+              navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads")
+            }
+            className="p-2 rounded-lg hover:bg-white/80 transition-colors"
+          >
+            <ArrowLeft size={20} className="text-gray-600" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {mode === "add"
+              ? "Add New Lead"
+              : isCounsellor
+                ? "Edit My Lead"
+                : "Edit Lead"}
+          </h1>
         </div>
 
         <form
-          className="flex-1 overflow-y-auto custom-scrollbar"
           onSubmit={handleSubmit}
+          className="bg-white rounded-2xl shadow-sm overflow-hidden"
         >
-          <div className="p-6 space-y-4">
-            {activeTab === "personal" && (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {/* Row 1: Applicant Name + Email */}
+          <div className="p-6 space-y-8">
+            {/* Personal Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+                <User size={18} className="text-blue-500" /> Personal
+                Information
+              </h3>
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <InputField
@@ -1196,17 +1000,16 @@ export default function LeadModal({
                       </p>
                     )}
                   </div>
-
                   <div className="space-y-1">
                     <PhoneInputWithCountry
                       value={form.phone}
                       onChange={handleCustomChange}
                       name="phone"
                       error={errors.phone}
+                      labelName="Applicant's Contact *"
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <InputField
@@ -1217,18 +1020,15 @@ export default function LeadModal({
                       icon={<UserCircle size={16} />}
                     />
                   </div>
-
                   <div className="space-y-1">
                     <PhoneInputWithCountry
                       value={form.father_contact}
                       onChange={handleCustomChange}
                       name="father_contact"
-                      label="Father's Contact"
+                      labelName="Father's Contact *"
                     />
                   </div>
                 </div>
-
-                {/* Row 2: Phone + Date of Birth */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <InputField
@@ -1245,7 +1045,6 @@ export default function LeadModal({
                       </p>
                     )}
                   </div>
-
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Date of Birth
@@ -1260,9 +1059,7 @@ export default function LeadModal({
                         name="dob"
                         value={form.dob}
                         onChange={handleCustomChange}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors ${
-                          errors.dob ? "border-red-400" : "border-slate-300"
-                        }`}
+                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors ${errors.dob ? "border-red-400" : "border-slate-300"}`}
                       />
                     </div>
                     {errors.dob && (
@@ -1272,8 +1069,6 @@ export default function LeadModal({
                     )}
                   </div>
                 </div>
-
-                {/* Row 4: Marital Status + Source */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <SearchableDropdown
@@ -1286,27 +1081,25 @@ export default function LeadModal({
                       icon={<Heart size={16} />}
                     />
                   </div>
-
                   <div className="space-y-1">
                     <SearchableDropdown
                       name="source"
                       options={sourceOptions}
                       value={form.source}
                       onChange={handleCustomChange}
-                      label="Source *"
+                      label="Source"
                       placeholder="Search source..."
                       error={errors.source}
-                      required={true}
+                      required
                     />
                   </div>
                 </div>
 
-                {/* Row 5: Preferred Countries (full width) */}
+                {/* Preferred Countries */}
                 <div className="space-y-1" ref={countryDropdownRef}>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Preferred Countries *
                   </label>
-
                   <div className="relative">
                     <Globe
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -1327,10 +1120,9 @@ export default function LeadModal({
                           : "Type to search countries..."
                       }
                       className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors
-            ${errors.preferred_country ? "border-red-400" : "border-slate-300 focus:border-blue-500"}
-            ${selectedCountries.length >= 5 ? "bg-slate-100 cursor-not-allowed opacity-60" : "bg-white"}`}
+                        ${errors.preferred_country ? "border-red-400" : "border-slate-300 focus:border-blue-500"}
+                        ${selectedCountries.length >= 5 ? "bg-slate-100 cursor-not-allowed opacity-60" : "bg-white"}`}
                     />
-
                     {countryDropdownOpen && countrySearchTerm && (
                       <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-auto py-1">
                         {filteredCountries.length === 0 ? (
@@ -1342,8 +1134,7 @@ export default function LeadModal({
                             <div
                               key={c.value}
                               onClick={() => handleAddCountry(c.value)}
-                              className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-100 transition-colors
-                    ${selectedCountries.includes(c.value) ? "opacity-40 pointer-events-none" : ""}`}
+                              className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-100 transition-colors ${selectedCountries.includes(c.value) ? "opacity-40 pointer-events-none" : ""}`}
                             >
                               {c.display}
                             </div>
@@ -1352,7 +1143,6 @@ export default function LeadModal({
                       </div>
                     )}
                   </div>
-
                   {selectedCountries.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-1.5">
                       {selectedCountries.map((country) => (
@@ -1370,7 +1160,6 @@ export default function LeadModal({
                       ))}
                     </div>
                   )}
-
                   {errors.preferred_country && (
                     <p className="text-red-500 text-[10px] ml-1">
                       {errors.preferred_country}
@@ -1378,7 +1167,7 @@ export default function LeadModal({
                   )}
                 </div>
 
-                {/* Row 6: Home Address (full width) */}
+                {/* Home Address */}
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Home Address
@@ -1399,28 +1188,29 @@ export default function LeadModal({
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Educational Information Tab */}
-            {activeTab === "educational" && (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {/* Row 1 — Recent Qualification & Year Awarded */}
+            {/* Educational Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
+                <GraduationCap size={18} className="text-blue-500" />{" "}
+                Educational Information
+              </h3>
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Row 5 — Last Degree (Study Level) */}
                   <div className="space-y-1">
                     <SearchableDropdown
                       name="study_level"
                       options={studyLevelOptions}
                       value={form.study_level}
                       onChange={handleCustomChange}
-                      label="Last Degree *"
+                      label="Last Degree "
                       placeholder="Search degree level..."
                       icon={<GraduationCap size={16} />}
                       error={errors.study_level}
-                      required={true}
+                      required
                     />
                   </div>
-
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Year Awarded
@@ -1443,8 +1233,6 @@ export default function LeadModal({
                     </div>
                   </div>
                 </div>
-
-                {/* Row 2 — Grades/CGPA & Board/University */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <InputField
@@ -1456,7 +1244,6 @@ export default function LeadModal({
                       placeholder="e.g., 3.5/4.0, 85%, A, etc."
                     />
                   </div>
-
                   <div className="space-y-1">
                     <InputField
                       labelName="Board / University"
@@ -1468,8 +1255,6 @@ export default function LeadModal({
                     />
                   </div>
                 </div>
-
-                {/* Row 3 — English Proficiency Test */}
                 <div className="space-y-1">
                   <SearchableDropdown
                     name="english_proficiency_test"
@@ -1481,49 +1266,69 @@ export default function LeadModal({
                     icon={<FileText size={16} />}
                   />
                 </div>
-
-                {/* Dynamic Score Fields for English Tests */}
-                {["ielts", "pte", "toefl", "duolingo"].includes(
-                  form.english_proficiency_test,
-                ) && (
-                  <EnglishTestScoreFields
-                    testType={form.english_proficiency_test}
-                    scores={testScores[form.english_proficiency_test] || {}}
-                    onScoreChange={(field, value) =>
-                      handleScoreChange(
-                        form.english_proficiency_test,
-                        field,
-                        value,
-                      )
-                    }
-                  />
-                )}
-
-                {form.english_proficiency_test === "cambridge" && (
-                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                    <p className="text-sm text-amber-700 flex items-center gap-2">
-                      <FileText size={16} />
-                      Cambridge tests require certificate upload. Please attach
-                      the score report in documents.
-                    </p>
-                  </div>
-                )}
+                {form.english_proficiency_test &&
+                  form.english_proficiency_test !== "none" && (
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Total Score
+                      </label>
+                      <input
+                        type="number"
+                        name="english_test_overall_score"
+                        value={form.english_test_overall_score}
+                        onChange={handleCustomChange}
+                        step="0.5"
+                        min="0"
+                        max={
+                          form.english_proficiency_test === "toefl"
+                            ? 120
+                            : form.english_proficiency_test === "duolingo"
+                              ? 160
+                              : form.english_proficiency_test === "ielts"
+                                ? 9
+                                : form.english_proficiency_test === "pte"
+                                  ? 90
+                                  : 999
+                        }
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="Enter total score"
+                      />
+                      <p className="text-[10px] text-slate-400">
+                        Range: 0–
+                        {form.english_proficiency_test === "toefl"
+                          ? "120"
+                          : form.english_proficiency_test === "duolingo"
+                            ? "160"
+                            : form.english_proficiency_test === "ielts"
+                              ? "9"
+                              : form.english_proficiency_test === "pte"
+                                ? "90"
+                                : ""}
+                      </p>
+                      {errors.english_test_overall_score && (
+                        <p className="text-red-500 text-[10px] ml-1">
+                          {errors.english_test_overall_score}
+                        </p>
+                      )}
+                    </div>
+                  )}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Footer */}
           <div className="p-6 border-t border-slate-100 bg-white sticky bottom-0">
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() =>
+                  navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads")
+                }
                 className="px-6 py-2 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
               >
-                Close
+                Cancel
               </button>
               <AddButton
-                label={editLead ? "Update Lead" : "Save Lead"}
+                label={mode === "add" ? "Save Lead" : "Update Lead"}
                 loading={saving}
                 handleClick={handleSubmit}
               />

@@ -1,6 +1,7 @@
 // Leads.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../../Content/Url";
 import "./Leads.css";
 import { FiUsers, FiTrendingUp, FiCheckCircle } from "react-icons/fi";
@@ -14,7 +15,6 @@ import {
   COUNTRIES,
   formatDate,
 } from "../../Components/LeadsComponents/LeadsConstants";
-import LeadModal from "../../Components/LeadsComponents/LeadModal";
 import LeadDrawer from "../../Components/LeadsComponents/LeadDrawer";
 import { KanbanColumn } from "../../Components/LeadsComponents/KanbanBoard";
 import LeadsTable from "../../Components/LeadsComponents/LeadsTable";
@@ -53,6 +53,7 @@ function StatCard({ label, value, icon, color }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function Leads() {
+  const navigate = useNavigate();
   const userRole = useSelector(selectRole);
   // ── State ──────────────────────────────────────────────────────────────────
   const [leads, setLeads] = useState([]);
@@ -78,8 +79,6 @@ export default function Leads() {
   });
   const [draggingLeadId, setDraggingLeadId] = useState(null);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editLead, setEditLead] = useState(null);
   const [drawerLead, setDrawerLead] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -115,12 +114,6 @@ export default function Leads() {
       setLoading(false);
     }
   }, []);
-
-  // New Handler for Assign Counsellor
-  const onAssignCounsellor = (lead) => {
-    setEditLead({ ...lead, _assignOnly: true });
-    setModalOpen(true);
-  };
 
   // ── Fetch Counsellors ──────────────────────────────────────────────────────
   const fetchCounsellors = useCallback(async () => {
@@ -195,101 +188,6 @@ export default function Leads() {
 
   // ── CRUD handlers ──────────────────────────────────────────────────────────
 
-  async function handleSave(form) {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Not logged in.");
-      return;
-    }
-    const payload = {
-      ...form,
-      counsellor_id: form.counsellor_id ? Number(form.counsellor_id) : null,
-    };
-    try {
-      const res = await fetch(
-        editLead
-          ? `${BASE_URL}/admin/leads/${editLead.id}`
-          : `${BASE_URL}/admin/leads`,
-        {
-          method: editLead ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-      if (!res.ok)
-        throw new Error(
-          (await res.json().catch(() => ({}))).message || `HTTP ${res.status}`,
-        );
-
-      toast.success(
-        editLead ? "Lead updated successfully" : "Lead added successfully",
-      );
-
-      if (!editLead) {
-        dispatch(
-          addNotification({
-            message: `New Lead added: ${form.name}`,
-          }),
-        );
-      }
-
-      if (editLead) {
-        dispatch(
-          addNotification({
-            message: `Lead Data Edited: ${form.name}`,
-          }),
-        );
-      }
-
-      setEditLead(null);
-      setModalOpen(false);
-      fetchLeads();
-    } catch (err) {
-      toast.error("Failed to save lead: " + err.message);
-    }
-  }
-
-  // In handleAssign, improve the success message
-  async function handleAssign(leadId, counsellor_id) {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    const isUnassigning =
-      !counsellor_id || counsellor_id === null || counsellor_id === "";
-
-    try {
-      const res = await fetch(`${BASE_URL}/admin/leads/${leadId}/assign`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          counsellor_id: isUnassigning ? null : Number(counsellor_id),
-        }),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message);
-      }
-
-      toast.success(
-        isUnassigning
-          ? "Counsellor unassigned successfully"
-          : "Counsellor assigned successfully",
-      );
-      fetchLeads();
-    } catch (error) {
-      console.error("Assignment error:", error);
-      toast.error("Failed to update counsellor assignment: " + error.message);
-      fetchLeads();
-    }
-  }
-
   async function handleStage(leadId, status, note = "") {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -311,7 +209,6 @@ export default function Leads() {
       });
       if (!res.ok) throw new Error();
     } catch {
-      // alert("Failed to update lead status");
       fetchLeads();
     }
   }
@@ -535,8 +432,6 @@ export default function Leads() {
 
       <div className="flex-shrink-0 backdrop-blur-sm px-6 py-4 relative z-[60]">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Title */}
-
           {/* Actions */}
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Search */}
@@ -822,12 +717,9 @@ export default function Leads() {
               Export
             </button>
 
-            {/* Add Lead */}
+            {/* Add Lead - Navigate to new lead page */}
             <button
-              onClick={() => {
-                setEditLead(null);
-                setModalOpen(true);
-              }}
+              onClick={() => navigate("/admin/leads/new")}
               className="flex items-center gap-1.5 h-9 px-4 bg-teal-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap"
             >
               <svg
@@ -868,15 +760,9 @@ export default function Leads() {
                 leads={leadsByStage[stage.key] || []}
                 onOpen={setDrawerLead}
                 onMenuAction={(action, l) => {
-                  if (action === "edit") {
-                    setEditLead(l);
-                    setModalOpen(true);
-                  }
+                  if (action === "edit") navigate(`/admin/leads/${l.id}/edit`);
                   if (action === "delete") setDeleteConfirm(l);
-                  if (action === "assign") {
-                    setEditLead({ ...l, _assignOnly: true });
-                    setModalOpen(true);
-                  }
+                  if (action === "assign") navigate(`/admin/leads/${l.id}/assign`);
                 }}
                 onDrop={async (leadId, newStatus) => {
                   setDraggingLeadId(null);
@@ -896,12 +782,9 @@ export default function Leads() {
           filteredLeads={filteredLeads}
           counsellors={counsellors}
           onRowClick={setDrawerLead}
-          onEdit={(l) => {
-            setEditLead(l);
-            setModalOpen(true);
-          }}
+          onEdit={(l) => navigate(`/admin/leads/${l.id}/edit`)}
           onDelete={setDeleteConfirm}
-          onAssignCounsellor={onAssignCounsellor}
+          onAssignCounsellor={(l) => navigate(`/admin/leads/${l.id}/assign`)}
           actionMenu={actionMenu}
           setActionMenu={setActionMenu}
           pagination={pagination}
@@ -923,22 +806,6 @@ export default function Leads() {
         message={`Are you sure you want to delete ${deleteConfirm?.name}? This action cannot be undone.`}
       />
 
-      <LeadModal
-        open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setEditLead(null);
-        }}
-        onSave={
-          editLead?._assignOnly
-            ? (form) => handleAssign(editLead.id, form.counsellor_id)
-            : handleSave
-        }
-        counsellors={counsellors}
-        editLead={editLead}
-        assignMode={editLead?._assignOnly === true}
-      />
-
       {/* Only render drawer when there is a lead */}
       {drawerLead && (
         <LeadDrawer
@@ -946,7 +813,6 @@ export default function Leads() {
           onClose={() => setDrawerLead(null)}
           onStage={handleStage}
           onAddNoteOnly={handleAddNoteOnly}
-          // Remove onEdit if not used in LeadDrawer
         />
       )}
     </div>

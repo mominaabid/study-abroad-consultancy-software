@@ -127,10 +127,15 @@ export default function CreateApplicationModal({
         target_country: "",
         deadline: "",
         status: "inquiry",
-        last_degree: "",
-        cgpa: "",
-        english_test: "",
-        test_score: "",
+        // last_degree: "",
+        // cgpa: "",
+        // english_test: "",
+        // test_score: "",
+
+        last_degree: selectedStudentForCreate.last_degree || "",
+        cgpa: selectedStudentForCreate.cgpa || "",
+        english_test: selectedStudentForCreate.english_test || "",
+        test_score: selectedStudentForCreate.test_score || "",
         counselor_notes: "",
       });
     } else {
@@ -227,6 +232,10 @@ export default function CreateApplicationModal({
           full_name: selectedStudent.name || "",
           email: selectedStudent.email || "",
           phone: selectedStudent.phone || "",
+          last_degree: selectedStudent.last_degree || "",
+          cgpa: selectedStudent.cgpa || "",
+          english_test: selectedStudent.english_test || "",
+          test_score: selectedStudent.test_score || "",
         }));
       } else {
         setFormData((prev) => ({ ...prev, [name]: value }));

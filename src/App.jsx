@@ -21,6 +21,7 @@ import SetupCounsellorPassword from "./Pages/Auth/SetupCounsellorPassword";
 import { AdminDashboard } from "./Pages/AdminPage/AdminDashboard";
 import AdminChatPage from "./Pages/AdminPage/AdminChat";
 import Leads from "./Pages/AdminPage/Leads";
+import LeadModal from "./Components/LeadsComponents/LeadModal";
 import { Counsellor } from "./Pages/AdminPage/Counsellor";
 import AdminPayments from "./Pages/AdminPage/AdminPayments";
 // import { AdminApplications } from "./Pages/AdminPage/AdminApplications"; // ✅ reuses CounsellorApplication
@@ -28,6 +29,7 @@ import { AdminProfile } from "./Pages/AdminPage/AdminProfile";
 
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
+
 import CounsellorChat from "./Pages/CounsellorPage/CounsellorChat";
 import CounsellorDocuments from "./Pages/CounsellorPage/CounsellorDocuments";
 import { CounsellorApplication } from "./Pages/CounsellorPage/CounsellorApplication";
@@ -56,13 +58,13 @@ const AblyInitializer = () => {
 
   useEffect(() => {
     if (!user?.id) return;
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) return;
 
-    console.log('🔌 Initializing Ably for user:', user.id, user.role);
+    console.log("🔌 Initializing Ably for user:", user.id, user.role);
     connectAbly(token)
-      .then(() => console.log('✅ Ably ready'))
-      .catch(err => console.error('❌ Ably init failed:', err));
+      .then(() => console.log("✅ Ably ready"))
+      .catch((err) => console.error("❌ Ably init failed:", err));
   }, [user?.id]); // re-runs if user changes (login/logout)
 
   return null; // renders nothing
@@ -76,7 +78,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-     <AblyInitializer />
+      <AblyInitializer />
       <ToastContainer
         position="top-center"
         autoClose={3000}
@@ -97,11 +99,27 @@ export default function App() {
           />
 
           {/* Admin routes */}
+          {/* <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
+            <Route path="/admin" element={<PrivateLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="leads" element={<Leads />} />
+              <Route path="counsellors" element={<Counsellor />} />
+              <Route path="chats" element={<AdminChatPage />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="applications" element={<CounsellorApplication />} />
+              <Route path="profile" element={<AdminProfile />} />
+            </Route>
+          </Route> */}
+
           <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
             <Route path="/admin" element={<PrivateLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="leads" element={<Leads />} />
+              <Route path="leads/new" element={<LeadModal />} />
+              <Route path="leads/:id/edit" element={<LeadModal />} />
+              <Route path="leads/:id/assign" element={<LeadModal />} />
               <Route path="counsellors" element={<Counsellor />} />
               <Route path="chats" element={<AdminChatPage />} />
               <Route path="payments" element={<AdminPayments />} />
@@ -116,6 +134,8 @@ export default function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<CounsellorDashboard />} />
               <Route path="leads" element={<CounsellorLeads />} />
+              <Route path="leads/new" element={<LeadModal />} />
+              <Route path="leads/:id/edit" element={<LeadModal />} />
               <Route path="chats" element={<CounsellorChat />} />
               <Route path="documents" element={<CounsellorDocuments />} />
               <Route path="applications" element={<CounsellorApplication />} />

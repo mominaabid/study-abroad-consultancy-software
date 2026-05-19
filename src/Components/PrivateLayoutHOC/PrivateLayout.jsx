@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { selectRole } from "../../redux/slices/authSlice";
 import { Sidebar } from "../Sidebar";
 import Header from "../Header";
-import FloatingWhatsApp  from "../../Components/WhatsAppWidget/FloatingWhatsApp";
+import FloatingWhatsApp from "../../Components/WhatsAppWidget/FloatingWhatsApp";
 import "./PrivateLayout.css";
 
 const modulesByRole = {
@@ -49,11 +49,22 @@ export default function PrivateLayout() {
   }
 
   const modules = modulesByRole[role] || [];
-
   const dashboardBasePath = `/${role}/dashboard`;
   const isDashboardPage =
     location.pathname === dashboardBasePath ||
     location.pathname.startsWith(`${dashboardBasePath}/`);
+
+  // ---- NEW: Hide tabs on Lead modal routes (Add/Edit/Assign) ----
+  // Remove the role prefix (e.g., /admin or /counsellor) to match clean paths
+  const pathWithoutRole = location.pathname.replace(
+    /^\/(admin|counsellor)/,
+    "",
+  );
+  const isLeadModalRoute = /\/leads\/(new|\d+\/edit|\d+\/assign)$/.test(
+    pathWithoutRole,
+  );
+  const hideTabs = isLeadModalRoute;
+  // -------------------------------------------------------------
 
   return (
     <div className="private-layout">
@@ -70,8 +81,8 @@ export default function PrivateLayout() {
       >
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
-        {/* ------ MODULE TABS – hidden on Dashboard pages ------ */}
-        {modules.length > 0 && !isDashboardPage && (
+        {/* ------ MODULE TABS – hidden on Dashboard pages AND Lead Modal pages ------ */}
+        {modules.length > 0 && !isDashboardPage && !hideTabs && (
           <div className="border-b border-gray-200 bg-white px-4 sm:px-6">
             <nav
               className="flex space-x-6 overflow-x-auto pt-4"
@@ -81,7 +92,7 @@ export default function PrivateLayout() {
                 <NavLink
                   key={module.path}
                   to={`/${role}/${module.path}`}
-                  end={module.path === "dashboard"} // dashboard exact match only
+                  end={module.path === "dashboard"}
                   className={({ isActive }) =>
                     `whitespace-nowrap border-b-2 px-1 pb-3 text-sm font-medium transition-all duration-200 ${
                       isActive
