@@ -109,19 +109,28 @@ function SearchableDropdown({
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-sm font-medium text-slate-700 mb-1">
+      <label className="text-gray-600 text-xs font-semibold mb-1">
         {label} {required && "*"}
       </label>
       <div
-        className={`flex items-center gap-2 w-full px-4 py-2.5 border rounded-xl bg-white text-sm cursor-text transition-all
-          ${error ? "border-red-400 ring-1 ring-red-200" : open ? "border-blue-500 ring-1 ring-blue-100" : "border-slate-300 hover:border-slate-400"}`}
+        className={`relative flex items-center w-full p-2.5 border border-gray-200 rounded-lg shadow bg-white text-gray-500 transition-all
+    ${
+      error
+        ? "border-red-400 focus-within:ring-1 focus-within:ring-red-200"
+        : "focus-within:ring-1 focus-within:ring-[#009E99]"
+    }`}
         onClick={() => setOpen(true)}
       >
-        {icon && <span className="text-slate-400 shrink-0">{icon}</span>}
-        <Search size={15} className="text-slate-400 shrink-0" />
+        {icon && (
+          <div className="flex items-center text-[#009E99] shrink-0 mr-2">
+            {icon}
+          </div>
+        )}
+
+        <Search size={15} className="text-slate-400 shrink-0 mr-2" />
         <input
           type="text"
-          className="flex-1 outline-none bg-transparent text-slate-700 placeholder:text-slate-400"
+          className="flex-1 outline-none bg-transparent text-gray-500 placeholder:text-gray-400 text-sm"
           placeholder={selectedOption ? selectedOption.label : placeholder}
           value={open ? query : selectedOption ? selectedOption.label : ""}
           onChange={(e) => {
@@ -1045,23 +1054,20 @@ export default function LeadModal() {
                       </p>
                     )}
                   </div>
+
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Date of Birth
-                    </label>
-                    <div className="relative">
-                      <Calendar
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                        size={16}
-                      />
-                      <input
-                        type="date"
-                        name="dob"
-                        value={form.dob}
-                        onChange={handleCustomChange}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors ${errors.dob ? "border-red-400" : "border-slate-300"}`}
-                      />
-                    </div>
+                    <InputField
+                      labelName="Date of Birth"
+                      type="date"
+                      name="dob"
+                      value={form.dob}
+                      handlerChange={handleCustomChange}
+                      icon={<Calendar size={16} />}
+                      className={
+                        errors.dob ? "border-red-400 focus:ring-red-200" : ""
+                      }
+                    />
+
                     {errors.dob && (
                       <p className="text-red-500 text-[10px] ml-1">
                         {errors.dob}
@@ -1097,7 +1103,7 @@ export default function LeadModal() {
 
                 {/* Preferred Countries */}
                 <div className="space-y-1" ref={countryDropdownRef}>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
                     Preferred Countries *
                   </label>
                   <div className="relative">
@@ -1169,7 +1175,7 @@ export default function LeadModal() {
 
                 {/* Home Address */}
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 ">
                     Home Address
                   </label>
                   <div className="relative">
@@ -1212,7 +1218,7 @@ export default function LeadModal() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-slate-700">
                       Year Awarded
                     </label>
                     <div className="relative">
@@ -1269,7 +1275,7 @@ export default function LeadModal() {
                 {form.english_proficiency_test &&
                   form.english_proficiency_test !== "none" && (
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-medium text-slate-700">
                         Total Score
                       </label>
                       <input

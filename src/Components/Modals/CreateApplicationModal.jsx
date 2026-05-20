@@ -346,7 +346,7 @@ export default function CreateApplicationModal({
                   onChange={handleFieldChange}
                   name="target_country"
                   placeholder="Select target country"
-                  required={false}
+                  required={true}
                 />
 
                 <UniversitySelect
@@ -367,7 +367,7 @@ export default function CreateApplicationModal({
                   required={true}
                 />
 
-                <FormField label="Deadline">
+                <FormField label="Deadline *">
                   <input
                     type="date"
                     name="deadline"
@@ -378,9 +378,7 @@ export default function CreateApplicationModal({
                 </FormField>
               </div>
 
-              {/* Status Selection - Searchable */}
-              {/* Status Selection - Searchable */}
-              <FormField label="Initial Status">
+              <FormField label="Initial Status *">
                 <SearchableSelect
                   name="status"
                   value={formData.status}
@@ -414,7 +412,7 @@ export default function CreateApplicationModal({
             {/* Student Details Section */}
             <InfoSection title="Student Details">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Full Name">
+                <FormField label="Full Name *">
                   <input
                     type="text"
                     placeholder="Full Name"
@@ -425,7 +423,7 @@ export default function CreateApplicationModal({
                   />
                 </FormField>
 
-                <FormField label="Email" error={errors.email}>
+                <FormField label="Email *" error={errors.email}>
                   <input
                     type="email"
                     placeholder="Email"
@@ -436,7 +434,7 @@ export default function CreateApplicationModal({
                   />
                 </FormField>
 
-                <FormField label="Phone Number">
+                <FormField label="Phone Number *">
                   <PhoneInputWithCountry
                     key={formData.phone}
                     value={formData.phone}
@@ -447,7 +445,7 @@ export default function CreateApplicationModal({
                   />
                 </FormField>
 
-                <FormField label="Last Degree">
+                <FormField label="Last Degree *">
                   <input
                     type="text"
                     placeholder="Last Degree"
@@ -458,7 +456,7 @@ export default function CreateApplicationModal({
                   />
                 </FormField>
 
-                <FormField label="CGPA (0-10)" error={errors.cgpa}>
+                <FormField label="CGPA (0-10) *" error={errors.cgpa}>
                   <input
                     type="text"
                     placeholder="CGPA"
@@ -469,7 +467,7 @@ export default function CreateApplicationModal({
                   />
                 </FormField>
 
-                <FormField label="English Test">
+                <FormField label="English Test *">
                   <input
                     type="text"
                     placeholder="IELTS / TOEFL"
@@ -480,7 +478,7 @@ export default function CreateApplicationModal({
                   />
                 </FormField>
 
-                <FormField label="Test Score" error={errors.test_score}>
+                <FormField label="Test Score *" error={errors.test_score}>
                   <input
                     type="text"
                     placeholder="Test Score"
@@ -495,7 +493,7 @@ export default function CreateApplicationModal({
 
             {/* Additional Notes */}
             <InfoSection title="Additional Information">
-              <FormField label="Counselor Notes">
+              <FormField label="Notes *">
                 <textarea
                   rows="3"
                   name="counselor_notes"
