@@ -86,7 +86,7 @@ export const Header = () => {
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0D8ABC&color=fff`;
 
   return (
-    <nav className="bg-white shadow-sm w-full sticky top-0 z-[9999]">
+    <nav className="bg-white shadow-sm w-full sticky top-0 z-[100]">
       <div className="px-4 h-16 flex items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center gap-4">
