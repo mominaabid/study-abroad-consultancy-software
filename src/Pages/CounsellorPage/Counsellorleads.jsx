@@ -553,15 +553,38 @@ export default function CounsellorLeads() {
             style={{ minWidth: "max-content" }}
           >
             {STAGES.map((stage) => (
+              // <KanbanColumn
+              //   key={stage.key}
+              //   stage={stage}
+              //   leads={leadsByStage[stage.key] || []}
+              //   onOpen={setDrawerLead}
+              //   onMenuAction={(action, l) => {
+              //     if (action === "edit")
+              //       navigate(`/counsellor/leads/${l.id}/edit`);
+              //     if (action === "delete") handleDelete(l);
+              //   }}
+              //   onDrop={async (leadId, newStatus) => {
+              //     setDraggingLeadId(null);
+              //     await handleStage(leadId, newStatus);
+              //   }}
+              //   draggingLeadId={draggingLeadId}
+              //   userRole="counsellor"
+              // />
+
               <KanbanColumn
                 key={stage.key}
                 stage={stage}
+                stages={STAGES}
                 leads={leadsByStage[stage.key] || []}
                 onOpen={setDrawerLead}
                 onMenuAction={(action, l) => {
-                  if (action === "edit")
+                  if (action === "edit") {
                     navigate(`/counsellor/leads/${l.id}/edit`);
-                  if (action === "delete") handleDelete(l);
+                  }
+
+                  if (action === "delete") {
+                    handleDelete(l);
+                  }
                 }}
                 onDrop={async (leadId, newStatus) => {
                   setDraggingLeadId(null);

@@ -1,9 +1,9 @@
+// EditApplicationModal.jsx
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { BASE_URL } from "../../Content/Url";
 import {
-  Edit,
   User,
   Mail,
   Phone,
@@ -15,6 +15,9 @@ import {
   FileText,
   X,
   RefreshCw,
+  GraduationCap,
+  School,
+  BarChart,
 } from "lucide-react";
 import PhoneInputWithCountry from "../../Components/InputFields/PhoneInputWithCountry";
 import UniversitySelect from "../../Components/InputFields/UniversitySelect";
@@ -24,6 +27,8 @@ import coursesList from "../../constants/courses.json";
 import CountrySelect from "../../Components/InputFields/CountrySelect";
 import { Title } from "../Title";
 import SearchableSelect from "../SearchableSelect";
+import { ViewIcon } from "../CustomButtons/ViewIcon";
+
 const getToken = () => localStorage.getItem("token") || "";
 
 const authAxios = {
@@ -103,14 +108,44 @@ export default function EditApplicationModal({
     full_name: "",
     email: "",
     phone: "",
-    last_degree: "",
-    cgpa: "",
-    english_test: "",
-    test_score: "",
+    study_level: "",
+    grades_cgpa: "",
+    english_proficiency_test: "",
+    english_test_overall_score: "",
+    year_awarded: "",
+    board_university: "",
     counselor_notes: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [educationEntries, setEducationEntries] = useState([]);
+  const [loadingEducation, setLoadingEducation] = useState(false);
+
+  const fetchLeadEducation = async (leadId) => {
+    if (!leadId) {
+      setEducationEntries([]);
+      return;
+    }
+    setLoadingEducation(true);
+    try {
+      const token = getToken();
+      const url = `${BASE_URL}/counsellor/leads/${leadId}`;
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const lead = res.data;
+      if (lead.education && Array.isArray(lead.education)) {
+        setEducationEntries(lead.education);
+      } else {
+        setEducationEntries([]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch lead education:", err);
+      toast.error("Could not load student's education history");
+    } finally {
+      setLoadingEducation(false);
+    }
+  };
 
   useEffect(() => {
     if (application) {
@@ -126,12 +161,18 @@ export default function EditApplicationModal({
         full_name: application.full_name || "",
         email: application.email || "",
         phone: application.phone || "",
-        last_degree: application.last_degree || "",
-        cgpa: application.cgpa || "",
-        english_test: application.english_test || "",
-        test_score: application.test_score || "",
+        study_level: "",
+        grades_cgpa: "",
+        english_proficiency_test: application.english_proficiency_test || "",
+        english_test_overall_score:
+          application.english_test_overall_score || "",
+        year_awarded: "",
+        board_university: "",
         counselor_notes: application.counselor_notes || "",
       });
+      fetchLeadEducation(application.user_id || application.student_id);
+    } else {
+      setEducationEntries([]);
     }
     setErrors({});
   }, [application, isOpen]);
@@ -147,27 +188,40 @@ export default function EditApplicationModal({
       newErrors.email = "Invalid email format";
     }
 
-    if (formData.cgpa && formData.cgpa.trim() !== "") {
-      const cgpaNum = parseFloat(formData.cgpa);
-      if (isNaN(cgpaNum) || cgpaNum < 0 || cgpaNum > 10) {
-        newErrors.cgpa = "CGPA must be a number between 0 and 10";
+    if (formData.grades_cgpa && formData.grades_cgpa.trim() !== "") {
+      const grades_cgpaNum = parseFloat(formData.grades_cgpa);
+      if (isNaN(grades_cgpaNum) || grades_cgpaNum < 0 || grades_cgpaNum > 10) {
+        newErrors.grades_cgpa = "CGPA must be a number between 0 and 10";
       } else if (
-        formData.cgpa.includes(".") &&
-        formData.cgpa.split(".")[1]?.length > 2
+        formData.grades_cgpa.includes(".") &&
+        formData.grades_cgpa.split(".")[1]?.length > 2
       ) {
-        newErrors.cgpa = "CGPA can have at most 2 decimal places";
+        newErrors.grades_cgpa = "CGPA can have at most 2 decimal places";
       }
     }
 
-    if (formData.test_score && formData.test_score.trim() !== "") {
-      const scoreNum = parseFloat(formData.test_score);
+    if (
+      formData.english_test_overall_score &&
+      formData.english_test_overall_score.trim() !== ""
+    ) {
+      const scoreNum = parseFloat(formData.english_test_overall_score);
       if (isNaN(scoreNum) || scoreNum < 0) {
-        newErrors.test_score = "Test score must be a positive number";
+        newErrors.english_test_overall_score =
+          "Test score must be a positive number";
       } else if (
-        formData.test_score.includes(".") &&
-        formData.test_score.split(".")[1]?.length > 1
+        formData.english_test_overall_score.includes(".") &&
+        formData.english_test_overall_score.split(".")[1]?.length > 1
       ) {
-        newErrors.test_score = "Score can have at most 1 decimal place";
+        newErrors.english_test_overall_score =
+          "Score can have at most 1 decimal place";
+      }
+    }
+
+    if (formData.year_awarded && formData.year_awarded.trim() !== "") {
+      const yearNum = parseInt(formData.year_awarded, 10);
+      const currentYear = new Date().getFullYear();
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear + 5) {
+        newErrors.year_awarded = `Year must be between 1900 and ${currentYear + 5}`;
       }
     }
 
@@ -186,16 +240,20 @@ export default function EditApplicationModal({
       (name === "target_university" ||
         name === "course" ||
         name === "target_country" ||
-        name === "full_name") &&
+        name === "full_name" ||
+        name === "board_university") &&
       /\d/.test(value)
     )
       return;
 
-    if (name === "cgpa") {
+    if (name === "grades_cgpa") {
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
-    if (name === "test_score") {
+    if (name === "english_test_overall_score") {
       if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
+    }
+    if (name === "year_awarded") {
+      if (value !== "" && !/^\d{0,4}$/.test(value)) return;
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -219,6 +277,12 @@ export default function EditApplicationModal({
 
     setLoading(true);
     try {
+      // Convert empty strings to null for integer/numeric DB columns
+      const yearAwardedValue =
+        formData.year_awarded === "" ? null : formData.year_awarded;
+      const gradesCgpaValue =
+        formData.grades_cgpa === "" ? null : formData.grades_cgpa;
+
       const payload = {
         user_id: parseInt(formData.user_id),
         target_university: formData.target_university,
@@ -229,10 +293,12 @@ export default function EditApplicationModal({
         full_name: formData.full_name,
         email: formData.email,
         phone: formData.phone,
-        last_degree: formData.last_degree,
-        cgpa: formData.cgpa,
-        english_test: formData.english_test,
-        test_score: formData.test_score,
+        study_level: formData.study_level,
+        grades_cgpa: gradesCgpaValue,
+        english_proficiency_test: formData.english_proficiency_test,
+        english_test_overall_score: formData.english_test_overall_score,
+        year_awarded: yearAwardedValue,
+        board_university: formData.board_university,
         counselor_notes: formData.counselor_notes,
       };
 
@@ -256,6 +322,24 @@ export default function EditApplicationModal({
     }
   };
 
+  const handleAutofillFromEducation = (edu) => {
+    setFormData((prev) => ({
+      ...prev,
+      study_level: edu.degree || "",
+      grades_cgpa: edu.grades_cgpa || "",
+      year_awarded: edu.year_awarded || "",
+      board_university: edu.board_university || "",
+    }));
+    setErrors((prev) => {
+      const newErrs = { ...prev };
+      delete newErrs.study_level;
+      delete newErrs.grades_cgpa;
+      delete newErrs.year_awarded;
+      delete newErrs.board_university;
+      return newErrs;
+    });
+  };
+
   if (!isOpen || !application) return null;
 
   return (
@@ -264,13 +348,10 @@ export default function EditApplicationModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
         <Title setModal={onClose}>Edit Application</Title>
 
-        {/* Scrollable Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
-            {/* Basic Information Section */}
             <InfoSection title="Basic Information">
               <FormField label="Student" required error={errors.user_id}>
                 <select
@@ -339,29 +420,13 @@ export default function EditApplicationModal({
                   options={STATUS_OPTIONS.map((opt) => ({
                     value: opt.value,
                     label: opt.label,
-                    icon:
-                      opt.value === "inquiry"
-                        ? ""
-                        : opt.value === "evaluation"
-                          ? ""
-                          : opt.value === "application submitted"
-                            ? ""
-                            : opt.value === "offer letter received"
-                              ? ""
-                              : opt.value === "offer letter not received"
-                                ? ""
-                                : opt.value === "visa filed"
-                                  ? ""
-                                  : opt.value === "approved"
-                                    ? ""
-                                    : "",
+                    icon: "",
                   }))}
                   placeholder="Search or select status..."
                 />
               </FormField>
             </InfoSection>
 
-            {/* Student Details Section */}
             <InfoSection title="Student Details">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Full Name">
@@ -397,53 +462,154 @@ export default function EditApplicationModal({
                   />
                 </FormField>
 
-                <FormField label="Last Degree">
-                  <input
-                    type="text"
-                    placeholder="Last Degree"
-                    name="last_degree"
-                    value={formData.last_degree}
-                    onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
-                  />
-                </FormField>
-
-                <FormField label="CGPA (0-10)" error={errors.cgpa}>
-                  <input
-                    type="text"
-                    placeholder="CGPA"
-                    name="cgpa"
-                    value={formData.cgpa}
-                    onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
-                  />
-                </FormField>
-
                 <FormField label="English Test">
                   <input
                     type="text"
                     placeholder="IELTS / TOEFL"
-                    name="english_test"
-                    value={formData.english_test}
+                    name="english_proficiency_test"
+                    value={formData.english_proficiency_test}
                     onChange={handleFieldChange}
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
 
-                <FormField label="Test Score" error={errors.test_score}>
+                <FormField
+                  label="Test Score"
+                  error={errors.english_test_overall_score}
+                >
                   <input
                     type="text"
                     placeholder="Test Score"
-                    name="test_score"
-                    value={formData.test_score}
+                    name="english_test_overall_score"
+                    value={formData.english_test_overall_score}
                     onChange={handleFieldChange}
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
+
+                {/* READ-ONLY EDUCATION FIELDS START */}
+                <FormField label="Degree">
+                  <input
+                    type="text"
+                    placeholder="Degree"
+                    name="study_level"
+                    value={formData.study_level}
+                    onChange={handleFieldChange}
+                    readOnly
+                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                  />
+                </FormField>
+
+                <FormField label="Grades" error={errors.grades_cgpa}>
+                  <input
+                    type="text"
+                    placeholder="CGPA"
+                    name="grades_cgpa"
+                    value={formData.grades_cgpa}
+                    onChange={handleFieldChange}
+                    readOnly
+                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                  />
+                </FormField>
+
+                <FormField label="Year Awarded" error={errors.year_awarded}>
+                  <input
+                    type="text"
+                    placeholder="e.g., 2022"
+                    name="year_awarded"
+                    value={formData.year_awarded}
+                    onChange={handleFieldChange}
+                    readOnly
+                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                  />
+                </FormField>
+
+                <FormField
+                  label="Board / University"
+                  error={errors.board_university}
+                >
+                  <input
+                    type="text"
+                    placeholder="e.g., University of London"
+                    name="board_university"
+                    value={formData.board_university}
+                    onChange={handleFieldChange}
+                    readOnly
+                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                  />
+                </FormField>
+                {/* READ-ONLY EDUCATION FIELDS END */}
               </div>
             </InfoSection>
 
-            {/* Additional Notes */}
+            <InfoSection title="Educational History (from Lead)">
+              {loadingEducation ? (
+                <div className="flex justify-center py-6">
+                  <RefreshCw
+                    size={24}
+                    className="animate-spin text-amber-500"
+                  />
+                </div>
+              ) : educationEntries.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                  <GraduationCap
+                    size={32}
+                    className="mx-auto mb-2 opacity-50"
+                  />
+                  <p>No education records found for this student.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {educationEntries.map((edu) => (
+                    <div
+                      key={edu.id}
+                      className="group relative bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
+                    >
+                      <div
+                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Copy to student details"
+                      >
+                        <ViewIcon
+                          handleView={() => handleAutofillFromEducation(edu)}
+                        />
+                      </div>
+
+                      <div className="flex items-start gap-4">
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg">
+                          {edu.degree?.charAt(0)?.toUpperCase() || "D"}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-slate-800 text-base mb-1">
+                            {edu.degree}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
+                            <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full">
+                              <Calendar size={12} /> {edu.year_awarded}
+                            </span>
+                            {edu.grades_cgpa && (
+                              <span className="inline-flex items-center gap-1">
+                                <BarChart size={12} /> {edu.grades_cgpa}
+                              </span>
+                            )}
+                            {edu.board_university && (
+                              <span className="inline-flex items-center gap-1">
+                                <School size={12} /> {edu.board_university}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-slate-400 mt-2">
+                * Educational information is fetched directly from the student's
+                lead record. Click the edit icon on any card to copy its details
+                into the student fields above.
+              </p>
+            </InfoSection>
+
             <InfoSection title="Additional Information">
               <FormField label="Counselor Notes">
                 <textarea
@@ -458,7 +624,6 @@ export default function EditApplicationModal({
             </InfoSection>
           </div>
 
-          {/* Footer */}
           <div className="p-6 border-t border-slate-100 bg-white flex gap-3">
             <button
               type="button"

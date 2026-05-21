@@ -430,7 +430,7 @@ export default function Leads() {
         </div>
       )}
 
-      <div className="flex-shrink-0 backdrop-blur-sm px-6 py-4 relative z-[60]">
+      <div className="flex-shrink-0 px-6 py-4 relative z-[60]">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           {/* Actions */}
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -451,7 +451,7 @@ export default function Leads() {
                 placeholder="Search leads..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-96"
+                className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-full"
               />
             </div>
 
@@ -754,15 +754,40 @@ export default function Leads() {
             style={{ minWidth: "max-content" }}
           >
             {STAGES.map((stage) => (
+              // <KanbanColumn
+              //   key={stage.key}
+              //   stage={stage}
+              //   leads={leadsByStage[stage.key] || []}
+              //   onOpen={setDrawerLead}
+              //   onMenuAction={(action, l) => {
+              //     if (action === "edit") navigate(`/admin/leads/${l.id}/edit`);
+              //     if (action === "delete") setDeleteConfirm(l);
+              //     if (action === "assign") navigate(`/admin/leads/${l.id}/assign`);
+              //   }}
+              //   onDrop={async (leadId, newStatus) => {
+              //     setDraggingLeadId(null);
+              //     await handleStage(leadId, newStatus);
+              //   }}
+              //   draggingLeadId={draggingLeadId}
+              //   userRole={userRole}
+              // />
+
               <KanbanColumn
                 key={stage.key}
                 stage={stage}
+                stages={STAGES}
                 leads={leadsByStage[stage.key] || []}
                 onOpen={setDrawerLead}
                 onMenuAction={(action, l) => {
                   if (action === "edit") navigate(`/admin/leads/${l.id}/edit`);
-                  if (action === "delete") setDeleteConfirm(l);
-                  if (action === "assign") navigate(`/admin/leads/${l.id}/assign`);
+
+                  if (action === "delete") {
+                    setDeleteConfirm(l);
+                  }
+
+                  if (action === "assign") {
+                    navigate(`/admin/leads/${l.id}/assign`);
+                  }
                 }}
                 onDrop={async (leadId, newStatus) => {
                   setDraggingLeadId(null);

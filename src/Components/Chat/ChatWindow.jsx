@@ -220,11 +220,6 @@ export default function ChatWindow({ conversation }) {
         </div>
         <div>
           <p className="font-semibold text-sm">{otherName}</p>
-          <p
-            className={`text-xs ${isOtherOnline ? "text-green-500" : "text-gray-400"}`}
-          >
-            {isOtherOnline ? "Online" : "Offline"}
-          </p>
         </div>
       </div>
 

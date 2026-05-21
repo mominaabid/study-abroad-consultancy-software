@@ -297,32 +297,32 @@ export const ViewApplicationModal = ({ application, onClose }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <InfoRow
                     label="Last Degree"
-                    value={application.last_degree}
+                    value={application.study_level}
                     icon={BookOpen}
                   />
                   <InfoRow
                     label="Institute"
-                    value={application.institute}
+                    value={application.board_university}
                     icon={Home}
                   />
                   <InfoRow
                     label="CGPA/Percentage"
-                    value={application.cgpa}
+                    value={application.grades_cgpa}
                     icon={Award}
                   />
                   <InfoRow
                     label="Passing Year"
-                    value={application.passing_year}
+                    value={application.year_awarded}
                     icon={Calendar}
                   />
                   <InfoRow
                     label="English Test"
-                    value={application.english_test}
+                    value={application.english_proficiency_test}
                     icon={FileText}
                   />
                   <InfoRow
                     label="Test Score"
-                    value={application.test_score}
+                    value={application.english_test_overall_score}
                     icon={BarChart}
                   />
                 </div>

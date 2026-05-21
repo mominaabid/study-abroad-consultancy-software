@@ -27,12 +27,12 @@ export const EditApplicationModal = ({
     passport_number: "",
     nationality: "",
     profile_picture: null,
-    last_degree: "",
-    institute: "",
-    cgpa: "",
-    passing_year: "",
-    english_test: "IELTS",
-    test_score: "",
+    study_level: "",
+    board_university: "",
+    grades_cgpa: "",
+    year_awarded: "",
+    english_proficiency_test: "IELTS",
+    english_test_overall_score: "",
     target_country: "",
     target_university: "",
     course: "",
@@ -53,12 +53,12 @@ export const EditApplicationModal = ({
         passport_number: application.passport_number || "",
         nationality: application.nationality || "",
         profile_picture: null,
-        last_degree: application.last_degree || "",
-        institute: application.institute || "",
-        cgpa: application.cgpa || "",
-        passing_year: application.passing_year || "",
-        english_test: application.english_test || "IELTS",
-        test_score: application.test_score || "",
+        study_level: application.study_level || "",
+        board_university: application.board_university || "",
+        grades_cgpa: application.grades_cgpa || "",
+        year_awarded: application.year_awarded || "",
+        english_proficiency_test: application.english_proficiency_test || "IELTS",
+        english_test_overall_score: application.english_test_overall_score || "",
         target_country: application.target_country || "",
         target_university: application.target_university || "",
         course: application.course || "",
@@ -206,8 +206,8 @@ export const EditApplicationModal = ({
       case "target_country":
       case "target_university":
       case "course":
-      case "last_degree":
-      case "institute":
+      case "study_level":
+      case "board_university":
       case "gender":
         return validateTextOnlyField(stringValue, 3, 50);
 
@@ -220,10 +220,10 @@ export const EditApplicationModal = ({
       case "passport_number":
         return validatePassport(stringValue);
 
-      case "cgpa":
+      case "grades_cgpa":
         return validateCgpa(stringValue);
 
-      case "test_score":
+      case "english_test_overall_score":
         return validateTestScore(stringValue);
 
       case "counselor_notes": {
@@ -245,7 +245,7 @@ export const EditApplicationModal = ({
       case "age":
         return validateAge(stringValue);
 
-      case "passing_year": {
+      case "year_awarded": {
         if (!stringValue) return null;
         if (hasLeadingSpaces(stringValue)) return "Cannot start with spaces";
         if (containsLetters(stringValue)) return "Cannot contain alphabets";
@@ -285,10 +285,10 @@ export const EditApplicationModal = ({
       "cnic",
       "nationality",
       "gender",
-      "last_degree",
-      "institute",
-      "cgpa",
-      "passing_year",
+      "study_level",
+      "board_university",
+      "grades_cgpa",
+      "year_awarded",
       "target_country",
       "target_university",
       "course",
@@ -343,19 +343,19 @@ export const EditApplicationModal = ({
         break;
       }
 
-      case "cgpa": {
+      case "grades_cgpa": {
         if (!/^[\d.]*$/.test(value)) return;
         if (value.length > 4) return;
         break;
       }
 
-      case "test_score": {
+      case "english_test_overall_score": {
         if (!/^[\d.]*$/.test(value)) return;
         if (value.length > 4) return;
         break;
       }
 
-      case "passing_year": {
+      case "year_awarded": {
         const yearNums = value.replace(/\D/g, "");
         if (yearNums.length > 4) return;
         formattedValue = yearNums;
@@ -374,8 +374,8 @@ export const EditApplicationModal = ({
       case "target_country":
       case "target_university":
       case "course":
-      case "last_degree":
-      case "institute": {
+      case "study_level":
+      case "board_university": {
         if (!/^[a-zA-Z\s]*$/.test(value)) return;
         if (value.length > 50) return;
         break;
@@ -483,10 +483,10 @@ export const EditApplicationModal = ({
       "cnic",
       "nationality",
       "gender",
-      "last_degree",
-      "institute",
-      "cgpa",
-      "passing_year",
+      "study_level",
+      "board_university",
+      "grades_cgpa",
+      "year_awarded",
       "target_country",
       "target_university",
       "course",
@@ -497,7 +497,7 @@ export const EditApplicationModal = ({
     fieldsToValidate.forEach((field) => {
       if (field === "phone" && !formData.phone) return;
       if (field === "passport_number" && !formData.passport_number) return;
-      if (field === "test_score" && !formData.test_score) return;
+      if (field === "english_test_overall_score" && !formData.english_test_overall_score) return;
 
       const error = validateField(field, formData[field]);
       if (error) newErrors[field] = error;
@@ -760,22 +760,22 @@ export const EditApplicationModal = ({
           {activeTab === "academic" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {renderInput(
-                "last_degree",
+                "study_level",
                 "text",
                 "Last Completed Degree",
                 true,
               )}
-              {renderInput("institute", "text", "Institute/University", true)}
-              {renderInput("cgpa", "text", "CGPA / Percentage", true)}
-              {renderInput("passing_year", "number", "Passing Year", true)}
+              {renderInput("board_university", "text", "Institute/University", true)}
+              {renderInput("grades_cgpa", "text", "CGPA / Percentage", true)}
+              {renderInput("year_awarded", "number", "Passing Year", true)}
 
               <div className="space-y-1">
                 <label className="text-sm font-semibold text-gray-600">
                   English Proficiency Test
                 </label>
                 <select
-                  name="english_test"
-                  value={formData.english_test}
+                  name="english_proficiency_test"
+                  value={formData.english_proficiency_test}
                   onChange={handleChange}
                   className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
                 >
@@ -786,7 +786,7 @@ export const EditApplicationModal = ({
                 </select>
               </div>
 
-              {renderInput("test_score", "text", "Test Score (Overall)", false)}
+              {renderInput("english_test_overall_score", "text", "Test Score (Overall)", false)}
             </div>
           )}
 

@@ -59,6 +59,16 @@ export const Header = () => {
     }
   };
 
+  // New: navigate to profile page based on role
+  const goToProfile = () => {
+    setDropdownOpen(false);
+    if (!user) return;
+    if (user.role === "admin") navigate("/admin/profile");
+    else if (user.role === "counsellor") navigate("/counsellor/profile");
+    else if (user.role === "student") navigate("/student/profile");
+    else navigate("/profile"); // fallback
+  };
+
   const getTitle = () => {
     if (location.pathname.includes("admin-dashboard")) return "Admin Dashboard";
     if (location.pathname.includes("leads")) return "Leads Management";
@@ -76,17 +86,10 @@ export const Header = () => {
   const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0D8ABC&color=fff`;
 
   return (
-    <nav className="bg-white shadow-sm w-full sticky top-0 z-30">
+    <nav className="bg-white shadow-sm w-full sticky top-0 z-[9999]">
       <div className="px-4 h-16 flex items-center justify-between">
         {/* Left Section */}
         <div className="flex items-center gap-4">
-          {/* <button
-            onClick={toggleSideBar}
-            className="p-2 hover:bg-gray-100 rounded-lg md:hidden text-gray-600"
-          >
-            <Menu size={24} />
-          </button> */}
-
           <span className="text-sm sm:text-base md:text-xl font-bold text-gray-800 whitespace-nowrap ml-2">
             {getTitle()}
           </span>
@@ -94,7 +97,7 @@ export const Header = () => {
 
         {/* Right Section */}
         <div className="flex items-center space-x-3 sm:space-x-5">
-          {/* ── Notification Bell Dropdown ── */}
+          {/* Notification Bell Dropdown */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={handleNotifClick}
@@ -154,10 +157,6 @@ export const Header = () => {
                     ))
                   )}
                 </div>
-
-                {notifications.length > 0 && (
-                  <div className="p-2 border-t border-gray-50 bg-gray-50/30"></div>
-                )}
               </div>
             )}
           </div>
@@ -192,6 +191,15 @@ export const Header = () => {
                     {user?.role || "User"}
                   </span>
                 </div>
+
+                {/* PROFILE ITEM – directly under the role */}
+                <button
+                  onClick={goToProfile}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                >
+                  <UserIcon size={18} />
+                  Profile
+                </button>
 
                 <div className="border-t border-gray-50 mt-1">
                   <button

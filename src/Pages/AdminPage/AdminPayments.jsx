@@ -1,4 +1,3 @@
-// src/components/admin/AdminPayments.jsx
 import { useState, useEffect, useCallback } from "react";
 import { BASE_URL } from "../../Content/Url";
 import {
@@ -867,15 +866,21 @@ function StudentDetailsPanel({
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <button
-            onClick={() => onSetFees(student)}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700"
-          >
-            Set Fees
-          </button>
+          {/* Show only if fees are NOT set */}
+          {totalFeesNet <= 0 && (
+            <button
+              onClick={() => onSetFees(student)}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700"
+            >
+              Set Fees
+            </button>
+          )}
+
           <button
             onClick={() => onAddPayment(student)}
-            className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700"
+            className={`px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 ${
+              totalFeesNet <= 0 ? "flex-1" : "w-full"
+            }`}
           >
             Add Payment
           </button>
@@ -1009,10 +1014,40 @@ export default function AdminPayments() {
     fetchPendingVerifications();
   }, [fetchOfferLetterStudents, fetchAllPayments, fetchPendingVerifications]);
 
-  const handleSuccess = () => {
-    fetchOfferLetterStudents();
-    fetchAllPayments();
-    fetchPendingVerifications();
+  // const handleSuccess = () => {
+  //   fetchOfferLetterStudents();
+  //   fetchAllPayments();
+  //   fetchPendingVerifications();
+  // };
+
+  const handleSuccess = async () => {
+    await fetchOfferLetterStudents();
+    await fetchAllPayments();
+    await fetchPendingVerifications();
+
+    // Realtime update selected student
+    if (selectedStudent) {
+      try {
+        const res = await fetch(
+          `${BASE_URL}/admin/payments/offer-letter-students`,
+          {
+            headers: {
+              Authorization: `Bearer ${getToken()}`,
+            },
+          },
+        );
+
+        const data = await res.json();
+
+        const updatedStudent = data.find((s) => s.id === selectedStudent.id);
+
+        if (updatedStudent) {
+          setSelectedStudent(updatedStudent);
+        }
+      } catch (err) {
+        console.error("Failed to refresh selected student", err);
+      }
+    }
   };
 
   const filteredStudents = students.filter(
@@ -1383,22 +1418,6 @@ export default function AdminPayments() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {/* <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                            payment.status === "completed"
-                              ? "bg-green-100 text-green-700"
-                              : payment.status === "awaiting_verification"
-                                ? "bg-amber-100 text-amber-700"
-                                : payment.status === "rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {payment.status === "awaiting_verification"
-                            ? "Pending"
-                            : payment.status}
-                        </span> */}
-
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
                             payment.status === "completed"

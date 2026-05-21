@@ -118,10 +118,10 @@ export default function ApplicationStatusModal({
             <InfoRow icon={<BookOpen size={16} />} label="Course" value={application.course} />
             <InfoRow icon={<MapPin size={16} />} label="Target Country" value={application.target_country} />
             <InfoRow icon={<Calendar size={16} />} label="Deadline" value={application.deadline ? new Date(application.deadline).toLocaleDateString() : "—"} />
-            <InfoRow icon={<Award size={16} />} label="Last Degree" value={application.last_degree} />
-            <InfoRow icon={<Award size={16} />} label="CGPA" value={application.cgpa} />
-            <InfoRow icon={<FileText size={16} />} label="English Test" value={application.english_test} />
-            <InfoRow icon={<Award size={16} />} label="Test Score" value={application.test_score} />
+            <InfoRow icon={<Award size={16} />} label="Last Degree" value={application.study_level} />
+            <InfoRow icon={<Award size={16} />} label="CGPA" value={application.grades_cgpa} />
+            <InfoRow icon={<FileText size={16} />} label="English Test" value={application.english_proficiency_test} />
+            <InfoRow icon={<Award size={16} />} label="Test Score" value={application.english_test_overall_score} />
             
             {application.counselor_notes && (
               <InfoRow icon={<FileText size={16} />} label="Counselor Notes" value={application.counselor_notes} />

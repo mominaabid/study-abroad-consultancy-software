@@ -59,16 +59,25 @@ export default function PhoneInputWithCountry({
 
   const handleNumberChange = (e) => {
     let num = e.target.value.replace(/\D/g, "");
-    if (num.length > 11) num = num.slice(0, 11);
+
+    // 1. Reject if first digit is '0' and there is at least one digit
+    if (num.startsWith("0") && num.length > 0) {
+      // Do not update the value; simply return (keeps previous number)
+      return;
+    }
+
+    // 2. Limit to maximum 15 digits
+    if (num.length > 15) {
+      num = num.slice(0, 15);
+    }
+
     setNumber(num);
     onChange?.({ target: { name, value: `${countryCode} ${num}`.trim() } });
   };
 
   return (
     <div className="flex flex-col">
-      <label className="text-gray-600 text-xs font-semibold">
-        {labelName}
-      </label>
+      <label className="text-gray-600 text-xs font-semibold">{labelName}</label>
 
       <div
         className={`
@@ -197,8 +206,8 @@ export default function PhoneInputWithCountry({
               text-gray-500
               ${disabled ? "cursor-not-allowed" : ""}
             `}
-            placeholder="3001234567"
-            maxLength={11}
+            placeholder="1234567890" // updated placeholder
+            maxLength={15}
           />
         </div>
       </div>
