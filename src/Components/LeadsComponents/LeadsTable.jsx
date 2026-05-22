@@ -15,7 +15,7 @@ export default function LeadsTable({
   pagination,
   currentPage,
   onPageChange,
-   userRole, 
+  userRole,
 }) {
   function openActionMenu(e, lead) {
     e.stopPropagation();
@@ -183,7 +183,7 @@ export default function LeadsTable({
                     </td>
 
                     {/* Program */}
-                    <td className={tdCls}>
+                    {/* <td className={tdCls}>
                       <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md">
                         <svg
                           className="w-3 h-3 text-blue-600"
@@ -202,8 +202,38 @@ export default function LeadsTable({
                           {lead.study_level || "—"}
                         </span>
                       </div>
-                    </td>
+                    </td> */}
 
+                    {/* Program Column */}
+                    <td className={tdCls}>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md">
+                        <svg
+                          className="w-3 h-3 text-blue-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                          />
+                        </svg>
+                        <span className="text-[11px] font-medium text-blue-700">
+                          {lead.education && lead.education.length > 0
+                            ? (() => {
+                                const degrees = lead.education.map(
+                                  (e) => e.degree,
+                                );
+                                if (degrees.length <= 2)
+                                  return degrees.join(", ");
+                                return degrees.slice(0, 2).join(", ") + ", ...";
+                              })()
+                            : "—"}
+                        </span>
+                      </div>
+                    </td>
                     {/* Status */}
                     <td className={tdCls}>
                       <div className="transform transition-all duration-200 group-hover:scale-105">
@@ -290,8 +320,8 @@ export default function LeadsTable({
       </div>
 
       {/* Floating Action Menu */}
-         {/* Floating Action Menu */}
-          {/* Floating Action Menu */}
+      {/* Floating Action Menu */}
+      {/* Floating Action Menu */}
       {actionMenu && (
         <>
           {/* Backdrop */}
@@ -359,7 +389,7 @@ export default function LeadsTable({
             </button>
 
             {/* Only show Assign Counsellor for admin (not counsellor) */}
-            {userRole !== 'counsellor' && (
+            {userRole !== "counsellor" && (
               <button
                 onClick={() => {
                   onAssignCounsellor(actionMenu.lead);
@@ -385,7 +415,7 @@ export default function LeadsTable({
             )}
 
             {/* Only show Delete for admin (not counsellor) */}
-            {userRole !== 'counsellor' && (
+            {userRole !== "counsellor" && (
               <>
                 <div className="my-1 border-t border-gray-100" />
                 <button

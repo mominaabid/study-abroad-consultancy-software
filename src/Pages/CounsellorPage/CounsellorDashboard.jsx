@@ -252,7 +252,7 @@ export const CounsellorDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {recentLeads.map((lead) => (
+                {/* {recentLeads.map((lead) => (
                   <tr
                     key={lead.id}
                     className="hover:bg-purple-50/40 transition-colors cursor-pointer"
@@ -278,6 +278,54 @@ export const CounsellorDashboard = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {lead.study_level || "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[lead.status] || "bg-gray-100 text-gray-600"}`}
+                      >
+                        {lead.status?.charAt(0).toUpperCase() +
+                          lead.status?.slice(1) || "New"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-gray-400">
+                      {timeAgo(lead.createdAt)}
+                    </td>
+                  </tr>
+                ))} */}
+
+                {recentLeads.map((lead) => (
+                  <tr
+                    key={lead.id}
+                    className="hover:bg-purple-50/40 transition-colors cursor-pointer"
+                    onClick={() => navigate("/counsellor/leads")}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          {lead.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800 text-sm">
+                            {lead.name}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {lead.email || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {lead.preferred_country || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {/* ✅ Updated Program column */}
+                      {lead.education && lead.education.length > 0
+                        ? (() => {
+                            const degrees = lead.education.map((e) => e.degree);
+                            if (degrees.length <= 2) return degrees.join(", ");
+                            return degrees.slice(0, 2).join(", ") + ", ...";
+                          })()
+                        : "—"}
                     </td>
                     <td className="px-6 py-4">
                       <span

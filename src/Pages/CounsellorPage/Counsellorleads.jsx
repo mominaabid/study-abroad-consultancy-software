@@ -1,4 +1,6 @@
+// CounsellorLeads.jsx (fixed)
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../../Content/Url";
 import "../AdminPage/Leads.css";
@@ -66,6 +68,10 @@ export default function CounsellorLeads() {
   const [draggingLeadId, setDraggingLeadId] = useState(null);
   const [drawerLead, setDrawerLead] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
+  const [countryFilterPosition, setCountryFilterPosition] = useState({
+    top: 0,
+    left: 0,
+  });
 
   // ── Fetch MY leads only ────────────────────────────────────────────────────
   const fetchLeads = useCallback(async (page = 1) => {
@@ -124,6 +130,19 @@ export default function CounsellorLeads() {
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
+
+  // Update dropdown position before opening
+  const openCountryFilter = () => {
+    if (countryFilterRef.current) {
+      const rect = countryFilterRef.current.getBoundingClientRect();
+      setCountryFilterPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+    setCountryFilterOpen(true);
+    setCountrySearch("");
+  };
 
   // ─── Update stage (counsellor can change stage of their leads) ──────────────
   async function handleStage(leadId, status, note = "") {
@@ -315,7 +334,7 @@ export default function CounsellorLeads() {
         </div>
       )}
       {/* ── Header ── */}
-      <div className="flex-shrink-0  backdrop-blur-sm border-b border-gray-100 px-6 py-4">
+      <div className="flex-shrink-0 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-lg font-bold text-gray-800">My Leads</h1>
@@ -349,10 +368,7 @@ export default function CounsellorLeads() {
             {/* Country filter */}
             <div className="relative" ref={countryFilterRef}>
               <button
-                onClick={() => {
-                  setCountryFilterOpen((p) => !p);
-                  setCountrySearch("");
-                }}
+                onClick={openCountryFilter}
                 className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[130px]"
               >
                 <span className="truncate max-w-[100px]">
@@ -374,88 +390,94 @@ export default function CounsellorLeads() {
                 </svg>
               </div>
 
-              {countryFilterOpen && (
-                <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-                  {/* Search */}
-                  <div className="p-2 border-b border-gray-100">
-                    <input
-                      autoFocus
-                      type="text"
-                      value={countrySearch}
-                      onChange={(e) => setCountrySearch(e.target.value)}
-                      placeholder="Search country..."
-                      className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
-                    />
-                  </div>
-
-                  {/* List */}
-                  <div className="max-h-52 overflow-y-auto py-1">
-                    {/* All Countries option */}
-                    <div
-                      onClick={() => {
-                        setFilterCountry("All Countries");
-                        setCountryFilterOpen(false);
-                        setCountrySearch("");
-                      }}
-                      className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
-            ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
-                    >
-                      All Countries
+              {countryFilterOpen &&
+                createPortal(
+                  <div
+                    className="fixed z-[9999] w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+                    style={{
+                      top: countryFilterPosition.top,
+                      left: countryFilterPosition.left,
+                    }}
+                  >
+                    {/* Search */}
+                    <div className="p-2 border-b border-gray-100">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={countrySearch}
+                        onChange={(e) => setCountrySearch(e.target.value)}
+                        placeholder="Search country..."
+                        className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+                      />
                     </div>
 
-                    {/* Filtered country list — built from actual lead data */}
-                    {[
-                      ...new Set(
-                        leads.flatMap((l) =>
-                          l.preferred_country
-                            ? l.preferred_country
-                                .split(",")
-                                .map((c) => c.trim())
-                                .filter(Boolean)
-                            : [],
-                        ),
-                      ),
-                    ]
-                      .filter((c) =>
-                        c.toLowerCase().includes(countrySearch.toLowerCase()),
-                      )
-                      .map((c) => (
-                        <div
-                          key={c}
-                          onClick={() => {
-                            setFilterCountry(c);
-                            setCountryFilterOpen(false);
-                            setCountrySearch("");
-                          }}
-                          className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
-        ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
-                        >
-                          {c}
-                        </div>
-                      ))}
+                    {/* List */}
+                    <div className="max-h-52 overflow-y-auto py-1">
+                      <div
+                        onClick={() => {
+                          setFilterCountry("All Countries");
+                          setCountryFilterOpen(false);
+                          setCountrySearch("");
+                        }}
+                        className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+                          ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+                      >
+                        All Countries
+                      </div>
 
-                    {[
-                      ...new Set(
-                        leads.flatMap((l) =>
-                          l.preferred_country
-                            ? l.preferred_country
-                                .split(",")
-                                .map((c) => c.trim())
-                                .filter(Boolean)
-                            : [],
+                      {[
+                        ...new Set(
+                          leads.flatMap((l) =>
+                            l.preferred_country
+                              ? l.preferred_country
+                                  .split(",")
+                                  .map((c) => c.trim())
+                                  .filter(Boolean)
+                              : [],
+                          ),
                         ),
-                      ),
-                    ].filter((c) =>
-                      c.toLowerCase().includes(countrySearch.toLowerCase()),
-                    ).length === 0 &&
-                      countrySearch && (
-                        <div className="px-4 py-3 text-[13px] text-gray-400">
-                          No countries found
-                        </div>
-                      )}
-                  </div>
-                </div>
-              )}
+                      ]
+                        .filter((c) =>
+                          c.toLowerCase().includes(countrySearch.toLowerCase()),
+                        )
+                        .map((c) => (
+                          <div
+                            key={c}
+                            onClick={() => {
+                              setFilterCountry(c);
+                              setCountryFilterOpen(false);
+                              setCountrySearch("");
+                            }}
+                            className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+                              ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+                          >
+                            {c}
+                          </div>
+                        ))}
+
+                      {[
+                        ...new Set(
+                          leads.flatMap((l) =>
+                            l.preferred_country
+                              ? l.preferred_country
+                                  .split(",")
+                                  .map((c) => c.trim())
+                                  .filter(Boolean)
+                              : [],
+                          ),
+                        ),
+                      ].filter((c) =>
+                        c.toLowerCase().includes(countrySearch.toLowerCase()),
+                      ).length === 0 &&
+                        countrySearch && (
+                          <div className="px-4 py-3 text-[13px] text-gray-400">
+                            No countries found
+                          </div>
+                        )}
+                    </div>
+                  </div>,
+                  document.body,
+                )}
             </div>
 
             {/* Status filter */}
@@ -553,24 +575,6 @@ export default function CounsellorLeads() {
             style={{ minWidth: "max-content" }}
           >
             {STAGES.map((stage) => (
-              // <KanbanColumn
-              //   key={stage.key}
-              //   stage={stage}
-              //   leads={leadsByStage[stage.key] || []}
-              //   onOpen={setDrawerLead}
-              //   onMenuAction={(action, l) => {
-              //     if (action === "edit")
-              //       navigate(`/counsellor/leads/${l.id}/edit`);
-              //     if (action === "delete") handleDelete(l);
-              //   }}
-              //   onDrop={async (leadId, newStatus) => {
-              //     setDraggingLeadId(null);
-              //     await handleStage(leadId, newStatus);
-              //   }}
-              //   draggingLeadId={draggingLeadId}
-              //   userRole="counsellor"
-              // />
-
               <KanbanColumn
                 key={stage.key}
                 stage={stage}
@@ -581,7 +585,6 @@ export default function CounsellorLeads() {
                   if (action === "edit") {
                     navigate(`/counsellor/leads/${l.id}/edit`);
                   }
-
                   if (action === "delete") {
                     handleDelete(l);
                   }
