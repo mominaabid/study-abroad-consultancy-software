@@ -335,7 +335,7 @@ export default function Leads() {
   const stats = [
     {
       label: "Total Leads",
-      value: leads.filter((l) => l.status === "new").length,
+      value: leads.length,
       icon: <FiUsers />,
       color: "#3b82f6",
     },
