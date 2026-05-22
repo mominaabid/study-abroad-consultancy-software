@@ -27,6 +27,10 @@ export default function PhoneInputWithCountry({
       c.value.includes(searchTerm),
   );
 
+  // Check if label contains an asterisk
+  const hasStar = labelName?.includes("*");
+  const cleanLabel = hasStar ? labelName.replace(/\s*\*$/, "") : labelName;
+
   useEffect(() => {
     if (value) {
       const match = value.match(/^(\+\d[\d-]*)\s*(.*)$/);
@@ -77,7 +81,10 @@ export default function PhoneInputWithCountry({
 
   return (
     <div className="flex flex-col">
-      <label className="text-gray-600 text-xs font-semibold">{labelName}</label>
+      <label className="text-gray-600 text-xs font-semibold">
+        {cleanLabel}
+        {hasStar && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
 
       <div
         className={`

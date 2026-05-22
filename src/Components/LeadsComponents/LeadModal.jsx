@@ -112,7 +112,7 @@ function SearchableDropdown({
   return (
     <div ref={ref} className="relative">
       <label className="text-gray-600 text-xs font-semibold mb-1">
-        {label} {required && "*"}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div
         className={`relative flex items-center w-full p-2.5 border border-gray-200 rounded-lg shadow bg-white text-gray-500 transition-all
@@ -1131,7 +1131,7 @@ export default function LeadModal() {
                       value={form.father_contact}
                       onChange={handleCustomChange}
                       name="father_contact"
-                      labelName="Father's Contact *"
+                      labelName="Father's Contact"
                     />
                   </div>
                 </div>
@@ -1200,8 +1200,11 @@ export default function LeadModal() {
 
                 {/* Preferred Countries */}
                 <div className="space-y-1" ref={countryDropdownRef}>
-                  <label className="block text-sm font-medium text-slate-700">
+                  {/* <label className="block text-sm font-medium text-slate-700">
                     Preferred Countries *
+                  </label> */}
+                  <label className="block text-sm font-medium text-slate-700">
+                    Preferred Countries <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Globe
@@ -1313,14 +1316,18 @@ export default function LeadModal() {
                         degree: e.target.value,
                       }))
                     }
-                    label="Degree *"
+                    label="Degree"
                     placeholder="Select degree..."
                     icon={<GraduationCap size={16} />}
                     required
                   />
                   <div className="space-y-1">
-                    <label className="text-gray-600 text-xs font-semibold mb-1">
+                    {/* <label className="text-gray-600 text-xs font-semibold mb-1">
                       Year Awarded *
+                    </label> */}
+
+                    <label className="text-gray-600 text-xs font-semibold mb-1">
+                      Year Awarded <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <CalendarDays

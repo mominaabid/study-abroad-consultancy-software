@@ -1,12 +1,15 @@
-import { useSelector } from 'react-redux';
-import { selectUser } from '../../redux/slices/authSlice';
-import { selectConversations, selectOnlineUsers } from '../../redux/slices/chatSlice';
+import { useSelector } from "react-redux";
+import { selectUser } from "../../redux/slices/authSlice";
+import {
+  selectConversations,
+  selectOnlineUsers,
+} from "../../redux/slices/chatSlice";
 
 function timeAgo(date) {
-  if (!date) return '';
+  if (!date) return "";
   const diff = Date.now() - new Date(date).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'now';
+  if (m < 1) return "now";
   if (m < 60) return `${m}m`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h`;
@@ -29,24 +32,31 @@ export default function ConversationList({ activeId, onSelect }) {
 
   return (
     <div className="overflow-y-auto h-full">
-      {conversations.map(conv => {
+      {conversations.map((conv) => {
         const isActive = conv._id === activeId;
-        const otherId = user?.role === 'student' ? conv.counsellor_id : conv.student_id;
-        const otherName = user?.role === 'student' ? conv.counsellor_name : conv.student_name;
+        const otherId =
+          user?.role === "student" ? conv.counsellor_id : conv.student_id;
+        const otherName =
+          user?.role === "student" ? conv.counsellor_name : conv.student_name;
         const isOnline = onlineUsers.includes(otherId);
-        const unread = user?.role === 'student' ? conv.student_unread : conv.counsellor_unread;
+        const unread =
+          user?.role === "student"
+            ? conv.student_unread
+            : conv.counsellor_unread;
 
         return (
           <div
             key={conv._id}
             onClick={() => onSelect(conv)}
             className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all border-b border-gray-100
-              ${isActive ? 'bg-teal-50 border-l-4 border-l-teal-500' : 'hover:bg-gray-50'}`}
+              ${isActive ? "bg-teal-50 border-l-4 border-l-teal-500" : "hover:bg-gray-50"}`}
           >
             <div className="relative flex-shrink-0">
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm
-                ${isActive ? 'bg-teal-200 text-teal-800' : 'bg-gray-100 text-gray-600'}`}>
-                {otherName?.charAt(0)?.toUpperCase() || '?'}
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm
+                ${isActive ? "bg-teal-200 text-teal-800" : "bg-gray-100 text-gray-600"}`}
+              >
+                {otherName?.charAt(0)?.toUpperCase() || "?"}
               </div>
               {isOnline && (
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
@@ -54,19 +64,39 @@ export default function ConversationList({ activeId, onSelect }) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <p className={`text-sm truncate ${unread > 0 ? 'font-bold' : ''}`}>
                   {otherName}
                 </p>
                 <span className="text-[10px] text-gray-400">{timeAgo(conv.last_message_at)}</span>
+              </div> */}
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <p
+                    className={`text-sm truncate ${unread > 0 ? "font-bold" : ""}`}
+                  >
+                    {otherName}
+                  </p>
+                  {!conv.is_currently_assigned && (
+                    <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full ml-1">
+                      unassigned
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-gray-400">
+                  {timeAgo(conv.last_message_at)}
+                </span>
               </div>
               <div className="flex items-center justify-between mt-0.5">
-                <p className={`text-xs truncate ${unread > 0 ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
-                  {conv.last_message || 'No messages yet'}
+                <p
+                  className={`text-xs truncate ${unread > 0 ? "text-gray-700 font-medium" : "text-gray-400"}`}
+                >
+                  {conv.last_message || "No messages yet"}
                 </p>
                 {unread > 0 && (
                   <span className="bg-teal-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
-                    {unread > 99 ? '99+' : unread}
+                    {unread > 99 ? "99+" : unread}
                   </span>
                 )}
               </div>

@@ -54,6 +54,9 @@ export default function ChatWindow({ conversation }) {
       : conversation?.student_name;
   const isOtherOnline = onlineUsers.includes(otherId);
 
+  // ✅ Check if conversation is currently assigned (active)
+  const isActiveChat = conversation?.is_currently_assigned === true;
+
   useEffect(() => {
     if (!convId) return;
 
@@ -124,6 +127,13 @@ export default function ChatWindow({ conversation }) {
 
   async function sendMessage() {
     if (!input.trim() || !convId || sending) return;
+    // ✅ Block sending for inactive conversations
+    if (!isActiveChat) {
+      console.warn(
+        "Cannot send message – conversation is inactive (unassigned)",
+      );
+      return;
+    }
 
     const content = input.trim();
     const tempId = `temp_${Date.now()}`;
@@ -151,14 +161,17 @@ export default function ChatWindow({ conversation }) {
         body: JSON.stringify({ conversationId: convId, content }),
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${res.status}`);
+      }
 
       const realMsg = await res.json();
-
       dispatch(replaceMessage({ tempId, message: realMsg }));
     } catch (err) {
       console.error("Send failed:", err);
       dispatch(removeMessage({ tempId, conversationId: convId }));
+      // Optionally show toast error
     } finally {
       setSending(false);
     }
@@ -167,24 +180,27 @@ export default function ChatWindow({ conversation }) {
   function handleInputChange(e) {
     setInput(e.target.value);
     clearTimeout(typingTimer.current);
-    fetch(`${BASE_URL}/chat/typing`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({ conversationId: convId, isTyping: true }),
-    }).catch(() => {});
-    typingTimer.current = setTimeout(() => {
+    // Only send typing events if chat is active
+    if (isActiveChat) {
       fetch(`${BASE_URL}/chat/typing`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ conversationId: convId, isTyping: false }),
+        body: JSON.stringify({ conversationId: convId, isTyping: true }),
       }).catch(() => {});
-    }, 1500);
+      typingTimer.current = setTimeout(() => {
+        fetch(`${BASE_URL}/chat/typing`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ conversationId: convId, isTyping: false }),
+        }).catch(() => {});
+      }, 1500);
+    }
   }
 
   function handleKeyDown(e) {
@@ -220,6 +236,15 @@ export default function ChatWindow({ conversation }) {
         </div>
         <div>
           <p className="font-semibold text-sm">{otherName}</p>
+          {/* ✅ Show status indicator */}
+          {!isActiveChat && (
+            <p className="text-xs text-amber-600 font-medium">
+              (unassigned – read only)
+            </p>
+          )}
+          {isActiveChat && isOtherOnline && (
+            <p className="text-xs text-green-500 font-medium">Online</p>
+          )}
         </div>
       </div>
 
@@ -255,7 +280,7 @@ export default function ChatWindow({ conversation }) {
                       <div className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
                         {timeStr(msg.createdAt)}
                         {isMine && isTemp && <span>⏳</span>}
-                        {isMine && !isTemp && <span>✓</span>}
+                        {/* {isMine && !isTemp && <span>✓✓</span>} */}
                       </div>
                     </div>
                   </div>
@@ -267,18 +292,24 @@ export default function ChatWindow({ conversation }) {
         <div ref={bottomRef} />
       </div>
 
+      {/* ✅ Chat input footer – disabled for inactive conversations */}
       <div className="border-t p-3 flex gap-2 bg-white">
         <textarea
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          disabled={!isActiveChat}
           rows={1}
-          className="flex-1 border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
-          placeholder="Type a message..."
+          className="flex-1 border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          placeholder={
+            isActiveChat
+              ? "Type a message..."
+              : "This conversation is inactive. New messages cannot be sent."
+          }
         />
         <button
           onClick={sendMessage}
-          disabled={!input.trim() || sending}
+          disabled={!input.trim() || sending || !isActiveChat}
           className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 rounded-lg transition-colors"
         >
           {sending ? "..." : "Send"}
