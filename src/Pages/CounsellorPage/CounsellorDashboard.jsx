@@ -98,7 +98,8 @@ export const CounsellorDashboard = () => {
   // ── Derived stats based on new requirements ─────────────────────────────────
 
   // 1) My Total Leads: leads with status "new"
-  const totalNewLeads = leads.filter((l) => l.status === "new").length;
+  // const totalNewLeads = leads.filter((l) => l.status === "new").length;
+  const totalNewLeads = leads.length;
 
   // 2) Active Leads: leads where status is NOT "new"
   const activeLeads = leads.filter((l) => l.status === "contacted").length;

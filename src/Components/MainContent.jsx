@@ -277,11 +277,11 @@ export const MainContent = () => {
   ).length;
 
   // Total leads - fixed to actual total count
-  // const totalLeadsCount = leads.length;
-  const totalLeadsCount = leads.filter((l) => {
-    const status = l.status?.toLowerCase();
-    return status === "new" || status === "contacted";
-  }).length;
+  const totalLeadsCount = leads.length;
+  // const totalLeadsCount = leads.filter((l) => {
+  //   const status = l.status?.toLowerCase();
+  //   return status === "new" || status === "contacted";
+  // }).length;
 
   // Active students = Counseling + Evaluated + Converted
   const activeStudentsCount = counselingCount + evaluatedCount + convertedCount;
