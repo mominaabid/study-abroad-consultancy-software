@@ -188,6 +188,70 @@ const useSSE = () => {
                 console.log("Document rejected notification dispatched");
                 break;
 
+              case "new_chat_message":
+                // ✅ conversationId is required in metadata – fallback to null if missing
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "chat_message",
+                    metadata: {
+                      conversationId: data.conversationId || null,
+                      senderName: data.senderName,
+                      senderRole: data.senderRole,
+                      preview: data.preview,
+                    },
+                  }),
+                );
+                console.log("Chat notification added to bell");
+                break;
+
+              case "lead_created":
+                dispatch(
+                  addNotification({
+                    message:
+                      data.message ||
+                      `Lead "${data.leadName}" added by counsellor ${data.counsellorName}`,
+                    type: "lead_created",
+                    metadata: {
+                      leadId: data.leadId,
+                      leadName: data.leadName,
+                      counsellorId: data.counsellorId,
+                      counsellorName: data.counsellorName,
+                    },
+                  }),
+                );
+                console.log("Lead created notification dispatched");
+                break;
+
+              // --- New: Counsellor added lead (admin view) ---
+              case "counsellor_added_lead":
+                dispatch(
+                  addNotification({
+                    message:
+                      data.message ||
+                      `Counsellor ${data.counsellorName} added a new lead: ${data.leadName}`,
+                    type: "counsellor_added_lead",
+                    metadata: {
+                      leadId: data.leadId,
+                      leadName: data.leadName,
+                      counsellorId: data.counsellorId,
+                      counsellorName: data.counsellorName,
+                    },
+                  }),
+                );
+                console.log("Counsellor added lead notification sent to admin");
+                break;
+
+              case "counsellor_added_application":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "counsellor_added_application",
+                    metadata: data.metadata,
+                  }),
+                );
+                break;
+
               default:
                 console.log("Unknown SSE message type:", data.type);
             }

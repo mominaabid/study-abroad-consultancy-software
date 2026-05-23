@@ -7,6 +7,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
 import { selectUser } from "./redux/slices/authSlice";
+import { fetchUnreadNotifications } from "./redux/slices/notificationSlice"; // ✅ import notification action
 import useSSE from "./redux/hooks/useSSE";
 import { connectAbly } from "./services/ablyService";
 import "./App.css";
@@ -53,6 +54,7 @@ const SSEInitializer = ({ children }) => {
   useSSE();
   return children;
 };
+
 const AblyInitializer = () => {
   const user = useSelector(selectUser);
 
@@ -69,12 +71,22 @@ const AblyInitializer = () => {
 
   return null; // renders nothing
 };
+
 export default function App() {
   const dispatch = useDispatch();
+  const user = useSelector(selectUser);
 
+  // Load user on app mount
   useEffect(() => {
     dispatch(loadUser());
   }, [dispatch]);
+
+  // ✅ When user becomes authenticated, fetch unread notifications
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchUnreadNotifications());
+    }
+  }, [user, dispatch]);
 
   return (
     <BrowserRouter>
@@ -99,19 +111,6 @@ export default function App() {
           />
 
           {/* Admin routes */}
-          {/* <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
-            <Route path="/admin" element={<PrivateLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="leads" element={<Leads />} />
-              <Route path="counsellors" element={<Counsellor />} />
-              <Route path="chats" element={<AdminChatPage />} />
-              <Route path="payments" element={<AdminPayments />} />
-              <Route path="applications" element={<CounsellorApplication />} />
-              <Route path="profile" element={<AdminProfile />} />
-            </Route>
-          </Route> */}
-
           <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
             <Route path="/admin" element={<PrivateLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />

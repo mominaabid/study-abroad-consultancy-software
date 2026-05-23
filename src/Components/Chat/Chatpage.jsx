@@ -1,5 +1,6 @@
-import { useState, useEffect ,useRef} from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router-dom'; // Import useLocation
 import { selectUser } from '../../redux/slices/authSlice';
 import {
   setConversations,
@@ -17,32 +18,48 @@ export default function ChatPage() {
   const user = useSelector(selectUser);
   const conversations = useSelector(selectConversations);
   const totalUnread = useSelector(selectTotalUnread(user?.role));
+  const location = useLocation(); // Get location state
 
   const [activeConversation, setActive] = useState(null);
   const [loadingConvs, setLoadingConvs] = useState(true);
-  const ablyReadyRef = useRef(false); 
-const activeConversationRef = useRef(null);
-async function fetchConversations() {
-  console.log('📋 Fetching conversations...');
-  try {
-    const res = await fetch(`${BASE_URL}/chat/conversations`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
-    console.log('📋 Response status:', res.status);
-    const data = await res.json();
-    console.log('📋 Data received:', data);
-    dispatch(setConversations(Array.isArray(data) ? data : []));
-  } catch (err) {
-    console.error('📋 fetchConversations error:', err);
-  } finally {
-    console.log('📋 Setting loading false');
-    setLoadingConvs(false);
+  const ablyReadyRef = useRef(false);
+  const activeConversationRef = useRef(null);
+
+  async function fetchConversations() {
+    console.log('📋 Fetching conversations...');
+    try {
+      const res = await fetch(`${BASE_URL}/chat/conversations`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      console.log('📋 Response status:', res.status);
+      const data = await res.json();
+      console.log('📋 Data received:', data);
+      dispatch(setConversations(Array.isArray(data) ? data : []));
+    } catch (err) {
+      console.error('📋 fetchConversations error:', err);
+    } finally {
+      console.log('📋 Setting loading false');
+      setLoadingConvs(false);
+    }
   }
-}
 
   useEffect(() => {
     fetchConversations();
   }, []);
+
+  // Auto-select conversation from notification click
+  useEffect(() => {
+    const conversationIdFromState = location.state?.conversationId;
+    if (!conversationIdFromState) return;
+    if (!conversations.length) return; // Wait for conversations to load
+
+    const targetConversation = conversations.find(c => c._id === conversationIdFromState);
+    if (targetConversation) {
+      handleSelectConversation(targetConversation);
+      // Clear the state so it doesn't re-select on re-renders
+      window.history.replaceState({}, document.title);
+    }
+  }, [conversations, location.state]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -75,11 +92,11 @@ async function fetchConversations() {
     };
   }, [user?.id]);
 
-function handleSelectConversation(conv) {
-  setActive(conv);
-  activeConversationRef.current = conv;
-  dispatch(setActiveConversation(conv._id));
-}
+  function handleSelectConversation(conv) {
+    setActive(conv);
+    activeConversationRef.current = conv;
+    dispatch(setActiveConversation(conv._id));
+  }
 
   return (
     <div className="flex h-full bg-white overflow-hidden">

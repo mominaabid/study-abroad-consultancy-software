@@ -16,6 +16,7 @@ import {
   selectUnreadCount,
   markAllAsRead,
   clearNotifications,
+  markAllNotificationsRead,
 } from "../redux/slices/notificationSlice";
 
 export const Header = () => {
@@ -56,17 +57,123 @@ export const Header = () => {
     setNotifOpen(!notifOpen);
     if (!notifOpen) {
       dispatch(markAllAsRead());
+      dispatch(markAllNotificationsRead());
     }
   };
 
-  // New: navigate to profile page based on role
+  // Navigation handler for notification clicks
+  // const handleNotificationClick = (notification) => {
+  //   const role = user?.role;
+
+  //   if (notification.type === "counsellor_added_lead" && role === "admin") {
+  //     navigate("/admin/leads");
+  //     return;
+  //   }
+
+  //    if (notification.type === "lead_assigned" && role === "counsellor") {
+  //     navigate("/counsellor/leads");
+  //     return;
+  //   }
+
+  //   if (notification.type === "application_created" && role === "student") {
+  //     navigate("/student/application");
+  //     return;
+  //   }
+
+  //   if (notification.type === "status_change" && role === "student") {
+  //     navigate("/student/application");
+  //     return;
+  //   }
+
+  //   // Define chat page route per role
+  //   let chatPath = "";
+  //   if (role === "admin") chatPath = "/admin/chats";
+  //   else if (role === "counsellor") chatPath = "/counsellor/chats";
+  //   else if (role === "student") chatPath = "/student/chats";
+  //   else return;
+
+  //   // For chat messages, pass conversationId in state
+  //   if (notification.type === "chat_message") {
+  //     const conversationId = notification.metadata?.conversationId;
+  //     if (conversationId) {
+  //       navigate(chatPath, { state: { conversationId } });
+  //     } else {
+  //       navigate(chatPath);
+  //     }
+  //   } else {
+  //     // For other notification types, fallback to chat page
+  //     navigate(chatPath);
+  //   }
+  // };
+
+  const handleNotificationClick = (notification) => {
+    const role = user?.role;
+
+    console.log("Notification clicked:", notification);
+
+    switch (notification.type) {
+      case "counsellor_added_lead":
+        if (role === "admin") {
+          navigate("/admin/leads");
+        }
+        return;
+
+      case "application_created":
+      case "application_updated":
+      case "application_deleted":
+      case "status_change":
+        if (role === "student") {
+          navigate("/student/application");
+        }
+        return;
+
+      case "counsellor_added_application":
+        if (role === "admin") {
+          navigate("/admin/applications");
+        } else if (role === "student") {
+          navigate("/student/application");
+        }
+        return;
+
+      case "document_shared":
+      case "document_verified":
+      case "document_rejected":
+        if (role === "student") {
+          navigate("/student/documents");
+        }
+        return;
+
+      case "chat_message": {
+        let chatPath = "";
+
+        if (role === "admin") chatPath = "/admin/chats";
+        else if (role === "counsellor") chatPath = "/counsellor/chats";
+        else if (role === "student") chatPath = "/student/chats";
+
+        const conversationId = notification.metadata?.conversationId;
+
+        if (conversationId) {
+          navigate(chatPath, { state: { conversationId } });
+        } else {
+          navigate(chatPath);
+        }
+
+        return;
+      }
+
+      default:
+        console.log("Unhandled notification type:", notification.type);
+        return;
+    }
+  };
+
   const goToProfile = () => {
     setDropdownOpen(false);
     if (!user) return;
     if (user.role === "admin") navigate("/admin/profile");
     else if (user.role === "counsellor") navigate("/counsellor/profile");
     else if (user.role === "student") navigate("/student/profile");
-    else navigate("/profile"); // fallback
+    else navigate("/profile");
   };
 
   const getTitle = () => {
@@ -142,7 +249,11 @@ export const Header = () => {
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50/30 transition-colors cursor-default"
+                        className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50/30 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setNotifOpen(false); // close dropdown
+                          handleNotificationClick(n);
+                        }}
                       >
                         <p className="text-sm text-gray-700 leading-tight font-medium">
                           {n.message}
@@ -192,7 +303,6 @@ export const Header = () => {
                   </span>
                 </div>
 
-                {/* PROFILE ITEM – directly under the role */}
                 <button
                   onClick={goToProfile}
                   className="w-full text-left px-4 py-3 text-sm text-gray-700 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors"
