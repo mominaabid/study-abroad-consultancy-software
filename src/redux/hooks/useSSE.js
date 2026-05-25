@@ -252,6 +252,52 @@ const useSSE = () => {
                 );
                 break;
 
+              case "payment_awaiting_verification":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "payment_awaiting_verification",
+                    metadata: data.metadata,
+                  }),
+                );
+                console.log(
+                  "Payment awaiting verification notification dispatched",
+                );
+                break;
+
+              case "payment_verified":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "payment_verified",
+                    metadata: data.metadata,
+                  }),
+                );
+                console.log("Payment verified notification dispatched");
+                break;
+
+              case "payment_rejected":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "payment_rejected",
+                    metadata: data.metadata,
+                  }),
+                );
+                console.log("Payment rejected notification dispatched");
+                break;
+
+              case "payment_added_by_admin":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "payment_added_by_admin",
+                    metadata: data.metadata,
+                  }),
+                );
+                console.log("Payment added by admin notification dispatched");
+                break;
+
               default:
                 console.log("Unknown SSE message type:", data.type);
             }

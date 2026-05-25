@@ -39,6 +39,22 @@ const formatNotification = (notif) => {
     icon = "📝";
     bgColor = "bg-amber-50";
     textColor = "text-amber-700";
+  } else if (type === "payment_awaiting_verification") {
+    icon = "💰";
+    bgColor = "bg-yellow-50";
+    textColor = "text-yellow-700";
+  } else if (type === "payment_verified") {
+    icon = "✅";
+    bgColor = "bg-green-50";
+    textColor = "text-green-700";
+  } else if (type === "payment_rejected") {
+    icon = "❌";
+    bgColor = "bg-red-50";
+    textColor = "text-red-700";
+  } else if (type === "payment_added_by_admin") {
+    icon = "✅";
+    bgColor = "bg-green-50";
+    textColor = "text-green-700";
   }
 
   return {

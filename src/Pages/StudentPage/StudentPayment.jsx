@@ -420,30 +420,31 @@ export default function StudentPayments() {
   };
 
   const fetchPaymentStats = async () => {
-  try {
-    const res = await fetch(`${BASE_URL}/student/payments/stats`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`,
-      },
-    });
+    try {
+      const res = await fetch(`${BASE_URL}/student/payments/stats`, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    setSummary(
-      data.stats || {
-        total_paid: 0,
-        total_pending: 0,
-        completed_count: 0,
-        rejected_count: 0,
-      },
-    );
+      setSummary(
+        data.stats || {
+          total_paid: 0,
+          total_pending: 0,
+          completed_count: 0,
+          rejected_count: 0,
+        },
+      );
 
-    // Sync fully paid count with completed_count
-    setFullyPaidCount(data.stats?.completed_count || 0);
-  } catch (err) {
-    console.error("Fetch payment stats error:", err);
-  }
-};
+      // Sync fully paid count with completed_count
+      // setFullyPaidCount(data.stats?.completed_count || 0);
+      setFullyPaidCount(0);
+    } catch (err) {
+      console.error("Fetch payment stats error:", err);
+    }
+  };
 
   const fetchApplications = async () => {
     try {
@@ -507,9 +508,19 @@ export default function StudentPayments() {
       setApplications(appsWithSummary);
 
       // Calculate fully paid applications count
-      const fullyPaidApps = appsWithSummary.filter(
-        (app) => app.remaining_amount <= 0,
-      ).length;
+      // const fullyPaidApps = appsWithSummary.filter(
+      //   (app) => app.remaining_amount <= 0,
+      // ).length;
+      // setFullyPaidCount(fullyPaidApps);
+
+      // Count only applications whose payment is completely finished
+      const fullyPaidApps = appsWithSummary.filter((app) => {
+        const finalFees = parseFloat(app.final_fees || app.total_fees || 0);
+        const totalPaid = parseFloat(app.total_paid || 0);
+
+        return finalFees > 0 && totalPaid >= finalFees;
+      }).length;
+
       setFullyPaidCount(fullyPaidApps);
 
       setSummary(

@@ -143,6 +143,25 @@ export const Header = () => {
         }
         return;
 
+      case "payment_awaiting_verification":
+        if (role === "admin") {
+          navigate("/admin/payments");
+        }
+        break;
+
+      case "payment_verified":
+      case "payment_rejected":
+        if (role === "student") {
+          navigate("/student/payments");
+        }
+        break;
+
+      case "payment_added_by_admin":
+        if (role === "student") {
+          navigate("/student/payments");
+        }
+        break;
+
       case "chat_message": {
         let chatPath = "";
 
