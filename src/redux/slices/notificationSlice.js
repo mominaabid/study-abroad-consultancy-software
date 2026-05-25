@@ -1,7 +1,23 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { BASE_URL } from "../../Content/Url";
 
-// Helper to format a DB notification into the UI shape (consistent with addNotification)
+// Helper to safely format a date from DB or fallback to "Just now"
+const safeFormatDate = (dateValue) => {
+  if (!dateValue) return "Just now";
+  const dateObj = new Date(dateValue);
+  if (isNaN(dateObj.getTime())) return "Invalid date";
+  return dateObj.toLocaleString(); // e.g., "5/26/2025, 10:30:00 AM"
+};
+
+// Helper to get time string (hour:minute) or fallback
+const safeFormatTime = (dateValue) => {
+  if (!dateValue) return "Just now";
+  const dateObj = new Date(dateValue);
+  if (isNaN(dateObj.getTime())) return "Invalid time";
+  return dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+// Helper to format a DB notification into the UI shape
 const formatNotification = (notif) => {
   let icon = "📢";
   let bgColor = "bg-blue-50";
@@ -65,10 +81,10 @@ const formatNotification = (notif) => {
     bgColor,
     textColor,
     metadata: notif.metadata,
-    time: new Date(notif.created_at).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    // FIX: Provide a safe formatted date string (full date + time)
+    formattedDate: safeFormatDate(notif.created_at),
+    // Keep the short time string for compact displays
+    time: safeFormatTime(notif.created_at),
     isRead: Boolean(notif.is_read),
   };
 };
@@ -128,7 +144,6 @@ const notificationSlice = createSlice({
       let bgColor = "bg-blue-50";
       let textColor = "text-blue-700";
 
-      // Status change notifications
       if (type === "status_change") {
         if (metadata?.newStatus === "approved") {
           icon = "✅";
@@ -149,13 +164,13 @@ const notificationSlice = createSlice({
         }
       }
 
-      // Chat message notifications
       if (type === "chat_message") {
         icon = "💬";
         bgColor = "bg-indigo-50";
         textColor = "text-indigo-700";
       }
 
+      const now = new Date();
       state.items.unshift({
         id: Date.now(),
         message: message,
@@ -164,7 +179,9 @@ const notificationSlice = createSlice({
         bgColor: bgColor,
         textColor: textColor,
         metadata: metadata || {},
-        time: new Date().toLocaleTimeString([], {
+        // FIX: Provide both full date and short time for consistency
+        formattedDate: now.toLocaleString(),
+        time: now.toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
@@ -172,13 +189,11 @@ const notificationSlice = createSlice({
       });
       state.unreadCount += 1;
 
-      // Limit to last 50 notifications
       if (state.items.length > 50) {
         state.items = state.items.slice(0, 50);
       }
     },
 
-    // New: replace entire notifications list (e.g., after login or polling)
     setNotifications: (state, action) => {
       state.items = action.payload.map(formatNotification);
       state.unreadCount = state.items.filter((item) => !item.isRead).length;
@@ -209,12 +224,10 @@ const notificationSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchUnreadNotifications.fulfilled, (state, action) => {
-        // Replace local state with fetched unread notifications
         state.items = action.payload.map(formatNotification);
         state.unreadCount = state.items.filter((item) => !item.isRead).length;
       })
       .addCase(markAllNotificationsRead.fulfilled, (state) => {
-        // After successful server sync, also mark locally as read
         state.items.forEach((item) => (item.isRead = true));
         state.unreadCount = 0;
       });

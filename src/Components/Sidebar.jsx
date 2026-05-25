@@ -13,6 +13,7 @@ import logo from "../assets/favicon.png";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, selectRole } from "../redux/slices/authSlice";
+import { selectTotalUnread } from "../redux/slices/chatSlice";
 
 // ── Menu definitions per role ──────────────────────────────────────────────────
 const ADMIN_MENU = [
@@ -24,7 +25,6 @@ const ADMIN_MENU = [
     path: "/admin/applications",
   },
   { name: "Payments", icon: <DollarSign size={20} />, path: "/admin/payments" },
-  // { name: "Profile", icon: <User size={20} />, path: "/admin/profile" },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/admin/chats" },
   { name: "Counselors", icon: <User size={20} />, path: "/admin/counsellors" },
 ];
@@ -35,11 +35,6 @@ const COUNSELLOR_MENU = [
     icon: <Home size={20} />,
     path: "/counsellor/dashboard",
   },
-  // {
-  //   name: "Profile",
-  //   icon: <User size={20} />,
-  //   path: "/counsellor/profile",
-  // },
   {
     name: "My Leads",
     icon: <BarChart size={20} />,
@@ -59,11 +54,6 @@ const COUNSELLOR_MENU = [
 
 const STUDENT_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/student/dashboard" },
-  // {
-  //   name: "Profile",
-  //   icon: <User size={20} />,
-  //   path: "/student/profile",
-  // },
   {
     name: "Application",
     icon: <FileText size={20} />,
@@ -85,7 +75,9 @@ const useDesktop = () => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 768);
     };
+
     window.addEventListener("resize", handleResize);
+
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
@@ -95,10 +87,14 @@ const useDesktop = () => {
 // ── Component ──────────────────────────────────────────────────────────────────
 export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
   const [isHovered, setIsHovered] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+
   const role = useSelector(selectRole);
+  const totalUnread = useSelector(selectTotalUnread(role));
+
   const isDesktop = useDesktop();
 
   // Force sidebar closed on mobile when component mounts or screen size becomes mobile
@@ -129,6 +125,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
   const handleMouseEnter = useCallback(() => {
     if (isDesktop) {
       setIsHovered(true);
+
       if (onHoverChange) onHoverChange(true);
     }
   }, [isDesktop, onHoverChange]);
@@ -136,6 +133,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
   const handleMouseLeave = useCallback(() => {
     if (isDesktop) {
       setIsHovered(false);
+
       if (onHoverChange) onHoverChange(false);
     }
   }, [isDesktop, onHoverChange]);
@@ -146,6 +144,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
   function handleLogout() {
     dispatch(logout());
     navigate("/login");
+
     if (!isDesktop) setIsOpen(false);
   }
 
@@ -180,6 +179,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
             onClick={() => navigate(homePath)}
           >
             <img src={logo} alt="Logo" className="h-8 w-12 object-contain" />
+
             {isExpanded && (
               <span className="text-lg font-bold text-gray-800 transition-opacity duration-300">
                 Educatia
@@ -210,11 +210,13 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
         <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
+
             return (
               <div
                 key={index}
                 onClick={() => {
                   if (item.path) navigate(item.path);
+
                   if (!isDesktop) setIsOpen(false);
                 }}
                 className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200
@@ -224,11 +226,39 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                       : "hover:bg-[#009E99]/10 hover:text-[#009E99]"
                   }`}
               >
-                <div className="min-w-[20px]">{item.icon}</div>
+                {/* Icon */}
+                <div className="min-w-[20px] relative">
+                  {item.icon}
+
+                  {/* Collapsed badge */}
+                  {!isExpanded && item.name === "Chats" && totalUnread > 0 && (
+                    <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                      {totalUnread > 99 ? "99+" : totalUnread}
+                    </span>
+                  )}
+                </div>
+
+                {/* Expanded Content */}
                 {isExpanded && (
-                  <span className="ml-4 whitespace-nowrap text-sm font-medium">
-                    {item.name}
-                  </span>
+                  <div className="ml-4 flex items-center justify-between w-full">
+                    <span className="whitespace-nowrap text-sm font-medium">
+                      {item.name}
+                    </span>
+
+                    {/* Chats Badge */}
+                    {item.name === "Chats" && totalUnread > 0 && (
+                      <span
+                        className={`min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full text-[11px] font-bold
+                        ${
+                          isActive
+                            ? "bg-white text-[#009E99]"
+                            : "bg-red-500 text-white"
+                        }`}
+                      >
+                        {totalUnread > 99 ? "99+" : totalUnread}
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             );
@@ -243,6 +273,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
           <div className="min-w-[20px]">
             <LogOut size={20} />
           </div>
+
           {isExpanded && (
             <span className="ml-4 whitespace-nowrap text-sm font-medium">
               Logout

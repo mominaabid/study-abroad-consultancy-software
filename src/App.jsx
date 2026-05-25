@@ -7,7 +7,8 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
 import { selectUser } from "./redux/slices/authSlice";
-import { fetchUnreadNotifications } from "./redux/slices/notificationSlice"; // ✅ import notification action
+import { fetchUnreadNotifications } from "./redux/slices/notificationSlice";
+import { fetchConversations } from "./redux/slices/chatSlice"; // ✅ import the thunk
 import useSSE from "./redux/hooks/useSSE";
 import { connectAbly } from "./services/ablyService";
 import "./App.css";
@@ -81,10 +82,25 @@ export default function App() {
     dispatch(loadUser());
   }, [dispatch]);
 
-  // ✅ When user becomes authenticated, fetch unread notifications
+  // When user becomes authenticated, fetch unread notifications
   useEffect(() => {
     if (user) {
       dispatch(fetchUnreadNotifications());
+    }
+  }, [user, dispatch]);
+
+  // ✅ Fetch conversations on user load and poll every 30 seconds
+  useEffect(() => {
+    if (user) {
+      // Initial fetch
+      dispatch(fetchConversations());
+
+      // Poll every 30 seconds to keep badge count updated
+      const interval = setInterval(() => {
+        dispatch(fetchConversations());
+      }, 30000);
+
+      return () => clearInterval(interval);
     }
   }, [user, dispatch]);
 

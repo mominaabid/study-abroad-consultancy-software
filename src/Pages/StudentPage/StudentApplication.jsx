@@ -172,7 +172,6 @@ function DocumentUploadModal({
 }
 
 // Document Card Component
-// Document Card Component - FIXED
 function DocumentCard({ doc, onRefresh }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -212,17 +211,9 @@ function DocumentCard({ doc, onRefresh }) {
   const status = getStatusBadge();
   const StatusIcon = status.icon;
 
-  // Get the correct file URL
   const fileUrl = doc.file_path || doc.file_url;
   const fileName =
     doc.original_name || (fileUrl ? fileUrl.split("/").pop() : "document");
-
-  console.log("Document:", {
-    id: doc.id,
-    fileUrl,
-    fileName,
-    status: doc.status,
-  });
 
   return (
     <div className="bg-gray-50 rounded-xl p-3 hover:shadow-sm transition">
@@ -239,11 +230,6 @@ function DocumentCard({ doc, onRefresh }) {
               >
                 <StatusIcon size={10} /> {status.label}
               </span>
-              {/* {doc.uploaded_by === "counsellor" && (
-                <span className="text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
-                  Shared by Counsellor
-                </span>
-              )} */}
               {doc.uploaded_by === "admin" && (
                 <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
                   Shared by Admin
@@ -313,6 +299,7 @@ function DocumentCard({ doc, onRefresh }) {
     </div>
   );
 }
+
 // Application Card Component
 function ApplicationCard({ application, onRefresh }) {
   const [expanded, setExpanded] = useState(false);
@@ -326,13 +313,10 @@ function ApplicationCard({ application, onRefresh }) {
   const fetchDocuments = async () => {
     setLoadingDocs(true);
     try {
-      // const res = await authAxios.get(`${BASE_URL}/student/documents`);
       const res = await authAxios.get(
         `${BASE_URL}/student/documents?application_id=${application.id}`,
       );
-      const allDocs = res.data || [];
-      // Don't filter by application_id - backend already returns student's documents
-      setDocuments(allDocs);
+      setDocuments(res.data || []);
     } catch (err) {
       console.error("Error fetching documents:", err);
     } finally {
@@ -374,13 +358,11 @@ function ApplicationCard({ application, onRefresh }) {
     return labelMap[application.status] || application.status;
   };
 
-  // Group documents by type for quick status
   const docStatusMap = {};
   documents.forEach((doc) => {
     docStatusMap[doc.doc_type] = doc.status;
   });
 
-  // Check which document types have been uploaded
   const uploadedTypes = new Set(documents.map((d) => d.doc_type));
 
   return (
@@ -428,7 +410,7 @@ function ApplicationCard({ application, onRefresh }) {
       {/* Expanded Content */}
       {expanded && (
         <div className="border-t border-gray-100 p-5 bg-gray-50/30">
-          {/* Document Checklist */}
+          {/* Document Checklist - MODIFIED SECTION */}
           <div className="mb-6">
             <h4 className="font-semibold text-gray-800 text-sm mb-3 flex items-center gap-2">
               <FileText size={14} className="text-teal-500" />
@@ -473,6 +455,10 @@ function ApplicationCard({ application, onRefresh }) {
                     label: "Pending",
                   };
 
+                // Show upload/re-upload button if not yet uploaded OR status is rejected
+                const showUploadButton =
+                  !isUploaded || docStatus === "rejected";
+
                 return (
                   <div
                     key={docType.key}
@@ -490,13 +476,15 @@ function ApplicationCard({ application, onRefresh }) {
                       >
                         {statusBadge.label}
                       </span>
-                      {!isUploaded && (
+                      {showUploadButton && (
                         <button
                           onClick={() =>
                             setUploadModal({ isOpen: true, docType: docType })
                           }
                           className="p-1 rounded-lg hover:bg-teal-50 text-teal-600 transition"
-                          title="Upload"
+                          title={
+                            docStatus === "rejected" ? "Re-upload" : "Upload"
+                          }
                         >
                           <Upload size={14} />
                         </button>
