@@ -648,7 +648,8 @@ export const MainContent = () => {
                     name={lead.name || "—"}
                     email={lead.email || "—"}
                     country={lead.preferred_country || "—"}
-                    program={lead.study_level || "—"}
+                    // program={lead.study_level || "—"}
+                    program={lead.education?.[0]?.degree || "—"}
                     status={lead.status || "New"}
                     color="bg-cyan-100 text-cyan-700"
                     assigned={lead.counsellor?.name || "Unassigned"}
@@ -791,8 +792,32 @@ const StatCard = ({
   </div>
 );
 
+// const ProgressBar = ({ label, count, total, color }) => {
+//   const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+//   return (
+//     <div>
+//       <div className="flex justify-between text-sm mb-2">
+//         <span className="font-medium text-gray-700">{label}</span>
+//         <span className="text-gray-400 font-medium">
+//           {count} ({percentage}%)
+//         </span>
+//       </div>
+//       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+//         <div
+//           className="h-full rounded-full transition-all duration-700"
+//           style={{
+//             width: `${Math.max(8, percentage)}%`,
+//             backgroundColor: color,
+//           }}
+//         />
+//       </div>
+//     </div>
+//   );
+// };
+
 const ProgressBar = ({ label, count, total, color }) => {
   const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+
   return (
     <div>
       <div className="flex justify-between text-sm mb-2">
@@ -801,14 +826,17 @@ const ProgressBar = ({ label, count, total, color }) => {
           {count} ({percentage}%)
         </span>
       </div>
+
       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{
-            width: `${Math.max(8, percentage)}%`,
-            backgroundColor: color,
-          }}
-        />
+        {percentage > 0 && (
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+              width: `${percentage}%`,
+              backgroundColor: color,
+            }}
+          />
+        )}
       </div>
     </div>
   );

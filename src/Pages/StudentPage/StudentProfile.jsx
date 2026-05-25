@@ -19,6 +19,8 @@ import {
   Camera,
   ChevronDown,
   Search,
+  BarChart,
+  School,
 } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
 import { PHONE_COUNTRIES } from "../../constants/countries";
@@ -524,8 +526,9 @@ export const StudentProfile = () => {
             </div>
           </div>
 
-          {/* RIGHT COLUMN - Editable Form */}
-          <div className="lg:col-span-2">
+          {/* RIGHT COLUMN - Editable Form & Education Section */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information Form */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="border-b border-gray-100 px-6 py-4">
                 <h3 className="text-lg font-semibold text-gray-800">
@@ -709,6 +712,55 @@ export const StudentProfile = () => {
                 </div>
               )}
             </div>
+
+            {/* EDUCATION SECTION */}
+            {profile.education && profile.education.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="border-b border-gray-100 px-6 py-4">
+                  <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <BookOpen size={18} className="text-teal-600" />
+                    Academic Programs / Degrees
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Your educational qualifications
+                  </p>
+                </div>
+                <div className="p-6 space-y-4">
+                  {profile.education.map((edu) => (
+                    <div
+                      key={edu.id}
+                      className="bg-slate-50 rounded-xl p-4 border border-slate-200 hover:shadow-sm transition"
+                    >
+                      <div className="flex flex-wrap justify-between items-start gap-2">
+                        <div>
+                          <h4 className="font-semibold text-gray-800 text-base">
+                            {edu.degree}
+                          </h4>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={14} className="text-gray-400" />
+                              {edu.year_awarded}
+                            </span>
+                            {edu.grades_cgpa && (
+                              <span className="flex items-center gap-1">
+                                <BarChart size={14} className="text-gray-400" />
+                                {edu.grades_cgpa}
+                              </span>
+                            )}
+                          </div>
+                          {edu.board_university && (
+                            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                              <School size={14} className="text-gray-400" />
+                              {edu.board_university}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

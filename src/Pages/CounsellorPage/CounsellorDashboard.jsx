@@ -368,7 +368,7 @@ export const CounsellorDashboard = () => {
                         {s.count} ({pct}%)
                       </span>
                     </div>
-                    <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    {/* <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-700"
                         style={{
@@ -376,6 +376,18 @@ export const CounsellorDashboard = () => {
                           background: s.color,
                         }}
                       />
+                    </div> */}
+
+                    <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                      {pct > 0 && (
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${pct}%`,
+                            background: s.color,
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 );
