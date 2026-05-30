@@ -72,6 +72,27 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
       toast.error("Please enter a valid total fees amount");
       return;
     }
+
+    const isValidLength = (val, min, max) =>
+      val && val.toString().length >= min && val.toString().length <= max;
+
+    if (
+      !isValidLength(formData.total_fees, 5, 12) ||
+      !isValidLength(formData.scholarship, 5, 12)
+    ) {
+      toast.error("Fees and scholarship must be between 5 and 12 characters");
+      return;
+    }
+
+    if (
+      formData.scholarship_remarks &&
+      (formData.scholarship_remarks.length < 3 ||
+        formData.scholarship_remarks.length > 255)
+    ) {
+      toast.error("Remarks must be between 3 and 255 characters");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/admin/payments/set-fees`, {
@@ -93,7 +114,7 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
       if (!res.ok) throw new Error(data.message);
       toast.success(
         parseFloat(formData.scholarship) > 0
-          ? `Fees set successfully! Scholarship of $${formData.scholarship} applied. Final fees: $${finalFees}`
+          ? `Fees set successfully! Scholarship of PKR ${formData.scholarship} applied. Final fees: PKR ${finalFees}`
           : "Total fees set successfully!",
       );
       onSuccess();
@@ -139,18 +160,21 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
               Total Fees *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                $
+              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500">
+                PKR
               </span>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 step="0.01"
+                minLength={5}
+                maxLength={12}
                 required
                 value={formData.total_fees}
                 onChange={(e) =>
                   setFormData({ ...formData, total_fees: e.target.value })
                 }
-                className="w-full border border-gray-200 rounded-xl pl-7 pr-3 py-2 outline-none focus:border-teal-400"
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-3 py-2 outline-none focus:border-teal-400"
                 placeholder="Enter total fees"
               />
             </div>
@@ -174,17 +198,20 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                   Scholarship Amount
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                    $
+                  <span className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500">
+                    PKR
                   </span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     step="0.01"
+                    minLength={5}
+                    maxLength={12}
                     value={formData.scholarship}
                     onChange={(e) =>
                       setFormData({ ...formData, scholarship: e.target.value })
                     }
-                    className="w-full border border-gray-200 rounded-xl pl-7 pr-3 py-2 outline-none focus:border-teal-400"
+                    className="w-full border border-gray-200 rounded-xl pl-10 pr-3 py-2 outline-none focus:border-teal-400"
                     placeholder="Enter scholarship amount (if any)"
                   />
                 </div>
@@ -235,6 +262,8 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                 </label>
                 <textarea
                   rows="2"
+                  minLength={3}
+                  maxLength={255}
                   value={formData.scholarship_remarks}
                   onChange={(e) =>
                     setFormData({
@@ -259,7 +288,7 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Fees:</span>
                   <span className="font-semibold">
-                    ${parseFloat(formData.total_fees || 0).toLocaleString()}
+                    PKR {parseFloat(formData.total_fees || 0).toLocaleString()}
                   </span>
                 </div>
                 {parseFloat(formData.scholarship) > 0 && (
@@ -267,14 +296,15 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                     <div className="flex justify-between text-green-600">
                       <span>Scholarship:</span>
                       <span>
-                        - $${parseFloat(formData.scholarship).toLocaleString()}
+                        - PKR{" "}
+                        {parseFloat(formData.scholarship).toLocaleString()}
                       </span>
                     </div>
                     <div className="border-t border-teal-200 my-1"></div>
                     <div className="flex justify-between font-bold">
                       <span>Final Fees to Pay:</span>
                       <span className="text-teal-700">
-                        $${finalFees.toLocaleString()}
+                        PKR {finalFees.toLocaleString()}
                       </span>
                     </div>
                   </>
@@ -284,7 +314,7 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                     <div className="flex justify-between font-bold">
                       <span>Amount to Pay:</span>
                       <span className="text-teal-700">
-                        $${finalFees.toLocaleString()}
+                        PKR {finalFees.toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -374,6 +404,24 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
       toast.error("Please enter a valid amount");
       return;
     }
+
+    if (
+      !formData.amount ||
+      formData.amount.toString().length < 5 ||
+      formData.amount.toString().length > 12
+    ) {
+      toast.error("Amount must be between 5 and 12 characters");
+      return;
+    }
+
+    if (
+      formData.notes &&
+      (formData.notes.length < 3 || formData.notes.length > 255)
+    ) {
+      toast.error("Notes must be between 3 and 255 characters");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/admin/payments`, {
@@ -454,17 +502,25 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Amount *
             </label>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={formData.amount}
-              onChange={(e) =>
-                setFormData({ ...formData, amount: e.target.value })
-              }
-              className="w-full border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-teal-400"
-              placeholder="Enter amount"
-            />
+            <div className="relative">
+              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500">
+                PKR
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                step="0.01"
+                minLength={5}
+                maxLength={12}
+                required
+                value={formData.amount}
+                onChange={(e) =>
+                  setFormData({ ...formData, amount: e.target.value })
+                }
+                className="w-full border border-gray-200 rounded-xl pl-10 pr-3 py-2 outline-none focus:border-teal-400"
+                placeholder="Enter amount"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -569,6 +625,8 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
             </label>
             <textarea
               rows="2"
+              minLength={3}
+              maxLength={255}
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
@@ -651,7 +709,7 @@ function VerifyPaymentModal({ isOpen, onClose, onSuccess, payment }) {
         <div className="p-5 border-b border-gray-100">
           <h2 className="text-lg font-bold text-gray-800">Verify Payment</h2>
           <p className="text-sm text-gray-500">
-            Amount: <span className="font-semibold">${payment?.amount}</span>
+            Amount: <span className="font-semibold">PKR {payment?.amount}</span>
           </p>
           <p className="text-xs text-gray-400">
             Student: {payment?.student?.name}
@@ -825,19 +883,19 @@ function StudentDetailsPanel({
                   Total Fees (after scholarship):
                 </span>
                 <span className="font-semibold">
-                  ${totalFeesNet.toLocaleString()}
+                  PKR {totalFeesNet.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Total Paid:</span>
                 <span className="font-semibold text-green-600">
-                  ${totalPaid.toLocaleString()}
+                  PKR {totalPaid.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-sm text-gray-600">Remaining:</span>
                 <span className="font-semibold text-amber-600">
-                  ${remainingAmount.toLocaleString()}
+                  PKR {remainingAmount.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -906,7 +964,7 @@ function StudentDetailsPanel({
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold">
-                        ${parseFloat(payment.amount).toLocaleString()}
+                        PKR {parseFloat(payment.amount).toLocaleString()}
                       </p>
                       <p className="text-xs text-gray-500">
                         {formatDate(payment.paid_at)}
@@ -1065,7 +1123,7 @@ export default function AdminPayments() {
     <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="bg-gradient-to-r from-blue-950 to-teal-900 text-white rounded-2xl p-6 shadow-xl">
+        <div className="bg-[#009E99] text-white rounded-2xl p-6 shadow-xl">
           <h1 className="text-xl md:text-2xl font-bold">Payment Management</h1>
           <p className="text-blue-200 text-sm mt-1">
             Manage student payments, set fees, and verify transactions
@@ -1078,7 +1136,7 @@ export default function AdminPayments() {
         <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
           <p className="text-xs text-gray-400">Total Collected</p>
           <p className="text-xl font-bold text-gray-800">
-            ${summary.total_amount?.toLocaleString() || "0"}
+            PKR {summary.total_amount?.toLocaleString() || "0"}
           </p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
@@ -1228,11 +1286,11 @@ export default function AdminPayments() {
                           {totalFees > 0 ? (
                             <>
                               <span className="text-green-600">
-                                Paid: $
+                                Paid: PKR{" "}
                                 {(student.total_paid || 0).toLocaleString()}
                               </span>
                               <span className="text-amber-600">
-                                Remaining: $
+                                Remaining: PKR{" "}
                                 {(remaining > 0
                                   ? remaining
                                   : 0
@@ -1316,7 +1374,7 @@ export default function AdminPayments() {
                     </p>
                     <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-400">
                       <span className="flex items-center gap-1">
-                        <Wallet size={12} /> Amount: ${payment.amount}
+                        <Wallet size={12} /> Amount: PKR {payment.amount}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock size={12} /> {formatDate(payment.paid_at)}
@@ -1410,7 +1468,7 @@ export default function AdminPayments() {
                         {payment.application?.target_university || "N/A"}
                       </td>
                       <td className="px-4 py-3 font-semibold text-teal-600">
-                        ${parseFloat(payment.amount).toLocaleString()}
+                        PKR {parseFloat(payment.amount).toLocaleString()}
                       </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100">

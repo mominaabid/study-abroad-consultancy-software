@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { timeAgo } from "./LeadsConstants";
 import { Avatar } from "./LeadAtoms";
 import { ViewIcon } from "../CustomButtons/ViewIcon";
@@ -15,6 +15,29 @@ export function KanbanCard({
   userRole,
 }) {
   const [menu, setMenu] = useState(false);
+  const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (!menu) return;
+
+    const handleClickOutside = (event) => {
+      // If click is inside menu or on the toggle button, do nothing
+      if (
+        (menuRef.current && menuRef.current.contains(event.target)) ||
+        (buttonRef.current && buttonRef.current.contains(event.target))
+      ) {
+        return;
+      }
+      setMenu(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menu]);
 
   const handleDragStart = (e) => {
     e.dataTransfer.setData(
@@ -45,14 +68,11 @@ export function KanbanCard({
             <p className="text-[13px] font-semibold text-gray-900 leading-tight">
               {lead.name}
             </p>
-
-            {/* <p className="text-[11px] text-gray-400 mt-0.5">
-              {lead.study_level || "No level"}
-            </p> */}
           </div>
         </div>
 
         <button
+          ref={buttonRef}
           className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center
                      text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all flex-shrink-0"
           onClick={(e) => {
@@ -70,6 +90,7 @@ export function KanbanCard({
         {/* Dropdown menu */}
         {menu && (
           <div
+            ref={menuRef}
             className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-2 px-2 animate-in fade-in slide-in-from-top-2 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
@@ -195,7 +216,7 @@ export function KanbanCard({
 
 export function KanbanColumn({
   stage,
-  stages = [], // pass all stages here
+  stages = [],
   leads,
   onOpen,
   onMenuAction,
@@ -217,29 +238,15 @@ export function KanbanColumn({
     e.preventDefault();
     setIsDragOver(false);
 
-    const dragData = JSON.parse(
-      e.dataTransfer.getData("text/plain"),
-    );
+    const dragData = JSON.parse(e.dataTransfer.getData("text/plain"));
 
     if (!dragData.id || dragData.status === stage.key) return;
 
-    // Current stage index
-    const currentIndex = stages.findIndex(
-      (s) => s.key === dragData.status,
-    );
+    const currentIndex = stages.findIndex((s) => s.key === dragData.status);
+    const targetIndex = stages.findIndex((s) => s.key === stage.key);
+    const isValidMove = Math.abs(targetIndex - currentIndex) === 1;
 
-    // Target stage index
-    const targetIndex = stages.findIndex(
-      (s) => s.key === stage.key,
-    );
-
-    // Allow movement only to adjacent stages
-    const isValidMove =
-      Math.abs(targetIndex - currentIndex) === 1;
-
-    if (!isValidMove) {
-      return;
-    }
+    if (!isValidMove) return;
 
     if (onDrop) {
       onDrop(dragData.id, stage.key);
@@ -258,24 +265,19 @@ export function KanbanColumn({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Column Header */}
       <div className="px-4 pt-4 pb-3 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
             style={{ background: stage.color }}
           />
-
           <span className="text-[13px] font-bold text-gray-800">
             {stage.label}
           </span>
-
           <span className="ml-auto text-[11px] font-bold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">
             {leads.length}
           </span>
         </div>
-
-        {/* Progress bar */}
         <div className="mt-2.5 h-0.5 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500"
@@ -290,7 +292,6 @@ export function KanbanColumn({
         </div>
       </div>
 
-      {/* Cards */}
       <div
         className="flex-1 overflow-y-auto px-3 pb-4 space-y-2.5 min-h-0"
         style={{ scrollbarWidth: "thin" }}
@@ -300,19 +301,11 @@ export function KanbanColumn({
             className={`flex flex-col items-center justify-center py-8 rounded-xl border-2 border-dashed transition-colors
               ${isDragOver ? "bg-white/50" : "border-gray-200"}`}
             style={
-              isDragOver
-                ? {
-                    borderColor: stage.color,
-                    color: stage.color,
-                  }
-                : {}
+              isDragOver ? { borderColor: stage.color, color: stage.color } : {}
             }
           >
             <div className="text-2xl mb-1 opacity-40">↓</div>
-
-            <span className="text-[11px] text-gray-400">
-              Drop here
-            </span>
+            <span className="text-[11px] text-gray-400">Drop here</span>
           </div>
         ) : (
           leads.map((lead) => (

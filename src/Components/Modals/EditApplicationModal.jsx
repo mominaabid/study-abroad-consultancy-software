@@ -229,6 +229,18 @@ export default function EditApplicationModal({
       newErrors.deadline = "Invalid date format";
     }
 
+    if (formData.counselor_notes) {
+      const note = formData.counselor_notes.trim();
+
+      if (note.length < 3) {
+        newErrors.counselor_notes = "Description must be at least 3 characters";
+      }
+
+      if (note.length > 255) {
+        newErrors.counselor_notes = "Description cannot exceed 255 characters";
+      }
+    }
+
     return newErrors;
   };
 
@@ -255,6 +267,8 @@ export default function EditApplicationModal({
     if (name === "year_awarded") {
       if (value !== "" && !/^\d{0,4}$/.test(value)) return;
     }
+
+    if (name === "counselor_notes" && value.length > 255) return;
 
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -436,6 +450,7 @@ export default function EditApplicationModal({
                     name="full_name"
                     value={formData.full_name}
                     onChange={handleFieldChange}
+                    readOnly
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
@@ -447,6 +462,7 @@ export default function EditApplicationModal({
                     name="email"
                     value={formData.email}
                     onChange={handleFieldChange}
+                    readOnly
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
@@ -459,6 +475,7 @@ export default function EditApplicationModal({
                     name="phone"
                     labelName=""
                     error={errors.phone}
+                    readOnly
                   />
                 </FormField>
 
@@ -611,12 +628,14 @@ export default function EditApplicationModal({
             </InfoSection>
 
             <InfoSection title="Additional Information">
-              <FormField label="Counselor Notes">
+              <FormField label="Description">
                 <textarea
                   rows="3"
                   name="counselor_notes"
                   value={formData.counselor_notes}
                   onChange={handleFieldChange}
+                  minLength={3}
+                  maxLength={255}
                   className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none resize-none"
                   placeholder="Internal notes about this application..."
                 />

@@ -590,7 +590,7 @@ export const StudentApplication = () => {
     <div className="p-4 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="bg-gradient-to-r from-blue-950 to-teal-900 text-white rounded-2xl p-6 shadow-xl">
+        <div className="bg-[#009E99] text-white rounded-2xl p-6 shadow-xl">
           <div className="flex justify-between items-center">
             <div>
               <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">

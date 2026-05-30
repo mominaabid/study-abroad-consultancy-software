@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Eye, EyeOff, ArrowRight } from "lucide-react";
 
 // Assuming background.png is in your assets folder
-import bgImage from "../../assets/background.png"; 
+import bgImage from "../../assets/background.png";
 
 import {
   loginUser,
@@ -54,7 +54,7 @@ export default function Login() {
   const passwordErr = touched.password && !password;
 
   return (
-    <div 
+    <div
       className="min-h-screen w-full flex items-center justify-end bg-cover bg-center bg-no-repeat font-sans relative overflow-hidden"
       style={{ backgroundImage: `url(${bgImage})` }}
     >
@@ -62,7 +62,6 @@ export default function Login() {
       <div className="absolute inset-0 bg-black/5 pointer-events-none" />
 
       <div className="container max-w-7xl mx-auto px-6 lg:px-20 z-10 flex justify-end">
-        
         {/* --- Glassmorphism Login Card --- */}
         <motion.div
           initial={{ opacity: 0, x: 50 }}
@@ -92,13 +91,17 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
             <div className="space-y-1.5">
-              <label className="text-base font-bold text-white uppercase tracking-widest ml-1">Username</label>
+              <label className="text-base font-bold text-white uppercase tracking-widest ml-1">
+                Username
+              </label>
               <input
                 type="email"
                 value={email}
                 placeholder="email@example.com"
                 className={`w-full bg-white/5 border-2 rounded-2xl p-4 text-white outline-none transition-all placeholder:text-white/50 ${
-                  emailErr ? "border-red-400/50" : "border-white/10 focus:border-[#009E99] focus:bg-white/10"
+                  emailErr
+                    ? "border-red-400/50"
+                    : "border-white/10 focus:border-[#009E99] focus:bg-white/10"
                 }`}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -106,21 +109,25 @@ export default function Login() {
 
             {/* Password Field */}
             <div className="space-y-1.5">
-              <label className="text-base font-bold text-white uppercase tracking-widest ml-1">Password</label>
+              <label className="text-base font-bold text-white uppercase tracking-widest ml-1">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPass ? "text" : "password"}
                   value={password}
                   placeholder="••••••••"
                   className={`w-full bg-white/5 border-2 rounded-2xl p-4 pr-14 text-white outline-none transition-all placeholder:text-white/30 ${
-                    passwordErr ? "border-red-400/50" : "border-white/10 focus:border-[#009E99] focus:bg-white/10"
+                    passwordErr
+                      ? "border-red-400/50"
+                      : "border-white/10 focus:border-[#009E99] focus:bg-white/10"
                   }`}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-white/40 hover:text-[#009E99] transition-colors"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-[#009E99] transition-colors"
                 >
                   {showPass ? <Eye size={20} /> : <EyeOff size={20} />}
                 </button>
@@ -147,7 +154,6 @@ export default function Login() {
           </form>
 
           {/* Footer Info */}
-        
         </motion.div>
       </div>
     </div>

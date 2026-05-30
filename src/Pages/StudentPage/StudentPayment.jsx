@@ -1,4 +1,3 @@
-// src/components/student/StudentPayments.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../redux/slices/authSlice";
@@ -75,7 +74,7 @@ function MakePaymentModal({
     let value = parseFloat(e.target.value);
     if (value > maxAmount) {
       toast.error(
-        `Amount cannot exceed remaining amount of $${maxAmount.toLocaleString()}`,
+        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,
       );
       setFormData({ ...formData, amount: maxAmount.toString() });
     } else {
@@ -94,7 +93,7 @@ function MakePaymentModal({
 
     if (amountNum > maxAmount) {
       toast.error(
-        `Amount cannot exceed remaining amount of $${maxAmount.toLocaleString()}`,
+        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,
       );
       return;
     }
@@ -187,7 +186,7 @@ function MakePaymentModal({
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-600">Total Fees:</span>
               <span className="font-semibold">
-                ${totalFees?.toLocaleString() || "0"}
+                pkr {totalFees?.toLocaleString() || "0"}
               </span>
             </div>
             {scholarshipAmount > 0 && (
@@ -197,7 +196,7 @@ function MakePaymentModal({
                     <Award size={12} /> Scholarship{" "}
                     {scholarshipType ? `(${scholarshipType})` : ""}:
                   </span>
-                  <span>- ${scholarshipAmount.toLocaleString()}</span>
+                  <span>- pkr{scholarshipAmount.toLocaleString()}</span>
                 </div>
                 {scholarshipRemarks && (
                   <p className="text-xs text-gray-500 italic mt-1">
@@ -207,7 +206,7 @@ function MakePaymentModal({
                 <div className="flex justify-between text-sm mb-1 font-semibold">
                   <span>Final Fees:</span>
                   <span className="text-teal-600">
-                    ${finalFees?.toLocaleString() || "0"}
+                    pkr{finalFees?.toLocaleString() || "0"}
                   </span>
                 </div>
               </>
@@ -215,13 +214,13 @@ function MakePaymentModal({
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-600">Paid Amount:</span>
               <span className="font-semibold text-green-600">
-                ${totalPaid?.toLocaleString() || "0"}
+                pkr {totalPaid?.toLocaleString() || "0"}
               </span>
             </div>
             <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
               <span className="text-gray-600">Remaining:</span>
               <span className="font-semibold text-amber-600">
-                ${remainingAmount?.toLocaleString() || "0"}
+                pkr {remainingAmount?.toLocaleString() || "0"}
               </span>
             </div>
           </div>
@@ -233,8 +232,8 @@ function MakePaymentModal({
               Amount *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                $
+              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500">
+                pkr
               </span>
               <input
                 type="number"
@@ -247,7 +246,7 @@ function MakePaymentModal({
               />
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              Maximum: ${maxAmount.toLocaleString()}
+              Maximum: pkr{maxAmount.toLocaleString()}
             </p>
           </div>
 
@@ -665,15 +664,9 @@ export default function StudentPayments() {
     <div className="p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="bg-gradient-to-r from-blue-950 to-teal-900 text-white rounded-3xl p-7 shadow-xl">
+        <div className="bg-[#009E99] text-white rounded-3xl p-7 shadow-xl">
           <div className="flex justify-between items-start">
             <div>
-              <button
-                onClick={() => navigate(-1)}
-                className="mb-3 flex items-center gap-1 text-teal-300 hover:text-white transition text-sm"
-              >
-                <ArrowLeft size={16} /> Back
-              </button>
               <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
                 Financial History
               </p>
@@ -704,7 +697,7 @@ export default function StudentPayments() {
             <div>
               <p className="text-xs text-gray-400 font-medium">Total Paid</p>
               <p className="text-2xl font-bold text-gray-800">
-                ${summary.total_paid?.toLocaleString() || "0"}
+                pkr {summary.total_paid?.toLocaleString() || "0"}
               </p>
             </div>
             <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -719,7 +712,7 @@ export default function StudentPayments() {
                 Pending Verification
               </p>
               <p className="text-2xl font-bold text-amber-600">
-                ${summary.total_pending?.toLocaleString() || "0"}
+                pkr {summary.total_pending?.toLocaleString() || "0"}
               </p>
             </div>
             <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
@@ -816,7 +809,7 @@ export default function StudentPayments() {
                           Total Fees:
                         </span>
                         <span className="font-semibold">
-                          ${(app.total_fees || 0).toLocaleString()}
+                          pkr {(app.total_fees || 0).toLocaleString()}
                         </span>
                       </div>
                       {app.scholarship_amount > 0 && (
@@ -830,7 +823,7 @@ export default function StudentPayments() {
                               :
                             </span>
                             <span className="font-semibold">
-                              - ${app.scholarship_amount.toLocaleString()}
+                              - pkr {app.scholarship_amount.toLocaleString()}
                             </span>
                           </div>
                           {app.scholarship_remarks && (
@@ -842,11 +835,11 @@ export default function StudentPayments() {
                           <div className="flex justify-between font-bold">
                             <span className="text-sm">Final Fees to Pay:</span>
                             <span className="text-teal-600">
-                              ${(app.final_fees || 0).toLocaleString()}
+                              pkr n{(app.final_fees || 0).toLocaleString()}
                             </span>
                           </div>
                           <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                            <CheckCircle size={12} /> You saved $
+                            <CheckCircle size={12} /> You saved pkr
                             {app.scholarship_amount.toLocaleString()} with
                             scholarship!
                           </p>
@@ -857,7 +850,7 @@ export default function StudentPayments() {
                         <div className="flex justify-between font-bold pt-2">
                           <span className="text-sm">Amount to Pay:</span>
                           <span className="text-teal-600">
-                            ${(app.total_fees || 0).toLocaleString()}
+                            pkr {(app.total_fees || 0).toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -869,10 +862,10 @@ export default function StudentPayments() {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-600">Payment Progress</span>
                       <span className="font-semibold">
-                        ${(app.total_paid || 0).toLocaleString()} / $
+                        pkr {(app.total_paid || 0).toLocaleString()} / pkr &nbsp;
                         {(
                           app.final_fees ||
-                          app.total_fees ||
+                          app.total_fees || 
                           0
                         ).toLocaleString()}
                       </span>
@@ -887,10 +880,10 @@ export default function StudentPayments() {
                     </div>
                     <div className="flex justify-between text-xs mt-2">
                       <span className="text-gray-500">
-                        Paid: ${(app.total_paid || 0).toLocaleString()}
+                        Paid: pkr {(app.total_paid || 0).toLocaleString()}
                       </span>
                       <span className="text-amber-600 font-semibold">
-                        Remaining: $
+                        Remaining: pkr
                         {(app.remaining_amount || 0).toLocaleString()}
                       </span>
                     </div>
@@ -979,7 +972,7 @@ export default function StudentPayments() {
                       </div>
                       <div>
                         <p className="text-xl font-bold text-gray-800">
-                          ${parseFloat(payment.amount).toLocaleString()}
+                          pkr {parseFloat(payment.amount).toLocaleString()}
                         </p>
                         <p className="text-xs text-gray-400 capitalize">
                           {payment.payment_type?.replace(/_/g, " ") ||

@@ -149,7 +149,7 @@ export const CounsellorDashboard = () => {
     <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* ── Welcome Banner ── */}
       <div className="mb-3">
-        <div className="bg-blue-950 text-white rounded-xl p-8 shadow-xl">
+        <div className="bg-[#009E99] text-white rounded-xl p-8 shadow-xl">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <p className="text-purple-200 text-sm font-medium mb-1">
@@ -368,15 +368,7 @@ export const CounsellorDashboard = () => {
                         {s.count} ({pct}%)
                       </span>
                     </div>
-                    {/* <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{
-                          width: `${Math.max(4, pct)}%`,
-                          background: s.color,
-                        }}
-                      />
-                    </div> */}
+                   
 
                     <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       {pct > 0 && (

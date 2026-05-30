@@ -255,6 +255,16 @@ export default function CreateApplicationModal({
       newErrors.deadline = "Invalid date format";
     }
 
+    if (formData.counselor_notes) {
+      const len = formData.counselor_notes.trim().length;
+
+      if (len < 3) {
+        newErrors.counselor_notes = "Description must be at least 3 characters";
+      } else if (len > 255) {
+        newErrors.counselor_notes = "Description cannot exceed 255 characters";
+      }
+    }
+
     return newErrors;
   };
 
@@ -283,6 +293,8 @@ export default function CreateApplicationModal({
     if (name === "year_awarded") {
       if (value !== "" && !/^\d{0,4}$/.test(value)) return;
     }
+
+    if (name === "counselor_notes" && value.length > 255) return;
 
     // When student selection changes: only fill name, email, phone – NOT educational fields
     if (name === "user_id") {
@@ -325,56 +337,6 @@ export default function CreateApplicationModal({
       });
     }
   };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   const validationErrors = validate();
-  //   if (Object.keys(validationErrors).length > 0) {
-  //     setErrors(validationErrors);
-  //     toast.error("Please fix the validation errors");
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   try {
-  //     const payload = {
-  //       user_id: parseInt(formData.user_id),
-  //       target_university: formData.target_university,
-  //       course: formData.course,
-  //       target_country: formData.target_country,
-  //       deadline: formData.deadline,
-  //       status: formData.status,
-  //       full_name: formData.full_name,
-  //       email: formData.email,
-  //       phone: formData.phone,
-  //       study_level: formData.study_level,
-  //       grades_cgpa: formData.grades_cgpa,
-  //       english_proficiency_test: formData.english_proficiency_test,
-  //       english_test_overall_score: formData.english_test_overall_score,
-  //       year_awarded: formData.year_awarded,
-  //       board_university: formData.board_university,
-  //       counselor_notes: formData.counselor_notes,
-  //     };
-
-  //     const res = await authAxios.post(
-  //       `${BASE_URL}/counsellor/applications`,
-  //       payload,
-  //     );
-
-  //     if (res.data.success) {
-  //       toast.success("Application created successfully");
-  //       onSuccess();
-  //       onClose();
-  //     }
-  //   } catch (err) {
-  //     console.error("Error:", err);
-  //     toast.error(
-  //       err.response?.data?.message || "Failed to create application",
-  //     );
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -528,6 +490,7 @@ export default function CreateApplicationModal({
                     name="full_name"
                     value={formData.full_name}
                     onChange={handleFieldChange}
+                    readOnly
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
@@ -539,6 +502,7 @@ export default function CreateApplicationModal({
                     name="email"
                     value={formData.email}
                     onChange={handleFieldChange}
+                    readOnly
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
@@ -551,6 +515,7 @@ export default function CreateApplicationModal({
                     name="phone"
                     labelName=""
                     error={errors.phone}
+                    readOnly
                   />
                 </FormField>
 
@@ -700,12 +665,14 @@ export default function CreateApplicationModal({
 
             {/* Additional Information */}
             <InfoSection title="Additional Information">
-              <FormField label="Counselor Notes">
+              <FormField label="Description">
                 <textarea
                   rows="3"
                   name="counselor_notes"
                   value={formData.counselor_notes}
                   onChange={handleFieldChange}
+                  minLength={3}
+                  maxLength={255}
                   className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none resize-none"
                   placeholder="Internal notes about this application..."
                 />

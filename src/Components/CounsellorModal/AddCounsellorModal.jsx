@@ -81,23 +81,44 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
+  const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z.-]+\.[a-zA-Z]{2,}$/;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (formData.name.trim().length < 3) {
       return toast.error("Full Name must be at least 3 characters");
     }
-    if (formData.father_name.trim().length < 3) {
+
+    if (
+      formData.father_name &&
+      formData.father_name.trim().length > 0 &&
+      formData.father_name.trim().length < 3
+    ) {
       return toast.error("Father's Name must be at least 3 characters");
     }
-    if (formData.address.trim().length < 3) {
+
+    if (
+      formData.address &&
+      formData.address.trim().length > 0 &&
+      formData.address.trim().length < 3
+    ) {
       return toast.error("Address must be at least 3 characters");
     }
 
-    if (!formData.phone || formData.phone.replace(/\D/g, "").length < 8) {
+    if (!formData.email.trim()) {
+      return toast.error("Email is required");
+    }
+
+    if (!emailRegex.test(formData.email)) {
+      return toast.error("Please enter a valid email address");
+    }
+
+    if (!formData.phone || formData.phone.replace(/\D/g, "").length < 9) {
       return toast.error("Valid phone number is required");
     }
-    if (formData.cnic.length !== 15) {
+
+    if (formData.cnic && formData.cnic.length !== 15) {
       return toast.error("CNIC must be in format: 00000-0000000-0");
     }
 
@@ -147,7 +168,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
               placeholder="Full Name (Min 3, Max 50)"
             />
             <InputField
-              labelName="Father Name *"
+              labelName="Father Name "
               name="father_name"
               type="text"
               icon={<User size={18} />}
@@ -179,7 +200,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <InputField
-                labelName="CNIC *"
+                labelName="CNIC"
                 name="cnic"
                 type="text"
                 icon={<CreditCard size={18} />}
@@ -191,7 +212,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
 
           <TextareaField
-            labelName="Address *"
+            labelName="Address"
             name="address"
             type="text"
             icon={<MapPin size={18} />}

@@ -61,51 +61,6 @@ export const Header = () => {
     }
   };
 
-  // Navigation handler for notification clicks
-  // const handleNotificationClick = (notification) => {
-  //   const role = user?.role;
-
-  //   if (notification.type === "counsellor_added_lead" && role === "admin") {
-  //     navigate("/admin/leads");
-  //     return;
-  //   }
-
-  //    if (notification.type === "lead_assigned" && role === "counsellor") {
-  //     navigate("/counsellor/leads");
-  //     return;
-  //   }
-
-  //   if (notification.type === "application_created" && role === "student") {
-  //     navigate("/student/application");
-  //     return;
-  //   }
-
-  //   if (notification.type === "status_change" && role === "student") {
-  //     navigate("/student/application");
-  //     return;
-  //   }
-
-  //   // Define chat page route per role
-  //   let chatPath = "";
-  //   if (role === "admin") chatPath = "/admin/chats";
-  //   else if (role === "counsellor") chatPath = "/counsellor/chats";
-  //   else if (role === "student") chatPath = "/student/chats";
-  //   else return;
-
-  //   // For chat messages, pass conversationId in state
-  //   if (notification.type === "chat_message") {
-  //     const conversationId = notification.metadata?.conversationId;
-  //     if (conversationId) {
-  //       navigate(chatPath, { state: { conversationId } });
-  //     } else {
-  //       navigate(chatPath);
-  //     }
-  //   } else {
-  //     // For other notification types, fallback to chat page
-  //     navigate(chatPath);
-  //   }
-  // };
-
   const handleNotificationClick = (notification) => {
     const role = user?.role;
 
@@ -196,16 +151,16 @@ export const Header = () => {
   };
 
   const getTitle = () => {
-    if (location.pathname.includes("admin-dashboard")) return "Admin Dashboard";
-    if (location.pathname.includes("leads")) return "Leads Management";
-    if (location.pathname.includes("counsellor"))
-      return "Counsellor Management";
-    if (location.pathname.includes("application")) return "Student Application";
-    if (location.pathname.includes("documents")) return "Student Documents";
-    if (location.pathname.includes("payments")) return "Student Payments";
-    if (location.pathname.includes("chats")) return "Student Chats";
+    if (location.pathname.includes("admin-dashboard")) return "Dashboard";
+    if (location.pathname.includes("leads")) return "Leads";
+    if (location.pathname.includes("counsellor")) return "Counsellors";
+    if (location.pathname.includes("application")) return "Applications";
+    if (location.pathname.includes("documents")) return "Documents";
+    if (location.pathname.includes("payments")) return "Payments";
+    if (location.pathname.includes("chats")) return "Chats";
+    if (location.pathname.includes("profile")) return "Profile";
 
-    return "My Dashboard";
+    return "Dashboard";
   };
 
   const userName = user?.name || "User";

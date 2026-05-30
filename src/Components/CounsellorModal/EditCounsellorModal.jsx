@@ -74,6 +74,8 @@ export const EditCounsellorModal = ({
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
   };
 
+  const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z.-]+\.[a-zA-Z]{2,}$/;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -87,6 +89,18 @@ export const EditCounsellorModal = ({
 
     if (formData.address && formData.address.length < 3) {
       return toast.error("Address must be at least 3 characters");
+    }
+
+    if (!formData.email?.trim()) {
+      return toast.error("Email is required");
+    }
+
+    if (!formData.phone || formData.phone.replace(/\D/g, "").length < 9) {
+      return toast.error("Valid phone number is required");
+    }
+
+    if (!emailRegex.test(formData.email)) {
+      return toast.error("Please enter a valid email address");
     }
 
     if (formData.cnic && formData.cnic.length < 15) {
@@ -137,7 +151,7 @@ export const EditCounsellorModal = ({
               placeholder="Enter name (3-50 chars)"
             />
             <InputField
-              labelName="Father Name *"
+              labelName="Father Name"
               name="father_name"
               type="text"
               icon={<Users size={18} />}
@@ -166,7 +180,7 @@ export const EditCounsellorModal = ({
 
           <div className="md:col-span-2">
             <InputField
-              labelName="CNIC *"
+              labelName="CNIC"
               name="cnic"
               type="text"
               icon={<IdCard size={18} />}
@@ -176,7 +190,7 @@ export const EditCounsellorModal = ({
           </div>
 
           <TextareaField
-            labelName="Address *"
+            labelName="Address"
             name="address"
             type="text"
             icon={<MapPin size={18} />}

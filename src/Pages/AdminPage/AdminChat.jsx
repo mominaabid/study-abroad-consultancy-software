@@ -420,6 +420,7 @@ function ChatWindow({ conversation }) {
 
             {dayMsgs.map((msg, idx) => {
               // ✅ Student always LEFT, counsellor always RIGHT
+              
               const isStudent = msg.sender_role === "student";
               const showLabel =
                 idx === 0 || dayMsgs[idx - 1]?.sender_id !== msg.sender_id;
@@ -518,10 +519,18 @@ export default function AdminChatPage() {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
         const data = await res.json();
-        const convs = Array.isArray(data) ? data : [];
+        let convs = Array.isArray(data) ? data : [];
+
+        // ✅ Keep only conversations that have at least one message
+        convs = convs.filter(
+          (conv) =>
+            conv.message_count > 0 ||
+            (conv.last_message && conv.last_message.trim() !== ""),
+        );
+
         setConversations(convs);
 
-        // Calculate stats
+        // Recalculate stats based on filtered conversations
         const today = new Date().toDateString();
         const todayConvs = convs.filter((c) => {
           const lastMsgDate = c.last_message_at
@@ -535,6 +544,14 @@ export default function AdminChatPage() {
           active: convs.filter((c) => c.last_message).length,
           today: todayConvs.length,
         });
+
+        // If the currently active conversation was removed, reset active chat
+        if (
+          activeConversation &&
+          !convs.some((c) => c._id === activeConversation._id)
+        ) {
+          setActive(null);
+        }
       } catch (err) {
         console.error("Failed to fetch conversations:", err);
       } finally {
@@ -542,7 +559,7 @@ export default function AdminChatPage() {
       }
     }
     fetchAll();
-  }, []);
+  }, []); // Make sure to include activeConversation in dependency array if you want to handle reset properly, or use a ref
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">

@@ -28,23 +28,34 @@ export const MainContent = () => {
     revenueChange: "+0%",
   });
 
-  // Dynamic stat footer data
+  // New dynamic stats
+  const [chatsCount, setChatsCount] = useState(0);
+  const [counsellorsCount, setCounsellorsCount] = useState(0);
+  const [paymentsCount, setPaymentsCount] = useState(0);
+  const [applicationsWithOfferCount, setApplicationsWithOfferCount] =
+    useState(0);
+
+  // Change percentages for new stats
+  const [chatsChange, setChatsChange] = useState("0%");
+  const [counsellorsChange, setCounsellorsChange] = useState("0%");
+  const [paymentsCountChange, setPaymentsCountChange] = useState("0%");
+  const [applicationsOfferChange, setApplicationsOfferChange] = useState("0%");
+
+  // Existing stat changes
   const [leadsChange, setLeadsChange] = useState("+0%");
   const [applicationsChange, setApplicationsChange] = useState("+0%");
 
   const notifications = useSelector(selectNotifications);
   const user = useSelector(selectUser);
 
-  // Helper: calculate percentage change between two numbers
+  // Helper: calculate percentage change
   const getPercentageChange = (current, previous) => {
-    if (previous === 0) {
-      return current > 0 ? "+100%" : "0%";
-    }
+    if (previous === 0) return current > 0 ? "+100%" : "0%";
     const change = ((current - previous) / previous) * 100;
     return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
   };
 
-  // Fetch Leads
+  // 1. Fetch Leads
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -53,19 +64,15 @@ export const MainContent = () => {
           setLoading(false);
           return;
         }
-
         const res = await fetch(`${BASE_URL}/admin/leads`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
-
         if (!res.ok) throw new Error("Failed to fetch leads");
-
         const data = await res.json();
         const leadsData = Array.isArray(data) ? data : data.data || [];
-
         setLeads(leadsData);
       } catch (err) {
         console.error("Dashboard API error:", err);
@@ -73,67 +80,49 @@ export const MainContent = () => {
         setLoading(false);
       }
     };
-
     fetchLeads();
   }, []);
 
-  // Compute dynamic change for Total Leads
+  // Leads change
   useEffect(() => {
     if (leads.length === 0) {
       setLeadsChange("0%");
       return;
     }
-
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    // First day of current month
-    const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
-    // Last day of previous month
-    const endOfPreviousMonth = new Date(currentYear, currentMonth, 0);
-
-    // Total leads up to now (current total)
+    const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     const totalNow = leads.length;
-
-    // Total leads up to end of previous month (includes all leads created on or before that date)
-    const totalPreviousMonth = leads.filter((lead) => {
-      const createdAt = new Date(lead.createdAt);
-      return createdAt <= endOfPreviousMonth;
-    }).length;
-
-    const change = getPercentageChange(totalNow, totalPreviousMonth);
-    setLeadsChange(change);
+    const totalPreviousMonth = leads.filter(
+      (lead) => new Date(lead.createdAt) <= endOfPreviousMonth,
+    ).length;
+    setLeadsChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [leads]);
 
-  // Fetch Payments for Revenue Stats
+  // 2. Fetch Payments (for revenue + transaction count)
   useEffect(() => {
     const fetchPayments = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
-
         const res = await fetch(`${BASE_URL}/admin/payments`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
-
         if (!res.ok) throw new Error("Failed to fetch payments");
-
         const data = await res.json();
         const paymentsData = data.payments || [];
         setPayments(paymentsData);
+        setPaymentsCount(paymentsData.length);
 
-        // Calculate monthly revenue
+        // Monthly revenue calculation
         const now = new Date();
         const thisMonth = now.getMonth();
         const thisYear = now.getFullYear();
         const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
         const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
-        // Current month revenue
         const monthlyRevenue = paymentsData
           .filter((p) => {
             const paidDate = new Date(p.paid_at);
@@ -145,7 +134,6 @@ export const MainContent = () => {
           })
           .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
-        // Last month revenue for comparison
         const lastMonthRevenue = paymentsData
           .filter((p) => {
             const paidDate = new Date(p.paid_at);
@@ -157,7 +145,6 @@ export const MainContent = () => {
           })
           .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
-        // Calculate change percentage
         let revenueChange = "+0%";
         if (lastMonthRevenue > 0) {
           const change =
@@ -167,25 +154,35 @@ export const MainContent = () => {
           revenueChange = "+100%";
         }
 
-        setPaymentStats({
-          monthlyRevenue,
-          revenueChange,
-        });
+        setPaymentStats({ monthlyRevenue, revenueChange });
       } catch (err) {
         console.error("Payments API error:", err);
       }
     };
-
     fetchPayments();
   }, []);
 
-  // Fetch Counsellor Applications
+  // Payments count change (month-over-month)
+  useEffect(() => {
+    if (payments.length === 0) {
+      setPaymentsCountChange("0%");
+      return;
+    }
+    const now = new Date();
+    const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    const totalNow = payments.length;
+    const totalPreviousMonth = payments.filter(
+      (p) => new Date(p.paid_at) <= endOfPreviousMonth,
+    ).length;
+    setPaymentsCountChange(getPercentageChange(totalNow, totalPreviousMonth));
+  }, [payments]);
+
+  // 3. Fetch Counsellor Applications (existing logic)
   useEffect(() => {
     const fetchCounsellorApplications = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
-
         const res = await fetch(
           `${BASE_URL}/counsellor/applications/students`,
           {
@@ -195,9 +192,7 @@ export const MainContent = () => {
             },
           },
         );
-
         if (!res.ok) throw new Error("Failed to fetch counsellor applications");
-
         const data = await res.json();
         if (data.success && data.students) {
           const allApps = [];
@@ -223,43 +218,136 @@ export const MainContent = () => {
         setApplications([]);
       }
     };
-
     fetchCounsellorApplications();
   }, []);
 
-  // Compute dynamic change for Applications
+  // Applications total change
   useEffect(() => {
     if (applications.length === 0) {
       setApplicationsChange("0%");
       return;
     }
-
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-
-    // End of previous month
-    const endOfPreviousMonth = new Date(currentYear, currentMonth, 0);
-
-    // Total applications now
+    const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     const totalNow = applications.length;
-
-    // Total applications created on or before end of previous month
-    const totalPreviousMonth = applications.filter((app) => {
-      // Use createdAt or fallback to current date
-      const createdDate = app.createdAt ? new Date(app.createdAt) : new Date();
-      return createdDate <= endOfPreviousMonth;
-    }).length;
-
-    const change = getPercentageChange(totalNow, totalPreviousMonth);
-    setApplicationsChange(change);
+    const totalPreviousMonth = applications.filter(
+      (app) => new Date(app.createdAt) <= endOfPreviousMonth,
+    ).length;
+    setApplicationsChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [applications]);
 
-  const now = new Date();
-  const thisMonth = now.getMonth();
-  const thisYear = now.getFullYear();
+  // 4. Applications with Offer Letter Received
+  useEffect(() => {
+    const offerApps = applications.filter(
+      (app) => app.status === "offer letter received",
+    ).length;
+    setApplicationsWithOfferCount(offerApps);
+  }, [applications]);
 
-  // Calculate real counts for funnel
+  // Offer-letter apps change
+  useEffect(() => {
+    if (applicationsWithOfferCount === 0) {
+      setApplicationsOfferChange("0%");
+      return;
+    }
+    const now = new Date();
+    const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    const totalNow = applicationsWithOfferCount;
+    const totalPreviousMonth = applications.filter(
+      (app) =>
+        app.status === "offer letter received" &&
+        new Date(app.createdAt) <= endOfPreviousMonth,
+    ).length;
+    setApplicationsOfferChange(
+      getPercentageChange(totalNow, totalPreviousMonth),
+    );
+  }, [applicationsWithOfferCount, applications]);
+
+  // 5. Fetch Chats
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${BASE_URL}/chat/admin/conversations`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch chats");
+        const data = await res.json();
+        const conversations = Array.isArray(data)
+          ? data
+          : data.conversations || [];
+        setChatsCount(conversations.length);
+      } catch (err) {
+        console.error("Chats API error:", err);
+        setChatsCount(0);
+      }
+    };
+    fetchChats();
+  }, []);
+
+  // Chats change (if createdAt available)
+  useEffect(() => {
+    if (chatsCount === 0) {
+      setChatsChange("0%");
+      return;
+    }
+    // Placeholder – replace with real logic if your chat objects have createdAt
+    setChatsChange("N/A");
+  }, [chatsCount]);
+
+  // 6. Fetch Counsellors
+  useEffect(() => {
+    const fetchCounsellors = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch counsellors");
+        const data = await res.json();
+        const counsellorsList = Array.isArray(data)
+          ? data
+          : data.counsellors || [];
+        setCounsellorsCount(counsellorsList.length);
+      } catch (err) {
+        console.error("Counsellors API error:", err);
+        setCounsellorsCount(0);
+      }
+    };
+    fetchCounsellors();
+  }, []);
+
+  // Counsellors change
+  useEffect(() => {
+    if (counsellorsCount === 0) {
+      setCounsellorsChange("0%");
+      return;
+    }
+    setCounsellorsChange("N/A");
+  }, [counsellorsCount]);
+
+  // --- Navigation Handlers ---
+  const handleNavigateToLeads = () => navigate("/admin/leads");
+  const handleNavigateToCounseling = () => navigate("/admin/counsellors");
+  const handleNavigateToChats = () => navigate("/admin/chats");
+  const handleNavigateToPayments = () => navigate("/admin/payments");
+  const handleNavigateToApplications = () => navigate("/admin/applications");
+  const handleNavigateToActiveStudents = () => navigate("/admin/leads");
+  const handleNavigateToCounsellorsList = () => navigate("/admin/counsellors");
+  const handleNavigateToPaymentsList = () => navigate("/admin/payments");
+  const handleNavigateToOfferLetterApps = () =>
+    navigate("/admin/applications?filter=offer_letter");
+
+  // --- Funnel and other logic (unchanged) ---
+  const now = new Date();
   const newCount = leads.filter(
     (l) => l.status?.toLowerCase() === "new",
   ).length;
@@ -275,20 +363,11 @@ export const MainContent = () => {
   const convertedCount = leads.filter(
     (l) => l.status?.toLowerCase() === "success",
   ).length;
-
-  // Total leads - fixed to actual total count
   const totalLeadsCount = leads.length;
-  // const totalLeadsCount = leads.filter((l) => {
-  //   const status = l.status?.toLowerCase();
-  //   return status === "new" || status === "contacted";
-  // }).length;
-
-  // Active students = Counseling + Evaluated + Converted
   const activeStudentsCount = counselingCount + evaluatedCount + convertedCount;
 
   const getActiveStudentsChange = () => {
     if (totalLeadsCount === 0) return "0%";
-
     const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
@@ -320,41 +399,16 @@ export const MainContent = () => {
     }).length;
 
     if (lastMonthActive === 0) return currentMonthActive > 0 ? "+100%" : "0%";
-
     const diff =
       ((currentMonthActive - lastMonthActive) / lastMonthActive) * 100;
     return `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`;
   };
-
   const activeChange = getActiveStudentsChange();
 
-  const handleNavigateToLeads = () => {
-    navigate("/admin/leads");
-  };
-  const handleNavigateToCounseling = () => {
-    navigate("/admin/counsellors");
-  };
-  const handleNavigateToChats = () => {
-    navigate("/admin/chats");
-  };
-  const handleNavigateToPayments = () => {
-    navigate("/admin/payments");
-  };
-
-  const handleNavigateToApplications = () => {
-    navigate("/admin/applications");
-  };
-
-  const handleNavigateToActiveStudents = () => {
-    navigate("/admin/leads");
-  };
-
-  // Recent Leads (latest 4)
   const recentLeads = [...leads]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 4);
 
-  // Prepare revenue chart data based on actual payments (last 6 months)
   const getMonthlyRevenueData = () => {
     const months = [
       "Jan",
@@ -371,7 +425,6 @@ export const MainContent = () => {
       "Dec",
     ];
     const monthlyTotals = new Array(12).fill(0);
-
     payments.forEach((payment) => {
       if (payment.status === "completed" && payment.amount > 0) {
         const date = new Date(payment.paid_at);
@@ -379,8 +432,6 @@ export const MainContent = () => {
         monthlyTotals[month] += parseFloat(payment.amount);
       }
     });
-
-    // Get last 6 months for better visualization
     const currentMonth = now.getMonth();
     const last6Months = [];
     for (let i = 5; i >= 0; i--) {
@@ -391,24 +442,19 @@ export const MainContent = () => {
         amount: monthlyTotals[monthIdx],
       });
     }
-
     return last6Months;
   };
 
   const revenueData = getMonthlyRevenueData();
   const maxRevenue = Math.max(...revenueData.map((d) => d.amount), 1000);
 
-  // Generate SVG path for revenue chart
   const generateChartPath = () => {
-    if (revenueData.length === 0) return "";
-
+    if (revenueData.length === 0) return { linePath: "", areaPath: "" };
     const width = 400;
     const height = 90;
     const step = width / (revenueData.length - 1);
-
     let linePath = `M 0 ${height - (revenueData[0].amount / maxRevenue) * height}`;
     let areaPath = `M 0 ${height} L 0 ${height - (revenueData[0].amount / maxRevenue) * height}`;
-
     for (let i = 1; i < revenueData.length; i++) {
       const x = i * step;
       const y = height - (revenueData[i].amount / maxRevenue) * height;
@@ -416,11 +462,45 @@ export const MainContent = () => {
       areaPath += ` L ${x} ${y}`;
     }
     areaPath += ` L ${width} ${height} Z`;
-
     return { linePath, areaPath };
   };
-
   const chartPaths = generateChartPath();
+
+  const getNotificationDescription = (notification) => {
+    const { type, metadata } = notification;
+    switch (type) {
+      case "lead_assigned":
+        return `Lead "${metadata.leadName}" was assigned to you.`;
+      case "status_change":
+        return `Application status changed from ${metadata.oldStatusLabel} to ${metadata.newStatusLabel}.`;
+      case "chat_message":
+        return `New message from ${metadata.senderName} (${metadata.senderRole}): "${metadata.preview}"`;
+      case "lead_created":
+        return `Lead "${metadata.leadName}" was created by ${metadata.counsellorName}.`;
+      case "counsellor_added_lead":
+        return `Counsellor ${metadata.counsellorName} added lead "${metadata.leadName}".`;
+      case "payment_awaiting_verification":
+        return `Payment of $${metadata.amount} requires verification.`;
+      case "payment_verified":
+        return `Payment of $${metadata.amount} was verified.`;
+      case "payment_rejected":
+        return `Payment of $${metadata.amount} was rejected.`;
+      case "payment_added_by_admin":
+        return `Payment of $${metadata.amount} was added by admin.`;
+      case "application_created":
+        return `New application submitted.`;
+      case "application_updated":
+        return `Application #${metadata.applicationId} was updated.`;
+      case "document_shared":
+        return `Document shared for application #${metadata.applicationId}.`;
+      case "document_verified":
+        return `Document verified.`;
+      case "document_rejected":
+        return `Document rejected.`;
+      default:
+        return "System update";
+    }
+  };
 
   return (
     <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
@@ -442,7 +522,6 @@ export const MainContent = () => {
                 active students to manage today.
               </p>
             </div>
-
             <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl px-5 py-1 border border-white/20 shadow-inner">
               <Calendar size={20} className="text-teal-100" />
               <div className="flex flex-col">
@@ -462,8 +541,6 @@ export const MainContent = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-        {/* Total Leads - Dynamic change */}
-        {/* Total Leads */}
         <StatCard
           title="Total Leads"
           value={loading ? "..." : totalLeadsCount}
@@ -472,8 +549,6 @@ export const MainContent = () => {
           color="from-cyan-500 to-blue-600"
           onClick={handleNavigateToLeads}
         />
-
-        {/* Active Students */}
         <StatCard
           title="Active Students"
           value={loading ? "..." : activeStudentsCount}
@@ -483,19 +558,15 @@ export const MainContent = () => {
           color="from-emerald-400 to-teal-500"
           onClick={handleNavigateToActiveStudents}
         />
-
-        {/* Monthly Revenue */}
         <StatCard
-          title="Monthly Revenue"
-          value={`$${(paymentStats.monthlyRevenue / 1000).toFixed(1)}K`}
+          title="Total Application Fees Paid"
+          value={`pkr ${(paymentStats.monthlyRevenue / 1000).toFixed(1)}K`}
           change={paymentStats.revenueChange}
           isNegative={paymentStats.revenueChange.startsWith("-")}
           icon={<DollarSign />}
           color="from-violet-500 to-indigo-600"
           onClick={handleNavigateToPayments}
         />
-
-        {/* Applications */}
         <StatCard
           title="Applications"
           value={loading ? "..." : applications.length}
@@ -505,14 +576,47 @@ export const MainContent = () => {
           color="from-rose-500 to-pink-600"
           onClick={handleNavigateToApplications}
         />
+
+        <StatCard
+          title="Chats"
+          value={chatsCount}
+          change={chatsChange}
+          icon={<MessageCircle />}
+          color="from-orange-500 to-rose-500"
+          onClick={handleNavigateToChats}
+        />
+        <StatCard
+          title="Counsellors"
+          value={counsellorsCount}
+          change={counsellorsChange}
+          icon={<Briefcase />}
+          color="from-blue-500 to-indigo-500"
+          onClick={handleNavigateToCounsellorsList}
+        />
+        <StatCard
+          title="Payments"
+          value={paymentsCount}
+          change={paymentsCountChange}
+          isNegative={paymentsCountChange.startsWith("-")}
+          icon={<DollarSign />}
+          color="from-emerald-500 to-teal-500"
+          onClick={handleNavigateToPaymentsList}
+        />
+        <StatCard
+          title="Applications with Offer Letter Received"
+          value={applicationsWithOfferCount}
+          change={applicationsOfferChange}
+          isNegative={applicationsOfferChange.startsWith("-")}
+          icon={<FileText />}
+          color="from-purple-500 to-pink-600"
+          onClick={handleNavigateToOfferLetterApps}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
-        {/* Dynamic Lead Funnel */}
         <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
           <h3 className="font-semibold text-xl text-gray-800 mb-6 flex items-center gap-3">
-            <div className="w-3 h-3 bg-[#009E99] rounded-full"></div>
-            Lead Funnel
+            <div className="w-3 h-3 bg-[#009E99] rounded-full"></div>Lead Funnel
           </h3>
           <div className="space-y-6">
             <ProgressBar
@@ -547,16 +651,14 @@ export const MainContent = () => {
             />
           </div>
         </div>
-
-        {/* Revenue Overview - Dynamic Chart */}
         <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-semibold text-xl text-gray-800">
-              Revenue Overview
+              Application's Fees Overview
             </h3>
             <div className="text-right">
               <p className="text-sm font-bold text-gray-800">
-                ${paymentStats.monthlyRevenue.toLocaleString()}
+                pkr {paymentStats.monthlyRevenue.toLocaleString()}
               </p>
               <p className="text-xs text-gray-400">This Month</p>
             </div>
@@ -593,10 +695,9 @@ export const MainContent = () => {
               )}
             </svg>
           </div>
-          {/* Month labels */}
           <div className="flex justify-around mt-3 px-2">
-            {revenueData.map((data, index) => (
-              <div key={index} className="text-center">
+            {revenueData.map((data, idx) => (
+              <div key={idx} className="text-center">
                 <div className="text-xs font-medium text-gray-500">
                   {data.month}
                 </div>
@@ -610,7 +711,6 @@ export const MainContent = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-        {/* Recent Leads */}
         <div className="xl:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="px-8 py-6 border-b bg-gradient-to-r from-slate-50 to-white flex justify-between items-center">
             <h3 className="font-semibold text-xl text-gray-800">
@@ -623,7 +723,6 @@ export const MainContent = () => {
               View All →
             </button>
           </div>
-
           <table className="w-full">
             <thead className="bg-zinc-50 text-xs uppercase tracking-widest text-gray-500">
               <tr>
@@ -648,7 +747,6 @@ export const MainContent = () => {
                     name={lead.name || "—"}
                     email={lead.email || "—"}
                     country={lead.preferred_country || "—"}
-                    // program={lead.study_level || "—"}
                     program={lead.education?.[0]?.degree || "—"}
                     status={lead.status || "New"}
                     color="bg-cyan-100 text-cyan-700"
@@ -665,41 +763,7 @@ export const MainContent = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
-            <h3 className="font-semibold text-xl text-gray-800 mb-6">
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <ActionButton
-                icon={<Plus size={22} />}
-                label="Add Lead"
-                color="from-teal-500 to-cyan-500"
-                onClick={handleNavigateToLeads}
-              />
-              <ActionButton
-                icon={<Briefcase size={22} />}
-                label="Add Counselor"
-                color="from-blue-500 to-indigo-500"
-                onClick={handleNavigateToCounseling}
-              />
-              <ActionButton
-                icon={<MessageCircle size={22} />}
-                label=" Chats"
-                color="from-orange-500 to-rose-500"
-                onClick={handleNavigateToChats}
-              />
-              <ActionButton
-                icon={<DollarSign size={22} />}
-                label="Payments"
-                color="from-emerald-500 to-teal-500"
-                onClick={handleNavigateToPayments}
-              />
-            </div>
-          </div>
-
           <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-semibold text-xl text-gray-800">
@@ -710,7 +774,6 @@ export const MainContent = () => {
                 LIVE
               </div>
             </div>
-
             <div className="space-y-6">
               {notifications.length > 0 ? (
                 notifications
@@ -719,7 +782,7 @@ export const MainContent = () => {
                     <ActivityItem
                       key={n.id}
                       title={n.message}
-                      desc="System Update"
+                      desc={getNotificationDescription(n)}
                       time={n.time}
                     />
                   ))
@@ -749,14 +812,11 @@ const StatCard = ({
 }) => (
   <div
     onClick={onClick}
-    className={`bg-white px-6 py-2 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 
-               hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 
-               transition-all duration-500 cursor-pointer group relative overflow-hidden h-full flex flex-col justify-between`}
+    className={`bg-white px-6 py-2 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer group relative overflow-hidden h-full flex flex-col justify-between`}
   >
     <div
       className={`absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br ${color} opacity-[0.08] rounded-full group-hover:scale-150 transition-transform duration-700`}
     />
-
     <div className="relative z-10">
       <div className="flex justify-between items-start">
         <div className="space-y-1">
@@ -773,14 +833,9 @@ const StatCard = ({
           {React.cloneElement(icon, { size: 22, strokeWidth: 2.5 })}
         </div>
       </div>
-
       <div className="mt-6 flex items-center gap-2">
         <div
-          className={`flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${
-            isNegative
-              ? "bg-red-50 text-red-600"
-              : "bg-emerald-50 text-emerald-600"
-          }`}
+          className={`flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${isNegative ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"}`}
         >
           {isNegative ? "↓" : "↑"} {change}
         </div>
@@ -792,32 +847,8 @@ const StatCard = ({
   </div>
 );
 
-// const ProgressBar = ({ label, count, total, color }) => {
-//   const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-//   return (
-//     <div>
-//       <div className="flex justify-between text-sm mb-2">
-//         <span className="font-medium text-gray-700">{label}</span>
-//         <span className="text-gray-400 font-medium">
-//           {count} ({percentage}%)
-//         </span>
-//       </div>
-//       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-//         <div
-//           className="h-full rounded-full transition-all duration-700"
-//           style={{
-//             width: `${Math.max(8, percentage)}%`,
-//             backgroundColor: color,
-//           }}
-//         />
-//       </div>
-//     </div>
-//   );
-// };
-
 const ProgressBar = ({ label, count, total, color }) => {
   const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-
   return (
     <div>
       <div className="flex justify-between text-sm mb-2">
@@ -826,15 +857,11 @@ const ProgressBar = ({ label, count, total, color }) => {
           {count} ({percentage}%)
         </span>
       </div>
-
       <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
         {percentage > 0 && (
           <div
             className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${percentage}%`,
-              backgroundColor: color,
-            }}
+            style={{ width: `${percentage}%`, backgroundColor: color }}
           />
         )}
       </div>

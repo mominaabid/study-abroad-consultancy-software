@@ -382,6 +382,15 @@ function CounsellorDocumentModal({
   const validate = () => {
     const newErrors = {};
     if (!formData.doc_type) newErrors.doc_type = "Document type is required";
+
+    if (formData.notes) {
+      if (formData.notes.length < 3) {
+        newErrors.notes = "Notes must be at least 3 characters";
+      } else if (formData.notes.length > 255) {
+        newErrors.notes = "Notes cannot exceed 255 characters";
+      }
+    }
+
     if (!file) {
       newErrors.file = "Please select a file";
     } else {
@@ -517,15 +526,28 @@ function CounsellorDocumentModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Notes (Optional)
             </label>
+
             <textarea
               rows="2"
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
               }
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none"
+              className={`w-full border ${
+                errors.notes ? "border-red-400" : "border-gray-200"
+              } rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none`}
               placeholder="Add notes for the student..."
+              maxLength={255}
             />
+
+            <div className="flex justify-between mt-1">
+              {errors.notes && (
+                <p className="text-red-500 text-xs">{errors.notes}</p>
+              )}
+              <p className="text-xs text-gray-400 ml-auto">
+                {formData.notes.length}/255
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
@@ -834,7 +856,7 @@ export const CounsellorApplication = () => {
     <div className="p-4 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="bg-gradient-to-r from-blue-950 to-teal-900 text-white rounded-2xl p-6 shadow-xl">
+        <div className="bg-[#009E99] text-white rounded-2xl p-6 shadow-xl">
           <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
               <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
