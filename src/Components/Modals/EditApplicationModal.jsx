@@ -141,7 +141,9 @@ export default function EditApplicationModal({
       }
     } catch (err) {
       console.error("Failed to fetch lead education:", err);
-      toast.error("Could not load student's education history");
+      toast.error("Could not load student's education history", {
+        toastId: "edit-app-education-error",
+      });
     } finally {
       setLoadingEducation(false);
     }
@@ -210,10 +212,10 @@ export default function EditApplicationModal({
           "Test score must be a positive number";
       } else if (
         formData.english_test_overall_score.includes(".") &&
-        formData.english_test_overall_score.split(".")[1]?.length > 1
+        formData.english_test_overall_score.split(".")[1]?.length > 2
       ) {
         newErrors.english_test_overall_score =
-          "Score can have at most 1 decimal place";
+          "Score can have at most 2 decimal place";
       }
     }
 
@@ -262,7 +264,7 @@ export default function EditApplicationModal({
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
     if (name === "english_test_overall_score") {
-      if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
+      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
     if (name === "year_awarded") {
       if (value !== "" && !/^\d{0,4}$/.test(value)) return;
@@ -285,7 +287,9 @@ export default function EditApplicationModal({
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error("Please fix the validation errors");
+      toast.error("Please fix the validation errors", {
+        toastId: "edit-app-validation-error",
+      });
       return;
     }
 
@@ -322,14 +326,18 @@ export default function EditApplicationModal({
       );
 
       if (res.data.success) {
-        toast.success("Application updated successfully");
+        toast.success("Application updated successfully", {
+          toastId: "edit-app-success",
+        });
         onSuccess();
         onClose();
       }
     } catch (err) {
       console.error("Error:", err);
+
       toast.error(
         err.response?.data?.message || "Failed to update application",
+        { toastId: "edit-app-error" },
       );
     } finally {
       setLoading(false);

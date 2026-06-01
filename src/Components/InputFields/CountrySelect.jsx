@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { Search, Globe } from "lucide-react";
 import { COUNTRIES } from "../../constants/countries";   
 import { ChevronDown } from "lucide-react";
+
 export default function CountrySelect({
   value = "",
   onChange,
@@ -15,6 +16,20 @@ export default function CountrySelect({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
+
+  // Helper to block leading space
+  const preventLeadingSpace = (e) => {
+    if (e.key === ' ' && e.target.value.length === 0) {
+      e.preventDefault();
+    }
+  };
+
+  const handlePaste = (e) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (pastedText.startsWith(' ')) {
+      e.preventDefault();
+    }
+  };
 
   const filteredCountries = useMemo(() => {
     if (!searchTerm.trim()) return COUNTRIES;
@@ -45,7 +60,8 @@ export default function CountrySelect({
   }, [isOpen]);
 
   const handleSelect = (countryName) => {
-    onChange({ target: { name, value: countryName } });
+    // Trim just in case (should never have leading space from list)
+    onChange({ target: { name, value: countryName.trim() } });
     setIsOpen(false);
     setSearchTerm("");
   };
@@ -81,6 +97,8 @@ export default function CountrySelect({
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={preventLeadingSpace}
+                  onPaste={handlePaste}
                   placeholder="Search country..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-teal-400 text-sm"
                 />

@@ -44,6 +44,13 @@ function formatDate(dateStr) {
   });
 }
 
+// Helper to prevent space as first character
+const preventLeadingSpace = (e) => {
+  if (e.key === " " && e.target.selectionStart === 0) {
+    e.preventDefault();
+  }
+};
+
 // ─── MAKE PAYMENT MODAL ──────────────────────────────────────────────────────
 function MakePaymentModal({
   isOpen,
@@ -74,7 +81,7 @@ function MakePaymentModal({
     let value = parseFloat(e.target.value);
     if (value > maxAmount) {
       toast.error(
-        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,
+        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,  { toastId: "pay-not-exceed" }
       );
       setFormData({ ...formData, amount: maxAmount.toString() });
     } else {
@@ -87,19 +94,19 @@ function MakePaymentModal({
 
     const amountNum = parseFloat(formData.amount);
     if (!formData.amount || amountNum <= 0) {
-      toast.error("Please enter a valid amount");
+      toast.error("Please enter a valid amount" , { toastId: "enter right amount" });
       return;
     }
 
     if (amountNum > maxAmount) {
       toast.error(
-        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,
+        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,  { toastId: "pay-not-access" }
       );
       return;
     }
 
     if (formData.mode === "online" && !proofFile) {
-      toast.error("Please upload payment screenshot for online payment");
+      toast.error("Please upload payment screenshot for online payment" , { toastId: "pay-screenshot" });
       return;
     }
 
@@ -124,7 +131,7 @@ function MakePaymentModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      toast.success(data.message);
+      toast.success(data.message , { toastId: "congrat" });
       onSuccess();
       onClose();
       setFormData({
@@ -135,7 +142,7 @@ function MakePaymentModal({
       });
       removeFile();
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err.message , { toastId: "sad" });
     } finally {
       setLoading(false);
     }
@@ -242,6 +249,7 @@ function MakePaymentModal({
                 placeholder="Enter amount"
                 value={formData.amount}
                 onChange={handleAmountChange}
+                onKeyDown={preventLeadingSpace}
                 className="w-full border border-gray-200 rounded-xl px-7 py-2.5 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none"
               />
             </div>
@@ -321,6 +329,7 @@ function MakePaymentModal({
               onChange={(e) =>
                 setFormData({ ...formData, payment_date: e.target.value })
               }
+              onKeyDown={preventLeadingSpace}
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none"
             />
           </div>
@@ -336,6 +345,7 @@ function MakePaymentModal({
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
               }
+              onKeyDown={preventLeadingSpace}
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none resize-none"
             />
           </div>
@@ -414,7 +424,7 @@ export default function StudentPayments() {
       );
     } catch (err) {
       console.error("Fetch payments error:", err);
-      toast.error("Failed to load payment history");
+      toast.error("Failed to load payment history" , { toastId: "pa-not-load" });
     }
   };
 
@@ -533,7 +543,7 @@ export default function StudentPayments() {
       );
     } catch (err) {
       console.error("Fetch applications error:", err);
-      toast.error("Failed to load applications");
+      toast.error("Failed to load applications" , { toastId: "app-fal" });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -835,7 +845,7 @@ export default function StudentPayments() {
                           <div className="flex justify-between font-bold">
                             <span className="text-sm">Final Fees to Pay:</span>
                             <span className="text-teal-600">
-                              pkr n{(app.final_fees || 0).toLocaleString()}
+                              pkr {(app.final_fees || 0).toLocaleString()}
                             </span>
                           </div>
                           <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
@@ -862,10 +872,11 @@ export default function StudentPayments() {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-600">Payment Progress</span>
                       <span className="font-semibold">
-                        pkr {(app.total_paid || 0).toLocaleString()} / pkr &nbsp;
+                        pkr {(app.total_paid || 0).toLocaleString()} / pkr
+                        &nbsp;
                         {(
                           app.final_fees ||
-                          app.total_fees || 
+                          app.total_fees ||
                           0
                         ).toLocaleString()}
                       </span>
@@ -1060,7 +1071,7 @@ export default function StudentPayments() {
           refreshAllData();
           fetchPaymentStats();
 
-          toast.success("Payment submitted! Admin will verify it soon.");
+          toast.success("Payment submitted! Admin will verify it soon." , { toastId: "pay-sbmt" });
         }}
         application={selectedApplication}
         totalFees={selectedAppSummary.total_fees}

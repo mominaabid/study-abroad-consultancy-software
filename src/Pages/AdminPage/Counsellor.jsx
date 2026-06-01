@@ -55,7 +55,9 @@ export const Counsellor = () => {
       setAllCounsellors(data);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load counsellors");
+      toast.error("Failed to load counsellors", {
+        toastId: "counsellor-load-error",
+      });
     }
   }, []);
 
@@ -106,11 +108,14 @@ export const Counsellor = () => {
       await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Counsellor deleted successfully");
+
+      toast.success("Counsellor deleted successfully", { toastId: "counsellor-delete-success" });
+
       await fetchCounsellors();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete counsellor");
+      toast.error("Failed to delete counsellor", { toastId: "counsellor-delete-error" });
+
     }
   };
 

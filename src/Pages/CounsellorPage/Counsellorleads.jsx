@@ -165,9 +165,9 @@ export default function CounsellorLeads() {
         body: JSON.stringify({ status, note }),
       });
       if (!res.ok) throw new Error();
-      toast.success(`Lead moved to ${status} stage`);
+      toast.success(`Lead moved to ${status} stage` , { toastId: "lead-moved" });
     } catch {
-      toast.error("Failed to update lead status");
+      toast.error("Failed to update lead status" , { toastId: "filed-edit-lead-status" });
       fetchLeads();
     }
   }
@@ -189,10 +189,10 @@ export default function CounsellorLeads() {
         },
       });
       if (!res.ok) throw new Error();
-      toast.success("Lead deleted successfully");
+      toast.success("Lead deleted successfully" , { toastId: "lead-remove-success" });
       fetchLeads(currentPage);
     } catch {
-      toast.error("Failed to delete lead");
+      toast.error("Failed to delete lead" , { toastId: "failed-remove-lead" });
     }
   }
 
@@ -226,7 +226,7 @@ export default function CounsellorLeads() {
       download: "my-leads.csv",
     });
     a.click();
-    toast.info("Exporting leads...");
+    toast.info("Exporting leads..." , { toastId: "lead-export" });
   }
 
   // ─── Filtered & grouped data ────────────────────────────────────────────────

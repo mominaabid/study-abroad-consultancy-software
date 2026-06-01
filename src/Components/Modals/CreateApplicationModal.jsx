@@ -124,7 +124,9 @@ export default function CreateApplicationModal({
       }
     } catch (err) {
       console.error("Failed to fetch lead education:", err);
-      toast.error("Could not load student's education history");
+      toast.error("Could not load student's education history", {
+        toastId: "fetch-education-error",
+      });
       setEducationEntries([]);
     } finally {
       setLoadingEducation(false);
@@ -236,10 +238,10 @@ export default function CreateApplicationModal({
           "Test score must be a positive number";
       } else if (
         formData.english_test_overall_score.includes(".") &&
-        formData.english_test_overall_score.split(".")[1]?.length > 1
+        formData.english_test_overall_score.split(".")[1]?.length > 2
       ) {
         newErrors.english_test_overall_score =
-          "Score can have at most 1 decimal place";
+          "Score can have at most 2 decimal places";
       }
     }
 
@@ -265,12 +267,37 @@ export default function CreateApplicationModal({
       }
     }
 
+    // Leading space checks for Basic Information fields
+    const basicFields = ["target_university", "course", "target_country"];
+    basicFields.forEach((field) => {
+      const val = formData[field];
+      if (val && val.startsWith(" ")) {
+        newErrors[field] = "Leading space is not allowed";
+      }
+    });
+
     return newErrors;
+  };
+
+  const preventLeadingSpace = (e) => {
+    if (e.key === " " && e.target.value.length === 0) {
+      e.preventDefault();
+      toast.warning("Leading space is not allowed", {
+        toastId: "leading-space-warning",
+      });
+    }
   };
 
   const handleFieldChange = (e) => {
     const { name, value } = e.target;
-    if (value.startsWith(" ")) return;
+
+    if (value.startsWith(" ")) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "Leading space is not allowed",
+      }));
+      return;
+    }
 
     // Prevent numbers in specific text fields
     if (
@@ -288,7 +315,7 @@ export default function CreateApplicationModal({
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
     if (name === "english_test_overall_score") {
-      if (value !== "" && !/^\d*\.?\d{0,1}$/.test(value)) return;
+      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
     if (name === "year_awarded") {
       if (value !== "" && !/^\d{0,4}$/.test(value)) return;
@@ -319,12 +346,15 @@ export default function CreateApplicationModal({
       } else {
         setFormData((prev) => ({ ...prev, [name]: value }));
       }
-      setErrors((prev) => {
-        const newErrs = { ...prev };
-        delete newErrs.user_id;
-        delete newErrs.email;
-        return newErrs;
-      });
+
+      if (errors[name] && !value.startsWith(" ") && value.trim().length > 0) {
+        setErrors((prev) => {
+          const newErrs = { ...prev };
+          delete newErrs[name];
+          return newErrs;
+        });
+      }
+
       return;
     }
 
@@ -343,7 +373,9 @@ export default function CreateApplicationModal({
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error("Please fix the validation errors");
+      toast.error("Please fix the validation errors", {
+        toastId: "validation-error",
+      });
       return;
     }
 
@@ -384,7 +416,9 @@ export default function CreateApplicationModal({
       );
 
       if (res.data.success) {
-        toast.success("Application created successfully");
+        toast.success("Application created successfully", {
+          toastId: "app-create-success",
+        });
         onSuccess();
         onClose();
       }
@@ -392,6 +426,7 @@ export default function CreateApplicationModal({
       console.error("Error:", err);
       toast.error(
         err.response?.data?.message || "Failed to create application",
+        { toastId: "app-create-error" },
       );
     } finally {
       setLoading(false);
@@ -435,6 +470,15 @@ export default function CreateApplicationModal({
                   name="target_country"
                   placeholder="Select target country"
                   required={true}
+                  onKeyDown={preventLeadingSpace}
+                  onBlur={(e) => {
+                    if (e.target.value?.startsWith(" ")) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        target_country: "Leading space is not allowed",
+                      }));
+                    }
+                  }}
                 />
                 <UniversitySelect
                   value={formData.target_university}
@@ -442,6 +486,15 @@ export default function CreateApplicationModal({
                   name="target_university"
                   universities={universitieslist}
                   required={true}
+                  onKeyDown={preventLeadingSpace}
+                  onBlur={(e) => {
+                    if (e.target.value?.startsWith(" ")) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        target_university: "Leading space is not allowed",
+                      }));
+                    }
+                  }}
                 />
               </div>
 
@@ -452,6 +505,15 @@ export default function CreateApplicationModal({
                   name="course"
                   courses={coursesList}
                   required={true}
+                  onKeyDown={preventLeadingSpace}
+                  onBlur={(e) => {
+                    if (e.target.value?.startsWith(" ")) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        course: "Leading space is not allowed",
+                      }));
+                    }
+                  }}
                 />
                 <FormField label="Deadline *">
                   <input

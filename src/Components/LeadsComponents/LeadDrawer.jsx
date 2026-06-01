@@ -166,7 +166,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
       (stage.key === "success" || stage.key === "rejected") &&
       lead.status !== "visa"
     ) {
-      toast.error(`Must reach "Visa" stage before marking as ${stage.label}.`);
+      toast.error(`Must reach "Visa" stage before marking as ${stage.label}.` , { toastId: "reach-vsa" });
       return;
     }
     const SEQUENTIAL = [
@@ -179,7 +179,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
     ];
     if (ti > currentIndex + 1 && SEQUENTIAL.includes(stage.key)) {
       toast.error(
-        `Complete "${STAGES[currentIndex + 1]?.label}" first before skipping ahead.`,
+        `Complete "${STAGES[currentIndex + 1]?.label}" first before skipping ahead.`,  { toastId: "full-first" }
       );
       return;
     }
@@ -189,12 +189,12 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
   };
 
   const handleStageConfirm = () => {
-    if (!stageNote.trim()) return toast.error("Note is required!");
+    if (!stageNote.trim()) return toast.error("Note is required!" , { toastId: "note-chahiye" });
     const finalNote = `[${targetStage.label}] ${stageNote}`;
     onStage(lead.id, targetStage.key, finalNote);
     setStageNote("");
     setShowStageModal(false);
-    toast.success(`Moved to ${targetStage.label}`);
+    toast.success(`Moved to ${targetStage.label}` , { toastId: "moved" });
     setTimeout(fetchNotes, 700);
   };
 

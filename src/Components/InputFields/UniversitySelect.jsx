@@ -14,6 +14,19 @@ export default function UniversitySelect({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
+  const preventLeadingSpace = (e) => {
+    if (e.key === " " && e.target.value.length === 0) {
+      e.preventDefault();
+    }
+  };
+
+  const handlePaste = (e) => {
+    const pastedText = e.clipboardData.getData("text");
+    if (pastedText.startsWith(" ")) {
+      e.preventDefault();
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -32,13 +45,14 @@ export default function UniversitySelect({
   }, [universities, searchTerm]);
 
   const handleSelect = (uniName) => {
-    onChange({ target: { name, value: uniName } });
+    onChange({ target: { name, value: uniName.trim() } });
     setIsOpen(false);
     setSearchTerm("");
   };
 
   const handleInputChange = (e) => {
-    const newValue = e.target.value;
+    let newValue = e.target.value;
+    if (newValue.startsWith(" ")) return;
     setSearchTerm(newValue);
     onChange({ target: { name, value: newValue } });
   };
@@ -56,6 +70,8 @@ export default function UniversitySelect({
             value={value}
             onChange={handleInputChange}
             onFocus={() => setIsOpen(true)}
+            onKeyDown={preventLeadingSpace}
+            onPaste={handlePaste}
             placeholder={placeholder}
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none pr-10"
           />
@@ -84,6 +100,8 @@ export default function UniversitySelect({
                   autoFocus
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={preventLeadingSpace}
+                  onPaste={handlePaste}
                   placeholder="Search from list..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:border-teal-400"
                 />

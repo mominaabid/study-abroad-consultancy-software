@@ -561,7 +561,7 @@ export default function CounsellorDocuments() {
       setDocuments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Fetch docs error:", err);
-      toast.error("Failed to load documents");
+      toast.error("Failed to load documents" , { toastId: "doc-loading-failed" });
     } finally {
       setLoading(false);
     }
@@ -598,12 +598,12 @@ export default function CounsellorDocuments() {
         throw new Error(errorData.message || 'Verification failed');
       }
       
-      toast.success("Document verified successfully!");
+      toast.success("Document verified successfully!" , { toastId: "doc-verified-success" });
       await fetchDocs();
       
     } catch (err) {
       console.error('Verify error:', err);
-      toast.error(err.message || "Failed to verify.");
+      toast.error(err.message || "Failed to verify." , { toastId: "verify-failed" });
       updateDocumentInState(docId, { status: docToVerify.status });
     } finally {
       setVerifying(null);
@@ -637,13 +637,13 @@ export default function CounsellorDocuments() {
         throw new Error(errorData.message || 'Rejection failed');
       }
       
-      toast.success("Document rejected. Student notified.");
+      toast.success("Document rejected. Student notified." , { toastId: "doc-reject-student-notify" });
       setRejectDoc(null);
       await fetchDocs();
       
     } catch (err) {
       console.error('Reject error:', err);
-      toast.error(err.message || "Failed to reject.");
+      toast.error(err.message || "Failed to reject." , { toastId: "rejection-failed" });
       updateDocumentInState(docId, { status: docToReject.status, rejection_reason: null });
     } finally {
       setRejecting(null);

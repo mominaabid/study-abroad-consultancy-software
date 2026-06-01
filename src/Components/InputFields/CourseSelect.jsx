@@ -14,6 +14,20 @@ export default function CourseSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
+  // Helper to block leading space
+  const preventLeadingSpace = (e) => {
+    if (e.key === " " && e.target.value.length === 0) {
+      e.preventDefault();
+    }
+  };
+
+  const handlePaste = (e) => {
+    const pastedText = e.clipboardData.getData("text");
+    if (pastedText.startsWith(" ")) {
+      e.preventDefault();
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -27,20 +41,22 @@ export default function CourseSelect({
   const filteredCourses = useMemo(() => {
     if (!searchTerm.trim()) return courses;
     return courses.filter((course) =>
-      course.toLowerCase().includes(searchTerm.toLowerCase())
+      course.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [courses, searchTerm]);
 
   const handleSelect = (courseName) => {
-    onChange({ target: { name, value: courseName } });
+    onChange({ target: { name, value: courseName.trim() } });
     setIsOpen(false);
     setSearchTerm("");
   };
 
   const handleInputChange = (e) => {
-    const newValue = e.target.value;
+    let newValue = e.target.value;
+    // Block leading space
+    if (newValue.startsWith(" ")) return;
     setSearchTerm(newValue);
-    onChange({ target: { name, value: newValue } }); 
+    onChange({ target: { name, value: newValue } });
   };
 
   return (
@@ -56,6 +72,8 @@ export default function CourseSelect({
             value={value}
             onChange={handleInputChange}
             onFocus={() => setIsOpen(true)}
+            onKeyDown={preventLeadingSpace}
+            onPaste={handlePaste}
             placeholder={placeholder}
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none pr-10"
           />
@@ -64,33 +82,34 @@ export default function CourseSelect({
             onClick={() => setIsOpen(!isOpen)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            <ChevronDown 
-              size={20} 
-              className={`${isOpen ? "rotate-180" : ""} transition-transform`} 
+            <ChevronDown
+              size={20}
+              className={`${isOpen ? "rotate-180" : ""} transition-transform`}
             />
           </button>
         </div>
 
-        {/* Dropdown */}
         {isOpen && (
           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-[320px] flex flex-col">
-            
-            {/* Search Box */}
             <div className="p-3 border-b sticky top-0 bg-white">
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="text"
                   autoFocus
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={preventLeadingSpace}
+                  onPaste={handlePaste}
                   placeholder="Search courses..."
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:border-teal-400"
                 />
               </div>
             </div>
 
-            {/* Courses List */}
             <div className="overflow-y-auto flex-1">
               {filteredCourses.length > 0 ? (
                 filteredCourses.map((course, idx) => (
@@ -105,8 +124,11 @@ export default function CourseSelect({
                 ))
               ) : (
                 <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                  No matching course found<br />
-                  <span className="text-xs">You can type any custom course name above</span>
+                  No matching course found
+                  <br />
+                  <span className="text-xs">
+                    You can type any custom course name above
+                  </span>
                 </div>
               )}
             </div>

@@ -207,7 +207,7 @@ export const StudentProfile = () => {
       }
     } catch (err) {
       console.error("Profile fetch error:", err);
-      toast.error(err?.response?.data?.message || "Failed to load profile");
+      toast.error(err?.response?.data?.message || "Failed to load profile" , { toastId: "no-lod" });
       setProfile(null);
     } finally {
       setLoading(false);
@@ -250,19 +250,19 @@ export const StudentProfile = () => {
 
   const validateForm = () => {
     if (!formData.name.trim() || formData.name.trim().length < 2) {
-      toast.error("Name must be at least 2 characters");
+      toast.error("Name must be at least 2 characters" , { toastId: "na-2-char" });
       return false;
     }
     if (!formData.phone.trim()) {
-      toast.error("Phone number is required");
+      toast.error("Phone number is required" , { toastId: "phone-need" });
       return false;
     }
     if (!formData.preferred_country.trim()) {
-      toast.error("Preferred country is required");
+      toast.error("Preferred country is required" , { toastId: "coun-req" });
       return false;
     }
     if (!formData.study_level.trim()) {
-      toast.error("Study level is required");
+      toast.error("Study level is required" , { toastId: "study-req" });
       return false;
     }
     return true;
@@ -288,11 +288,11 @@ export const StudentProfile = () => {
       );
 
       setProfile(response.data);
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated successfully!" , { toastId: "prof-edit-haply" });
       setEditMode(false);
     } catch (err) {
       console.error("Update error:", err);
-      toast.error(err?.response?.data?.message || "Failed to update profile");
+      toast.error(err?.response?.data?.message || "Failed to update profile" , { toastId: "fal-pro-load" });
     } finally {
       setUpdating(false);
     }
@@ -316,12 +316,12 @@ export const StudentProfile = () => {
     // Validate file type
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Only JPEG, PNG, or WEBP images are allowed");
+      toast.error("Only JPEG, PNG, or WEBP images are allowed" , { toastId: "this-types-allowed" });
       return;
     }
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be less than 5MB");
+      toast.error("Image size must be less than 5MB" , { toastId: "< 5MG" });
       return;
     }
 
@@ -340,13 +340,13 @@ export const StudentProfile = () => {
           },
         },
       );
-      toast.success("Profile picture updated!");
+      toast.success("Profile picture updated!" , { toastId: "pic-edi-pro" });
       setProfilePictureUrl(res.data.profilePictureUrl);
       // Refresh profile to keep data consistent
       fetchProfile();
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error(err?.response?.data?.message || "Failed to upload image");
+      toast.error(err?.response?.data?.message || "Failed to upload image" , { toastId: "uplod-pi-fl" });
     }
   };
 
@@ -443,22 +443,8 @@ export const StudentProfile = () => {
                 <h2 className="text-xl font-bold text-gray-800">
                   {profile.name}
                 </h2>
-                <p className="text-sm text-teal-600 font-medium mt-1 flex items-center justify-center gap-1">
-                  <Shield size={14} />
-                  Student
-                </p>
               </div>
               <div className="border-t border-gray-100 px-6 py-4 space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail size={16} className="text-gray-400" />
-                  <span className="text-gray-600">{profile.email}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone size={16} className="text-gray-400" />
-                  <span className="text-gray-600">
-                    {profile.phone || "Not provided"}
-                  </span>
-                </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Calendar size={16} className="text-gray-400" />
                   <span className="text-gray-600">
@@ -485,37 +471,7 @@ export const StudentProfile = () => {
                       "Unassigned"}
                   </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500 flex items-center gap-2">
-                    <Globe size={14} /> Preferred Country
-                  </span>
-                  <span className="font-medium text-gray-700 flex items-center gap-1.5">
-                    {profile.preferred_country && (
-                      <CountryFlag
-                        countryCode={
-                          getCountryByName(profile.preferred_country)?.iso || ""
-                        }
-                        svg
-                        style={{ width: "1.2em", height: "0.9em" }}
-                      />
-                    )}
-                    {profile.preferred_country || "—"}
-                    {profile.preferred_country &&
-                      getCountryByName(profile.preferred_country) && (
-                        <span className="text-gray-400 text-xs ml-1">
-                          ({getCountryByName(profile.preferred_country)?.value})
-                        </span>
-                      )}
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500 flex items-center gap-2">
-                    <BookOpen size={14} /> Study Level
-                  </span>
-                  <span className="font-medium text-gray-700">
-                    {profile.study_level || "—"}
-                  </span>
-                </div>
+
                 <div className="flex justify-between py-2">
                   <span className="text-gray-500">Last Updated</span>
                   <span className="font-medium text-gray-700">

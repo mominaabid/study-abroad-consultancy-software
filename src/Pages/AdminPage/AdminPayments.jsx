@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import SearchableSelect from "../../Components/SearchableSelect";
+
 function getToken() {
   return localStorage.getItem("token") || "";
 }
@@ -47,12 +48,28 @@ function formatDate(dateStr) {
   });
 }
 
+// ─── HELPER: Prevent spacebar as first character ───────────────────────────
+const preventLeadingSpace = {
+  onKeyDown: (e) => {
+    if (e.key !== " ") return;
+    const target = e.target;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    const value = target.value;
+    // Simulate the new value if space is inserted at cursor/selection
+    const newValue = value.substring(0, start) + " " + value.substring(end);
+    // If the new value would start with a space, prevent it
+    if (newValue.trimStart() !== newValue) {
+      e.preventDefault();
+    }
+  },
+};
+
 // ─── SET FEES MODAL ────────────────────────────────────────────────────────
-// ─── SET FEES MODAL WITH OPTIONAL SCHOLARSHIP ────────────────────────────────
 function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
   const [formData, setFormData] = useState({
     total_fees: "",
-    scholarship: "0",
+    scholarship: "",
     scholarship_type: "",
     scholarship_remarks: "",
   });
@@ -69,18 +86,22 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.total_fees || formData.total_fees <= 0) {
-      toast.error("Please enter a valid total fees amount");
+      toast.error("Please enter a valid total fees amount", {
+        toastId: "enter-valid-total-fees",
+      });
       return;
     }
 
     const isValidLength = (val, min, max) =>
       val && val.toString().length >= min && val.toString().length <= max;
 
-    if (
-      !isValidLength(formData.total_fees, 5, 12) ||
-      !isValidLength(formData.scholarship, 5, 12)
-    ) {
-      toast.error("Fees and scholarship must be between 5 and 12 characters");
+    const isScholarshipValid =
+      !formData.scholarship || isValidLength(formData.scholarship, 3, 12);
+
+    if (!isValidLength(formData.total_fees, 3, 12) || !isScholarshipValid) {
+      toast.error("Fees and scholarship must be between 3 and 12 characters", {
+        toastId: "fees & scholarship amount between 3 and 12",
+      });
       return;
     }
 
@@ -89,7 +110,9 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
       (formData.scholarship_remarks.length < 3 ||
         formData.scholarship_remarks.length > 255)
     ) {
-      toast.error("Remarks must be between 3 and 255 characters");
+      toast.error("Remarks must be between 3 and 255 characters", {
+        toastId: "remarks btw 3 and 255",
+      });
       return;
     }
 
@@ -112,15 +135,19 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
+
       toast.success(
         parseFloat(formData.scholarship) > 0
           ? `Fees set successfully! Scholarship of PKR ${formData.scholarship} applied. Final fees: PKR ${finalFees}`
           : "Total fees set successfully!",
+        { toastId: "set-fees-success" },
       );
       onSuccess();
       onClose();
     } catch (err) {
-      toast.error(err.message || "Failed to set fees");
+      toast.error(err.message || "Failed to set fees", {
+        toastId: "set-fees-api-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -166,14 +193,14 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
               <input
                 type="text"
                 inputMode="numeric"
-                step="0.01"
-                minLength={5}
+                minLength={3}
                 maxLength={12}
                 required
                 value={formData.total_fees}
                 onChange={(e) =>
                   setFormData({ ...formData, total_fees: e.target.value })
                 }
+                onKeyDown={preventLeadingSpace.onKeyDown}
                 className="w-full border border-gray-200 rounded-xl pl-10 pr-3 py-2 outline-none focus:border-teal-400"
                 placeholder="Enter total fees"
               />
@@ -204,13 +231,13 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                   <input
                     type="text"
                     inputMode="numeric"
-                    step="0.01"
-                    minLength={5}
+                    minLength={3}
                     maxLength={12}
                     value={formData.scholarship}
                     onChange={(e) =>
                       setFormData({ ...formData, scholarship: e.target.value })
                     }
+                    onKeyDown={preventLeadingSpace.onKeyDown}
                     className="w-full border border-gray-200 rounded-xl pl-10 pr-3 py-2 outline-none focus:border-teal-400"
                     placeholder="Enter scholarship amount (if any)"
                   />
@@ -271,6 +298,7 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
                       scholarship_remarks: e.target.value,
                     })
                   }
+                  onKeyDown={preventLeadingSpace.onKeyDown}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400 resize-none text-sm"
                   placeholder="Additional remarks about scholarship"
                 />
@@ -349,7 +377,6 @@ function SetFeesModal({ isOpen, onClose, onSuccess, student }) {
 }
 
 // ─── ADD PAYMENT MODAL (RESPONSIVE) ─────────────────────────────────────────
-// ─── ADD PAYMENT MODAL WITH AUTO-GENERATED REFERENCE ─────────────────────────
 function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
   const [formData, setFormData] = useState({
     amount: "",
@@ -401,16 +428,20 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.amount || formData.amount <= 0) {
-      toast.error("Please enter a valid amount");
+      toast.error("Please enter a valid amount", {
+        toastId: "add-payment-validation-error",
+      });
       return;
     }
 
     if (
       !formData.amount ||
-      formData.amount.toString().length < 5 ||
+      formData.amount.toString().length < 3 ||
       formData.amount.toString().length > 12
     ) {
-      toast.error("Amount must be between 5 and 12 characters");
+      toast.error("Amount must be between 3 and 12 characters", {
+        toastId: "add-payment-validation-error",
+      });
       return;
     }
 
@@ -418,7 +449,9 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
       formData.notes &&
       (formData.notes.length < 3 || formData.notes.length > 255)
     ) {
-      toast.error("Notes must be between 3 and 255 characters");
+      toast.error("Notes must be between 3 and 255 characters", {
+        toastId: "add-payment-validation-error",
+      });
       return;
     }
 
@@ -446,7 +479,9 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add payment");
 
-      toast.success("Payment added successfully!");
+      toast.success("Payment added successfully!", {
+        toastId: "add-payment-success",
+      });
       onSuccess();
       onClose();
       setFormData({
@@ -459,7 +494,10 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
       });
     } catch (err) {
       console.error("Add payment error:", err);
-      toast.error(err.message || "Failed to add payment");
+
+      toast.error(err.message || "Failed to add payment", {
+        toastId: "add-payment-api-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -472,7 +510,10 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
       reference_no: generateReferenceNo(),
       transaction_id: generateTransactionId(),
     }));
-    toast.info("New reference numbers generated");
+
+    toast.info("New reference numbers generated", {
+      toastId: "regenerate-ref-info",
+    });
   };
 
   if (!isOpen) return null;
@@ -509,14 +550,14 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
               <input
                 type="text"
                 inputMode="numeric"
-                step="0.01"
-                minLength={5}
+                minLength={3}
                 maxLength={12}
                 required
                 value={formData.amount}
                 onChange={(e) =>
                   setFormData({ ...formData, amount: e.target.value })
                 }
+                onKeyDown={preventLeadingSpace.onKeyDown}
                 className="w-full border border-gray-200 rounded-xl pl-10 pr-3 py-2 outline-none focus:border-teal-400"
                 placeholder="Enter amount"
               />
@@ -578,6 +619,7 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
                   onChange={(e) =>
                     setFormData({ ...formData, reference_no: e.target.value })
                   }
+                  onKeyDown={preventLeadingSpace.onKeyDown}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400 text-sm"
                   placeholder="Reference number"
                   readOnly={formData.mode === "cash"}
@@ -611,6 +653,7 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
                   onChange={(e) =>
                     setFormData({ ...formData, transaction_id: e.target.value })
                   }
+                  onKeyDown={preventLeadingSpace.onKeyDown}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400 text-sm"
                   placeholder="Transaction ID"
                   readOnly={formData.mode === "cash"}
@@ -631,6 +674,7 @@ function AddPaymentModal({ isOpen, onClose, onSuccess, student }) {
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
               }
+              onKeyDown={preventLeadingSpace.onKeyDown}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-teal-400 resize-none text-sm"
               placeholder="Additional notes"
             />
@@ -673,7 +717,9 @@ function VerifyPaymentModal({ isOpen, onClose, onSuccess, payment }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (action === "reject" && !rejectionReason.trim()) {
-      toast.error("Please provide a reason for rejection");
+      toast.error("Please provide a reason for rejection", {
+        toastId: "verify-payment-validation-error",
+      });
       return;
     }
     setLoading(true);
@@ -691,11 +737,16 @@ function VerifyPaymentModal({ isOpen, onClose, onSuccess, payment }) {
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      toast.success(`Payment ${action}d successfully!`);
+
+      toast.success(`Payment ${action}d successfully!`, {
+        toastId: "verify-payment-success",
+      });
       onSuccess();
       onClose();
     } catch (err) {
-      toast.error(err.message || "Failed to verify payment");
+      toast.error(err.message || "Failed to verify payment", {
+        toastId: "verify-payment-api-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -743,6 +794,7 @@ function VerifyPaymentModal({ isOpen, onClose, onSuccess, payment }) {
                 rows={3}
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
+                onKeyDown={preventLeadingSpace.onKeyDown}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-red-400 resize-none text-sm"
                 placeholder="Why is this payment being rejected?"
               />
@@ -821,7 +873,10 @@ function StudentDetailsPanel({
       setPayments(paymentsArray);
     } catch (err) {
       console.error("Fetch student payments error:", err);
-      toast.error(`Failed to load payment history: ${err.message}`);
+
+      toast.error(`Failed to load payment history: ${err.message}`, {
+        toastId: "fetch-student-payments-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -1024,7 +1079,10 @@ export default function AdminPayments() {
       setStudents(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Fetch students error:", err);
-      toast.error("Failed to load students");
+
+      toast.error("Failed to load students", {
+        toastId: "fetch-offer-letter-error",
+      });
     }
   }, []);
 
@@ -1046,6 +1104,9 @@ export default function AdminPayments() {
       );
     } catch (err) {
       console.error("Fetch payments error:", err);
+      toast.error("Failed to load payments", {
+        toastId: "fetch-all-payments-error",
+      });
     }
   }, []);
 
@@ -1061,6 +1122,9 @@ export default function AdminPayments() {
       setPendingVerifications(data.payments || []);
     } catch (err) {
       console.error("Fetch pending verifications error:", err);
+      toast.error("Failed to load pending verifications", {
+        toastId: "fetch-pending-verifications-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -1071,12 +1135,6 @@ export default function AdminPayments() {
     fetchAllPayments();
     fetchPendingVerifications();
   }, [fetchOfferLetterStudents, fetchAllPayments, fetchPendingVerifications]);
-
-  // const handleSuccess = () => {
-  //   fetchOfferLetterStudents();
-  //   fetchAllPayments();
-  //   fetchPendingVerifications();
-  // };
 
   const handleSuccess = async () => {
     await fetchOfferLetterStudents();
@@ -1104,6 +1162,9 @@ export default function AdminPayments() {
         }
       } catch (err) {
         console.error("Failed to refresh selected student", err);
+        toast.error("Failed to refresh selected student", {
+          toastId: "refresh-selected-student-error",
+        });
       }
     }
   };
@@ -1224,6 +1285,7 @@ export default function AdminPayments() {
                     placeholder="Search students..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={preventLeadingSpace.onKeyDown}
                     className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl outline-none focus:border-teal-400"
                   />
                 </div>

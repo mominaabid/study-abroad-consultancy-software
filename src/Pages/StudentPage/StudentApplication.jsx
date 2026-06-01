@@ -91,7 +91,7 @@ function DocumentUploadModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) {
-      toast.error("Please select a file");
+      toast.error("Please select a file" , { toastId: "choose file" });
       return;
     }
 
@@ -107,12 +107,12 @@ function DocumentUploadModal({
         formData,
       );
       if (res.data) {
-        toast.success("Document uploaded successfully!");
+        toast.success("Document uploaded successfully!" , { toastId: "doc-load" });
         onSuccess();
         onClose();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Upload failed");
+      toast.error(err.response?.data?.message || "Upload failed" , { toastId: "viral load" });
     } finally {
       setLoading(false);
     }
@@ -553,9 +553,9 @@ export const StudentApplication = () => {
     } catch (err) {
       console.error("Error fetching applications:", err);
       if (err.response?.status === 401) {
-        toast.error("Session expired. Please login again.");
+        toast.error("Session expired. Please login again." , { toastId: "sign-in again" });
       } else {
-        toast.error("Failed to load applications");
+        toast.error("Failed to load applications" , { toastId: "app-load-failed" });
       }
     } finally {
       setLoading(false);

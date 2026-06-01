@@ -50,9 +50,10 @@ export const EditCounsellorModal = ({
     }
 
     if (name === "phone") {
-      formattedValue = formattedValue.replace(/\D/g, "");
-      if (formattedValue.length > 11) {
-        formattedValue = formattedValue.slice(0, 11);
+      formattedValue = formattedValue.trimStart();
+
+      if (formattedValue.length > 20) {
+        formattedValue = formattedValue.slice(0, 20);
       }
     }
 
@@ -80,31 +81,31 @@ export const EditCounsellorModal = ({
     e.preventDefault();
 
     if (formData.name && formData.name.length < 3) {
-      return toast.error("Name must be at least 3 characters");
+      return toast.error("Name must be at least 3 characters" , { toastId: "nam-teen-char" });
     }
 
     if (formData.father_name && formData.father_name.length < 3) {
-      return toast.error("Father Name must be at least 3 characters");
+      return toast.error("Father Name must be at least 3 characters" , { toastId: "walid-nam-3-char" });
     }
 
     if (formData.address && formData.address.length < 3) {
-      return toast.error("Address must be at least 3 characters");
+      return toast.error("Address must be at least 3 characters" , { toastId: "pata-3-char" });
     }
 
     if (!formData.email?.trim()) {
-      return toast.error("Email is required");
+      return toast.error("Email is required" , { toastId: "email-must" });
     }
 
     if (!formData.phone || formData.phone.replace(/\D/g, "").length < 9) {
-      return toast.error("Valid phone number is required");
+      return toast.error("Valid phone number is required" , { toastId: "sahi-phone#-do" });
     }
 
     if (!emailRegex.test(formData.email)) {
-      return toast.error("Please enter a valid email address");
+      return toast.error("Please enter a valid email address" , { toastId: "darg-kro-rit-mail" });
     }
 
     if (formData.cnic && formData.cnic.length < 15) {
-      return toast.error("Please enter a valid 13-digit CNIC");
+      return toast.error("Please enter a valid 13-digit CNIC" , { toastId: "shanakhti-card-no-13-digit" });
     }
 
     try {
@@ -112,22 +113,27 @@ export const EditCounsellorModal = ({
       const token = localStorage.getItem("token");
       const counsellorId = counselor.id || counselor._id;
 
+      const payload = {
+        ...formData,
+        phone: formData.phone?.trim(),
+      };
+
       const res = await axios.put(
         `${BASE_URL}/admin/updateCounsellor/${counsellorId}`,
-        formData,
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         },
       );
-      toast.success(res.data?.message || "Counselor updated successfully");
+      toast.success(res.data?.message || "Counselor updated successfully" , { toastId: "doc-reject-success" });
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
       toast.error(
-        error?.response?.data?.message || "Failed to update counselor",
+        error?.response?.data?.message || "Failed to update counselor", { toastId: "fail-updat-conslar" }
       );
     } finally {
       setLoading(false);

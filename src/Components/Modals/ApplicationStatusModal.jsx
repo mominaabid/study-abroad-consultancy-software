@@ -61,7 +61,7 @@ export default function ApplicationStatusModal({
 
   const handleSubmit = async () => {
     if (!status) {
-      toast.error("Please select a status");
+      toast.error("Please select a status" , { toastId: "get-status" });
       return;
     }
 
@@ -73,12 +73,12 @@ export default function ApplicationStatusModal({
       );
 
       if (res.data.success) {
-        toast.success("Status updated successfully");
+        toast.success("Status updated successfully" , { toastId: "status-edit-suc" });
         onSuccess();
         onClose();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update status");
+      toast.error(err.response?.data?.message || "Failed to update status" , { toastId: "edit-stat" });
     } finally {
       setLoading(false);
     }

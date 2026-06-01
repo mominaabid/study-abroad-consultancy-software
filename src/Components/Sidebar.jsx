@@ -26,7 +26,7 @@ const ADMIN_MENU = [
   },
   { name: "Payments", icon: <DollarSign size={20} />, path: "/admin/payments" },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/admin/chats" },
-  { name: "Counselors", icon: <User size={20} />, path: "/admin/counsellors" },
+  { name: "Counsellors", icon: <User size={20} />, path: "/admin/counsellors" },
 ];
 
 const COUNSELLOR_MENU = [
@@ -36,7 +36,7 @@ const COUNSELLOR_MENU = [
     path: "/counsellor/dashboard",
   },
   {
-    name: "My Leads",
+    name: "Leads",
     icon: <BarChart size={20} />,
     path: "/counsellor/leads",
   },
@@ -55,7 +55,7 @@ const COUNSELLOR_MENU = [
 const STUDENT_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/student/dashboard" },
   {
-    name: "Application",
+    name: "Applications",
     icon: <FileText size={20} />,
     path: "/student/application",
   },

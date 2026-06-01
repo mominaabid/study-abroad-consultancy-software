@@ -87,7 +87,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
     e.preventDefault();
 
     if (formData.name.trim().length < 3) {
-      return toast.error("Full Name must be at least 3 characters");
+      return toast.error("Full Name must be at least 3 characters" , { toastId: "bas-3-n-c" });
     }
 
     if (
@@ -95,7 +95,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
       formData.father_name.trim().length > 0 &&
       formData.father_name.trim().length < 3
     ) {
-      return toast.error("Father's Name must be at least 3 characters");
+      return toast.error("Father's Name must be at least 3 characters" , { toastId: "aba-ka-name-teen-char" });
     }
 
     if (
@@ -103,23 +103,23 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
       formData.address.trim().length > 0 &&
       formData.address.trim().length < 3
     ) {
-      return toast.error("Address must be at least 3 characters");
+      return toast.error("Address must be at least 3 characters" , { toastId: "pta-teen-hinsay" });
     }
 
     if (!formData.email.trim()) {
-      return toast.error("Email is required");
+      return toast.error("Email is required" , { toastId: "mail-cned" });
     }
 
     if (!emailRegex.test(formData.email)) {
-      return toast.error("Please enter a valid email address");
+      return toast.error("Please enter a valid email address" , { toastId: "sai-mail-dalo" });
     }
 
     if (!formData.phone || formData.phone.replace(/\D/g, "").length < 9) {
-      return toast.error("Valid phone number is required");
+      return toast.error("Valid phone number is required" , { toastId: "sai-pta-no-dalo" });
     }
 
     if (formData.cnic && formData.cnic.length !== 15) {
-      return toast.error("CNIC must be in format: 00000-0000000-0");
+      return toast.error("CNIC must be in format: 00000-0000000-0" , { toastId: "sai-cnic-add-kr-do" });
     }
 
     try {
@@ -133,7 +133,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
         },
       });
 
-      toast.success("Counsellor added successfully!");
+      toast.success("Counsellor added successfully!" , { toastId: "Konslar-add" });
 
       dispatch(
         addNotification({
@@ -145,7 +145,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to add counsellor");
+      toast.error(error?.response?.data?.message || "Failed to add counsellor" , { toastId: "konslar-add-nhi-horha" });
     } finally {
       setLoading(false);
     }

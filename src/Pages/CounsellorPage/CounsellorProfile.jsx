@@ -76,7 +76,7 @@ export const CounsellorProfile = () => {
       });
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast.error(error?.response?.data?.message || "Failed to load profile");
+      toast.error(error?.response?.data?.message || "Failed to load profile" , { toastId: "profile-load-fail" });
     } finally {
       setLoading(false);
     }
@@ -94,12 +94,12 @@ export const CounsellorProfile = () => {
     // Validate file type
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Only JPEG, PNG, WEBP images are allowed");
+      toast.error("Only JPEG, PNG, WEBP images are allowed" , { toastId: "type-allowed" });
       return;
     }
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be less than 5MB");
+      toast.error("Image size must be less than 5MB" , { toastId: "less than 5MB" });
       return;
     }
 
@@ -117,7 +117,7 @@ export const CounsellorProfile = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
       // Update profile with new image URL
       setProfile((prev) => ({
@@ -125,10 +125,10 @@ export const CounsellorProfile = () => {
         profile_image: response.data.profilePicturePath,
         profilePictureUrl: response.data.profilePictureUrl,
       }));
-      toast.success("Profile picture updated successfully");
+      toast.success("Profile picture updated successfully" , { toastId: "pic-edit-success" });
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error?.response?.data?.message || "Failed to upload image");
+      toast.error(error?.response?.data?.message || "Failed to upload image" , { toastId: "pic-viral-failed" });
     } finally {
       setUploading(false);
       // Reset file input value so same file can be uploaded again if needed
@@ -176,23 +176,23 @@ export const CounsellorProfile = () => {
   // Validation before submit
   const validateForm = () => {
     if (formData.name.trim().length < 3) {
-      toast.error("Full name must be at least 3 characters");
+      toast.error("Full name must be at least 3 characters" , { toastId: "name at least 3 char" });
       return false;
     }
     if (formData.father_name.trim().length < 3) {
-      toast.error("Father's name must be at least 3 characters");
+      toast.error("Father's name must be at least 3 characters" , { toastId: "father name at least 3 char" });
       return false;
     }
     if (formData.address.trim().length < 3) {
-      toast.error("Address must be at least 3 characters");
+      toast.error("Address must be at least 3 characters" , { toastId: "address at least 3 char" });
       return false;
     }
     if (!formData.phone || formData.phone.trim().length < 8) {
-      toast.error("Please enter a valid phone number");
+      toast.error("Please enter a valid phone number" , { toastId: "enter valid phone" });
       return false;
     }
     if (formData.cnic.replace(/-/g, "").length !== 13) {
-      toast.error("CNIC must be exactly 13 digits (format: #####-#######-#)");
+      toast.error("CNIC must be exactly 13 digits (format: #####-#######-#)" , { toastId: "cnic 13 digits" });
       return false;
     }
     return true;
@@ -218,11 +218,11 @@ export const CounsellorProfile = () => {
         payload,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       setProfile(response.data);
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated successfully!" , { toastId: "profile edit" });
       setEditMode(false);
 
       if (
@@ -233,7 +233,7 @@ export const CounsellorProfile = () => {
       }
     } catch (error) {
       console.error("Update error:", error);
-      toast.error(error?.response?.data?.message || "Failed to update profile");
+      toast.error(error?.response?.data?.message || "Failed to update profile" , { toastId: "edit fail" });
     } finally {
       setUpdating(false);
     }
@@ -324,55 +324,8 @@ export const CounsellorProfile = () => {
                 <h2 className="text-xl font-bold text-gray-800">
                   {profile.name}
                 </h2>
-                <p className="text-sm text-teal-600 font-medium mt-1 flex items-center justify-center gap-1">
-                  <Shield size={14} />
-                  Counsellor
-                </p>
-                <div className="mt-3 flex justify-center">
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
-                      profile.status === "active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    <CheckCircle size={12} />
-                    {profile.status === "active"
-                      ? "Active Account"
-                      : "Inactive"}
-                  </span>
-                </div>
               </div>
               <div className="border-t border-gray-100 px-6 py-4 space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail size={16} className="text-gray-400" />
-                  <span className="text-gray-600">{profile.email}</span>
-                </div>
-                {/* Phone with flag */}
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone size={16} className="text-gray-400" />
-                  <span className="text-gray-600">
-                    {profile.phone ? (
-                      <>
-                        <CountryFlag
-                          countryCode={
-                            getCountryIsoFromPhone(profile.phone) || "PK"
-                          }
-                          svg
-                          style={{
-                            width: "1.2em",
-                            height: "0.9em",
-                            marginRight: "6px",
-                            display: "inline-block",
-                          }}
-                        />
-                        {profile.phone}
-                      </>
-                    ) : (
-                      "Not provided"
-                    )}
-                  </span>
-                </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Calendar size={16} className="text-gray-400" />
                   <span className="text-gray-600">
@@ -389,18 +342,6 @@ export const CounsellorProfile = () => {
                 Counsellor Info
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Father's Name</span>
-                  <span className="font-medium text-gray-700">
-                    {profile.father_name || "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">CNIC</span>
-                  <span className="font-medium text-gray-700">
-                    {profile.cnic ? "•••••-•••••••-•" : "—"}
-                  </span>
-                </div>
                 <div className="flex justify-between py-2">
                   <span className="text-gray-500">Last Updated</span>
                   <span className="font-medium text-gray-700">

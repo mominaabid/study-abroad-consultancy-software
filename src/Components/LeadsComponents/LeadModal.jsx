@@ -206,7 +206,7 @@ const calculateAge = (dob) => {
   return age;
 };
 
-// ─── Searchable Dropdown Component (error display removed) ─────────────────
+// ─── Searchable Dropdown Component (with leading space trim on search input) ─────────────────
 function SearchableDropdown({
   options = [],
   value,
@@ -264,7 +264,9 @@ function SearchableDropdown({
           placeholder={selectedOption ? selectedOption.label : placeholder}
           value={open ? query : selectedOption ? selectedOption.label : ""}
           onChange={(e) => {
-            setQuery(e.target.value);
+            // 🔹 Trim leading spaces from search query
+            const trimmed = e.target.value.replace(/^\s+/, "");
+            setQuery(trimmed);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
@@ -308,7 +310,7 @@ function SearchableDropdown({
   );
 }
 
-// ─── Searchable Counsellor Select (error display removed) ──────────────────
+// ─── Searchable Counsellor Select (with leading space trim on search input) ──────────────────
 function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -362,7 +364,9 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
           placeholder="Select counsellor or 'Unassigned'..."
           value={open ? query : selected ? selected.name : ""}
           onChange={(e) => {
-            setQuery(e.target.value);
+            // 🔹 Trim leading spaces from search query
+            const trimmed = e.target.value.replace(/^\s+/, "");
+            setQuery(trimmed);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
@@ -521,7 +525,7 @@ export default function LeadModal() {
     setGradeError(error || "");
   }, [tempDegree.degree, tempDegree.grades_cgpa]);
 
-  // ─── Input validation handlers ────────────────────────────────────────────
+  // ─── Input validation handlers (with leading space trimming) ────────────────────────────
   const handleNameChange = (e) => {
     let rawValue = e.target.value;
     let error = "";
@@ -572,13 +576,21 @@ export default function LeadModal() {
     setFieldErrors((prev) => ({ ...prev, fatherName: error }));
   };
 
+  const handleEmailChange = (e) => {
+    let rawValue = e.target.value;
+    let cleanedValue = rawValue.replace(/^\s+/, "");
+
+    setForm((prev) => ({ ...prev, email: cleanedValue }));
+  };
+
   const handleTotalScoreChange = (e) => {
     let rawValue = e.target.value;
+    // 🔹 Trim leading spaces
+    let cleanedValue = rawValue.replace(/^\s+/, "");
     let error = "";
 
     // Allow only numbers, decimal point, and backspace
-    // Remove any character that's not digit or decimal point
-    let cleanedValue = rawValue.replace(/[^\d.]/g, "");
+    cleanedValue = cleanedValue.replace(/[^\d.]/g, "");
 
     // Prevent multiple decimal points
     const decimalCount = (cleanedValue.match(/\./g) || []).length;
@@ -640,6 +652,16 @@ export default function LeadModal() {
     if (trimmed !== form.name) {
       setForm((prev) => ({ ...prev, name: trimmed }));
     }
+  };
+
+  // 🔹 Generic change handler with leading space trimming for all text fields
+  const handleCustomChange = (e) => {
+    const { name, value } = e.target;
+    let processedValue = value;
+    if (typeof processedValue === "string") {
+      processedValue = processedValue.replace(/^\s+/, ""); // trim leading spaces
+    }
+    setForm((prev) => ({ ...prev, [name]: processedValue }));
   };
 
   const getApiBaseUrl = useCallback(
@@ -709,7 +731,8 @@ export default function LeadModal() {
           setEducationEntries([]);
         }
       } catch {
-        toast.error("Failed to load lead data");
+        toast.error("Failed to load lead data", { toastId: "lead-load-fail" });
+
         navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads");
       } finally {
         setLoading(false);
@@ -761,29 +784,39 @@ export default function LeadModal() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ─── Education handlers ───────────────────────────────────────────────────
+  // ─── Education handlers (with trimming) ───────────────────────────────────
   const handleAddOrUpdateEducation = () => {
     if (!tempDegree.degree) {
-      toast.error("Degree is required");
+      toast.error("Degree is required", { toastId: "degree-required" });
+
       return;
     }
     if (!tempDegree.year_awarded) {
-      toast.error("Year awarded is required");
+      toast.error("Year awarded is required", { toastId: "year-required" });
+
       return;
     }
 
     // Additional client-side guard (already prevented by disabled button, but kept for safety)
     if (gradeError) {
-      toast.error(gradeError);
+      toast.error(gradeError, { toastId: "grade-error" });
+
       return;
     }
 
     const year = parseInt(tempDegree.year_awarded);
     const currentYear = new Date().getFullYear();
     if (isNaN(year) || year < 1950 || year > currentYear) {
-      toast.error(`Year must be between 1950 and ${currentYear}`);
+      toast.error(`Year must be between 1950 and ${currentYear}`, {
+        toastId: "year-range",
+      });
+
       return;
     }
+
+    // 🔹 Trim leading spaces for board_university and grades_cgpa before saving
+    const trimmedBoard = tempDegree.board_university?.replace(/^\s+/, "") || "";
+    const trimmedGrades = tempDegree.grades_cgpa?.replace(/^\s+/, "") || "";
 
     if (tempDegree.editingId) {
       setEducationEntries((prev) =>
@@ -791,24 +824,26 @@ export default function LeadModal() {
           edu.id === tempDegree.editingId
             ? {
                 ...edu,
-                ...tempDegree,
+                degree: tempDegree.degree,
                 year_awarded: year,
+                grades_cgpa: trimmedGrades,
+                board_university: trimmedBoard,
                 editingId: undefined,
               }
             : edu,
         ),
       );
-      toast.success("Education updated");
+      toast.success("Education updated", { toastId: "edu-updated" });
     } else {
       const newEntry = {
         id: Date.now(),
         degree: tempDegree.degree,
         year_awarded: year,
-        grades_cgpa: tempDegree.grades_cgpa || null,
-        board_university: tempDegree.board_university || null,
+        grades_cgpa: trimmedGrades || null,
+        board_university: trimmedBoard || null,
       };
       setEducationEntries((prev) => [...prev, newEntry]);
-      toast.success("Degree added");
+      toast.success("Degree added", { toastId: "degree-added" });
     }
     setTempDegree({
       degree: "",
@@ -822,7 +857,8 @@ export default function LeadModal() {
 
   const handleRemoveEducation = (id) => {
     setEducationEntries((prev) => prev.filter((edu) => edu.id !== id));
-    toast.info("Degree removed");
+    toast.info("Degree removed", { toastId: "degree-removed" });
+
   };
 
   const handleEditEducation = (entry) => {
@@ -883,8 +919,8 @@ export default function LeadModal() {
       errors.push("Phone number is required.");
     } else {
       const digits = form.phone.replace(/\D/g, "");
-      if (digits.length < 9) {
-        errors.push("Phone number must have at least 9 digits.");
+      if (digits.length < 11) {
+        errors.push("Phone number must have at least 11 digits.");
       }
     }
 
@@ -905,9 +941,9 @@ export default function LeadModal() {
     // Father contact (optional)
     if (form.father_contact?.trim()) {
       const digits = form.father_contact.replace(/\D/g, "");
-      if (digits.length < 9) {
+      if (digits.length < 11) {
         errors.push(
-          "Father contact must have at least 9 digits (if provided).",
+          "Father contact must have at least 11 digits (if provided).",
         );
       }
     }
@@ -1041,7 +1077,8 @@ export default function LeadModal() {
 
     const validationErrors = validate();
     if (validationErrors.length > 0) {
-      toast.error(validationErrors.join(" "));
+        toast.error(validationErrors.join(" "), { toastId: "validation-error" });
+
       return;
     }
 
@@ -1116,19 +1153,14 @@ export default function LeadModal() {
         successMessage = "Counsellor assigned successfully"; // fallback
       }
 
-      toast.success(successMessage);
+      toast.success(successMessage, { toastId: "lead-save-success" });
 
       navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads");
     } catch (err) {
-      toast.error("Failed to save: " + err.message);
+      toast.error("Failed to save: " + err.message, { toastId: "lead-save-fail" });
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleCustomChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleAddCountry = (countryValue) => {
@@ -1560,7 +1592,10 @@ export default function LeadModal() {
                     type="email"
                     name="email"
                     value={form.email}
-                    handlerChange={handleCustomChange}
+                    handlerChange={handleEmailChange}
+                    onBlur={() =>
+                      setForm((prev) => ({ ...prev, email: prev.email.trim() }))
+                    }
                     icon={<Mail size={16} />}
                   />
                   <InputField
@@ -1607,7 +1642,9 @@ export default function LeadModal() {
                       type="text"
                       value={countrySearchTerm}
                       onChange={(e) => {
-                        setCountrySearchTerm(e.target.value);
+                        // 🔹 Trim leading spaces from country search
+                        const trimmed = e.target.value.replace(/^\s+/, "");
+                        setCountrySearchTerm(trimmed);
                         setCountryDropdownOpen(true);
                       }}
                       onFocus={() => setCountryDropdownOpen(true)}
@@ -1704,20 +1741,18 @@ export default function LeadModal() {
                         placeholder="YYYY"
                         maxLength={4}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, "");
-
+                          // 🔹 Trim leading spaces and then keep only digits
+                          let trimmed = e.target.value.replace(/^\s+/, "");
+                          let value = trimmed.replace(/\D/g, "");
                           if (value.length > 4) return;
-
                           const year = Number(value);
                           const currentYear = new Date().getFullYear();
-
                           if (
                             value.length === 4 &&
                             (year < 1950 || year > currentYear)
                           ) {
                             return;
                           }
-
                           setTempDegree((prev) => ({
                             ...prev,
                             year_awarded: value,
@@ -1733,8 +1768,9 @@ export default function LeadModal() {
                       name="grades_cgpa"
                       value={tempDegree.grades_cgpa}
                       handlerChange={(e) => {
-                        const value = e.target.value;
-
+                        // 🔹 Trim leading spaces before processing
+                        let rawValue = e.target.value;
+                        let value = rawValue.replace(/^\s+/, "");
                         const rule = DEGREE_GRADE_RULES[tempDegree.degree];
 
                         // stop typing after max length
@@ -1756,7 +1792,6 @@ export default function LeadModal() {
                               grades_cgpa: value,
                             }));
                           }
-
                           return;
                         }
 
@@ -1769,7 +1804,6 @@ export default function LeadModal() {
                               grades_cgpa: value,
                             }));
                           }
-
                           return;
                         }
 
@@ -1781,7 +1815,6 @@ export default function LeadModal() {
                               grades_cgpa: value.toUpperCase(),
                             }));
                           }
-
                           return;
                         }
 
@@ -1824,15 +1857,18 @@ export default function LeadModal() {
                           labelName="Board / University"
                           name="board_university"
                           value={tempDegree.board_university}
-                          handlerChange={(e) =>
+                          handlerChange={(e) => {
+                            // 🔹 Trim leading spaces
+                            let rawValue = e.target.value;
+                            let trimmed = rawValue.replace(/^\s+/, "");
                             setTempDegree((prev) => ({
                               ...prev,
-                              board_university: e.target.value,
-                            }))
-                          }
+                              board_university: trimmed,
+                            }));
+                          }}
                           icon={<School size={16} />}
                           placeholder="e.g., CBSE, Punjab University, etc."
-                          maxLength={55} // ← added this line
+                          maxLength={55}
                         />
                       </div>
 

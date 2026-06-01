@@ -3,7 +3,7 @@ import { Search, ChevronDown, X } from "lucide-react";
 
 /**
  * Reusable Searchable Select Component
- * 
+ *
  * @param {Object} props
  * @param {Array} props.options - Array of options { value, label, icon? }
  * @param {string|number} props.value - Currently selected value
@@ -39,12 +39,29 @@ export default function SearchableSelect({
   const ref = useRef(null);
 
   // Find selected option
-  const selectedOption = options.find(opt => String(opt.value) === String(value));
+  const selectedOption = options.find(
+    (opt) => String(opt.value) === String(value),
+  );
 
   // Filter options based on search query
-  const filteredOptions = options.filter(opt =>
-    opt.label?.toLowerCase().includes(query.toLowerCase())
+  const filteredOptions = options.filter((opt) =>
+    opt.label?.toLowerCase().includes(query.toLowerCase()),
   );
+
+  // Block space key when input is empty
+  const preventLeadingSpace = (e) => {
+    if (e.key === " " && e.target.value.length === 0) {
+      e.preventDefault();
+    }
+  };
+
+  // Block pasting a string that starts with space
+  const handlePaste = (e) => {
+    const pastedText = e.clipboardData.getData("text");
+    if (pastedText.startsWith(" ")) {
+      e.preventDefault();
+    }
+  };
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -69,7 +86,9 @@ export default function SearchableSelect({
   }, [query, onSearch]);
 
   const handleSelect = (opt) => {
-    onChange({ target: { name, value: opt.value } });
+    // Trim the value just to be safe (though options should not have leading spaces)
+    const trimmedValue = String(opt.value).trim();
+    onChange({ target: { name, value: trimmedValue } });
     setQuery("");
     setOpen(false);
   };
@@ -77,6 +96,14 @@ export default function SearchableSelect({
   const handleClear = () => {
     onChange({ target: { name, value: "" } });
     setQuery("");
+  };
+
+  const handleInputChange = (e) => {
+    let newValue = e.target.value;
+    // Block leading space
+    if (newValue.startsWith(" ")) return;
+    setQuery(newValue);
+    setOpen(true);
   };
 
   return (
@@ -98,24 +125,23 @@ export default function SearchableSelect({
       >
         {/* Left Icon */}
         {icon && <span className="text-slate-400 shrink-0">{icon}</span>}
-        
+
         {/* Search Icon */}
         <Search size={15} className="text-slate-400 shrink-0" />
-        
+
         {/* Input */}
         <input
           type="text"
           className="flex-1 outline-none bg-transparent text-slate-700 placeholder:text-slate-400 min-w-0"
           placeholder={selectedOption ? selectedOption.label : placeholder}
           value={open ? query : selectedOption ? selectedOption.label : ""}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(true);
-          }}
+          onChange={handleInputChange}
           onFocus={() => !disabled && setOpen(true)}
+          onKeyDown={preventLeadingSpace}
+          onPaste={handlePaste}
           disabled={disabled}
         />
-        
+
         {/* Clear Button */}
         {value && !disabled && (
           <button
@@ -126,7 +152,7 @@ export default function SearchableSelect({
             <X size={14} className="text-slate-400" />
           </button>
         )}
-        
+
         {/* Chevron Icon */}
         <ChevronDown
           size={15}
@@ -137,7 +163,10 @@ export default function SearchableSelect({
       {/* Dropdown */}
       {open && !disabled && (
         <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
-          <div className={`overflow-y-auto py-1`} style={{ maxHeight: `${maxHeight}px` }}>
+          <div
+            className={`overflow-y-auto py-1`}
+            style={{ maxHeight: `${maxHeight}px` }}
+          >
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-3 text-sm text-slate-400 text-center">
                 No options found
@@ -153,10 +182,14 @@ export default function SearchableSelect({
                       ${isSelected ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-slate-50 text-slate-700"}
                     `}
                   >
-                    {opt.icon && <span className="text-base shrink-0">{opt.icon}</span>}
+                    {opt.icon && (
+                      <span className="text-base shrink-0">{opt.icon}</span>
+                    )}
                     <span className="flex-1">{opt.label}</span>
                     {isSelected && (
-                      <span className="text-blue-500 text-xs font-semibold shrink-0">✓ Selected</span>
+                      <span className="text-blue-500 text-xs font-semibold shrink-0">
+                        ✓ Selected
+                      </span>
                     )}
                   </div>
                 );
@@ -167,9 +200,7 @@ export default function SearchableSelect({
       )}
 
       {/* Error Message */}
-      {error && (
-        <p className="text-red-500 text-xs mt-1 ml-1">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-xs mt-1 ml-1">{error}</p>}
     </div>
   );
 }

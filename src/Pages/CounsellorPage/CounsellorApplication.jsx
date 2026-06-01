@@ -117,7 +117,10 @@ function DocumentPreviewModal({
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      toast.error("Please provide a rejection reason");
+      toast.error("Please provide a rejection reason", {
+        toastId: "reject-no-reason",
+      });
+
       return;
     }
     await onReject(selectedDoc.id, rejectReason);
@@ -416,7 +419,7 @@ function CounsellorDocumentModal({
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error("Please fix the errors");
+      toast.error("Please fix the errors" , { toastId: "upload-validation-error" });
       return;
     }
 
@@ -434,7 +437,7 @@ function CounsellorDocumentModal({
         formDataObj,
       );
       if (res.data.success) {
-        toast.success("Document shared with student successfully!");
+        toast.success("Document shared with student successfully!" , { toastId: "doc-share-success" });
         onSuccess();
         onClose();
         setFile(null);
@@ -443,7 +446,7 @@ function CounsellorDocumentModal({
       }
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error(err.response?.data?.message || "Upload failed");
+      toast.error(err.response?.data?.message || "Upload failed"  , { toastId: "doc-upload-failed" });
     } finally {
       setLoading(false);
     }
@@ -710,7 +713,7 @@ export const CounsellorApplication = () => {
       }
     } catch (err) {
       console.error("Error fetching data:", err);
-      toast.error("Failed to load data");
+      toast.error("Failed to load data" ,  { toastId: "load-data-failed" });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -732,11 +735,14 @@ export const CounsellorApplication = () => {
         `${BASE_URL}/counsellor/documents/${docId}/verify`,
       );
       if (res.data.message) {
-        toast.success("Document verified successfully");
+
+        toast.success("Document verified successfully", { toastId: "doc-verify-success" })
+
+
         await fetchData();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Verification failed");
+      toast.error(err.response?.data?.message || "Verification failed" , { toastId: "doc-verify-failed" });
     }
   };
 
@@ -747,11 +753,11 @@ export const CounsellorApplication = () => {
         { reason },
       );
       if (res.data.message) {
-        toast.success("Document rejected");
+        toast.success("Document rejected" , { toastId: "doc-reject-success" });
         await fetchData();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Rejection failed");
+      toast.error(err.response?.data?.message || "Rejection failed" , { toastId: "doc-reject-success" });
     }
   };
 
@@ -761,11 +767,11 @@ export const CounsellorApplication = () => {
       await authAxios.delete(
         `${BASE_URL}/counsellor/applications/${selectedApplication.id}`,
       );
-      toast.success("Application deleted successfully");
+      toast.success("Application deleted successfully" , { toastId: "delete-success" });
       setShowDeleteModal(false);
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Delete failed");
+      toast.error(err.response?.data?.message || "Delete failed" , { toastId: "delete-failed" });
     }
   };
 

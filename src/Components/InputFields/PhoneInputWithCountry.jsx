@@ -32,15 +32,30 @@ export default function PhoneInputWithCountry({
   const cleanLabel = hasStar ? labelName.replace(/\s*\*$/, "") : labelName;
 
   useEffect(() => {
-    if (value) {
-      const match = value.match(/^(\+\d[\d-]*)\s*(.*)$/);
-      if (match) {
-        setCountryCode(match[1]);
-        setNumber(match[2].trim());
-      } else {
-        setNumber(value);
-      }
+    if (!value) {
+      setNumber("");
+      return;
     }
+
+    const trimmedValue = value.trim();
+
+    // Format: +92 3001234567
+    const match = trimmedValue.match(/^(\+\d+)\s*(\d*)$/);
+
+    if (match) {
+      setCountryCode(match[1]);
+      setNumber(match[2]);
+      return;
+    }
+
+    // Existing DB values like 923001234567
+    if (/^92\d+$/.test(trimmedValue)) {
+      setCountryCode("+92");
+      setNumber(trimmedValue.slice(2));
+      return;
+    }
+
+    setNumber(trimmedValue);
   }, [value]);
 
   useEffect(() => {
@@ -61,23 +76,34 @@ export default function PhoneInputWithCountry({
     onChange?.({ target: { name, value: `${c.value} ${number}`.trim() } });
   };
 
-  const handleNumberChange = (e) => {
-    let num = e.target.value.replace(/\D/g, "");
+ const handleNumberChange = (e) => {
+  let inputValue = e.target.value;
 
-    // 1. Reject if first digit is '0' and there is at least one digit
-    if (num.startsWith("0") && num.length > 0) {
-      // Do not update the value; simply return (keeps previous number)
-      return;
-    }
+  // Prevent leading spaces
+  if (inputValue.startsWith(" ")) {
+    inputValue = inputValue.trimStart();
+  }
 
-    // 2. Limit to maximum 15 digits
-    if (num.length > 15) {
-      num = num.slice(0, 15);
-    }
+  let num = inputValue.replace(/\D/g, "");
 
-    setNumber(num);
-    onChange?.({ target: { name, value: `${countryCode} ${num}`.trim() } });
-  };
+  // Prevent starting with 0
+  if (num.startsWith("0")) {
+    return;
+  }
+
+  if (num.length > 15) {
+    num = num.slice(0, 15);
+  }
+
+  setNumber(num);
+
+  onChange?.({
+    target: {
+      name,
+      value: `${countryCode} ${num}`.trim(),
+    },
+  });
+};
 
   return (
     <div className="flex flex-col">

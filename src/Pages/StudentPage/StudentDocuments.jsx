@@ -328,7 +328,7 @@ function UploadZone({ docType, onUpload, uploading, onClearType }) {
 
   async function handleSubmit() {
     if (!selected || !localType) {
-      toast.error("Please select a document type and file.");
+      toast.error("Please select a document type and file." , { toastId: "select-doc-file" });
       return;
     }
     await onUpload(selected, localType);
@@ -683,7 +683,7 @@ export default function StudentDocuments() {
       toast.success(
         existingRejectedDoc
           ? "Document re-uploaded successfully! Status changed to In Review."
-          : "Document uploaded successfully!",
+          : "Document uploaded successfully!" , { toastId: "doc-load-happily" }
       );
       setReuploadType("");
       await fetchDocs(); // Refresh to ensure consistency
@@ -700,7 +700,7 @@ export default function StudentDocuments() {
       } else {
         removeDocumentFromState(optimisticDoc.id);
       }
-      toast.error(err.message || "Upload failed.");
+      toast.error(err.message || "Upload failed." , { toastId: "failed-edit" });
     } finally {
       setUploading(false);
     }

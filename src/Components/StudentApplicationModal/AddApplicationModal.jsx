@@ -372,12 +372,12 @@ export const AddApplicationModal = ({
         "image/webp",
       ];
       if (!allowedTypes.includes(file.type)) {
-        toast.error("Please upload only JPG, PNG, WEBP images");
+        toast.error("Please upload only JPG, PNG, WEBP images" , { toastId: "png-allwed"  });
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size should be less than 5MB");
+        toast.error("Image size should be less than 5MB" , { toastId: "should-< 5" });
         return;
       }
 
@@ -449,7 +449,7 @@ export const AddApplicationModal = ({
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix the validation errors before submitting");
+      toast.error("Please fix the validation errors before submitting" , { toastId: "err-val-fx" });
       return;
     }
 
@@ -481,7 +481,7 @@ export const AddApplicationModal = ({
       const token = getAuthToken();
 
       if (!token) {
-        toast.error("Authentication token not found. Please login again.");
+        toast.error("Authentication token not found. Please login again." , { toastId: "aut-not-fond" });
         return;
       }
 
@@ -498,7 +498,7 @@ export const AddApplicationModal = ({
 
       toast.success(
         `Application created successfully! A confirmation email has been sent to ${formData.email}`,
-        { autoClose: 5000 },
+        { autoClose: 5000 }, { toastId: "app-form-hapl" }
       );
 
       resetForm();
@@ -507,10 +507,10 @@ export const AddApplicationModal = ({
     } catch (error) {
       console.error("Error creating application:", error);
       if (error.response?.status === 401) {
-        toast.error("Session expired. Please login again.");
+        toast.error("Session expired. Please login again." , { toastId: "plz-sign" });
       } else {
         toast.error(
-          error.response?.data?.message || "Failed to create application",
+          error.response?.data?.message || "Failed to create application", { toastId: "app-f-cr" }
         );
       }
     } finally {

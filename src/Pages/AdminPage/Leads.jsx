@@ -225,11 +225,15 @@ export default function Leads() {
         },
       });
       if (!res.ok) throw new Error();
-      toast.success("Lead deleted successfully");
+
+      toast.success("Lead deleted successfully", {
+        toastId: "lead-delete-success",
+      });
+
       setDeleteConfirm(null);
       fetchLeads();
     } catch {
-      toast.error("Failed to delete lead");
+      toast.error("Failed to delete lead", { toastId: "lead-delete-error" });
     }
   }
 
@@ -264,7 +268,8 @@ export default function Leads() {
       download: "leads.csv",
     });
     a.click();
-    toast.info("Exporting leads...");
+
+    toast.info("Exporting leads...", { toastId: "lead-export-info" });
   }
 
   // ── Derived data ───────────────────────────────────────────────────────────
@@ -297,7 +302,8 @@ export default function Leads() {
   const handleAddNoteOnly = async (leadId, note) => {
     const token = localStorage.getItem("token");
     if (!token) {
-      toast.error("Not logged in.");
+      toast.error("Not logged in.", { toastId: "lead-note-error" });
+
       return;
     }
 
@@ -316,14 +322,19 @@ export default function Leads() {
         throw new Error(error.message || "Failed to add note");
       }
 
-      toast.success("Note added successfully!");
+      toast.success("Note added successfully!", {
+        toastId: "lead-note-success",
+      });
 
       if (drawerLead?.id === leadId) {
         fetchLeads(currentPage);
       }
     } catch (error) {
       console.error("Error adding note:", error);
-      toast.error(error.message || "Failed to add note");
+
+      toast.error(error.message || "Failed to add note", {
+        toastId: "lead-note-error",
+      });
     }
   };
 

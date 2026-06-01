@@ -151,16 +151,38 @@ export const Header = () => {
   };
 
   const getTitle = () => {
-    if (location.pathname.includes("admin-dashboard")) return "Dashboard";
-    if (location.pathname.includes("leads")) return "Leads";
-    if (location.pathname.includes("counsellor")) return "Counsellors";
-    if (location.pathname.includes("application")) return "Applications";
-    if (location.pathname.includes("documents")) return "Documents";
-    if (location.pathname.includes("payments")) return "Payments";
-    if (location.pathname.includes("chats")) return "Chats";
-    if (location.pathname.includes("profile")) return "Profile";
+    const role = user?.role;
 
-    return "Dashboard";
+    const menuMap = {
+      admin: [
+        { path: "/admin/dashboard", name: "Dashboard" },
+        { path: "/admin/leads", name: "Leads" },
+        { path: "/admin/applications", name: "Applications" },
+        { path: "/admin/payments", name: "Payments" },
+        { path: "/admin/chats", name: "Chats" },
+        { path: "/admin/counsellors", name: "Counsellors" },
+      ],
+      counsellor: [
+        { path: "/counsellor/dashboard", name: "Dashboard" },
+        { path: "/counsellor/leads", name: "Leads" },
+        { path: "/counsellor/applications", name: "Applications" },
+        { path: "/counsellor/chats", name: "Chats" },
+      ],
+      student: [
+        { path: "/student/dashboard", name: "Dashboard" },
+        { path: "/student/application", name: "Applications" },
+        { path: "/student/payments", name: "Payments" },
+        { path: "/student/chats", name: "Chats" },
+      ],
+    };
+
+    const routes = menuMap[role] || [];
+
+    const match = routes.find((item) =>
+      location.pathname.startsWith(item.path),
+    );
+
+    return match?.name || "Dashboard";
   };
 
   const userName = user?.name || "User";

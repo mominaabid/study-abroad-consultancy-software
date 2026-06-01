@@ -447,12 +447,12 @@ export const EditApplicationModal = ({
         "image/webp",
       ];
       if (!allowedTypes.includes(file.type)) {
-        toast.error("Please upload only JPG, PNG, WEBP images");
+        toast.error("Please upload only JPG, PNG, WEBP images" , { toastId: "jpg-allowed" });
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size should be less than 5MB");
+        toast.error("Image size should be less than 5MB" , { toastId: "less than 5 " });
         return;
       }
 
@@ -511,12 +511,12 @@ export const EditApplicationModal = ({
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error("Please fix the validation errors before submitting");
+      toast.error("Please fix the validation errors before submitting" , { toastId: "fix-val-err" });
       return;
     }
 
     if (!application || !application.id) {
-      toast.error("Invalid application data");
+      toast.error("Invalid application data" , { toastId: "inv-app-dat" });
       return;
     }
 
@@ -541,7 +541,7 @@ export const EditApplicationModal = ({
         localStorage.getItem("token") || sessionStorage.getItem("token");
 
       if (!token) {
-        toast.error("Authentication token not found. Please login again.");
+        toast.error("Authentication token not found. Please login again." , { toastId: "tok-not" });
         return;
       }
 
@@ -555,8 +555,8 @@ export const EditApplicationModal = ({
           },
         },
       );
-
-      toast.success("Application updated successfully!");
+ 
+      toast.success("Application updated successfully!" , { toastId: "haply-edt-ap" });
 
       if (onApplicationUpdated) {
         onApplicationUpdated(response.data);
@@ -566,12 +566,12 @@ export const EditApplicationModal = ({
     } catch (error) {
       console.error("Error updating application:", error);
       if (error.response?.status === 401) {
-        toast.error("Session expired. Please login again.");
+        toast.error("Session expired. Please login again." , { toastId: "exp-session"  });
       } else if (error.response?.status === 403) {
-        toast.error("You don't have permission to edit this application");
+        toast.error("You don't have permission to edit this application" , { toastId: "no-permit" });
       } else {
         toast.error(
-          error.response?.data?.message || "Failed to update application",
+          error.response?.data?.message || "Failed to update application", { toastId: "f-ed-ap" }
         );
       }
     } finally {

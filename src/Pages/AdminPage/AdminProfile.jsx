@@ -68,7 +68,10 @@ export const AdminProfile = () => {
       });
     } catch (err) {
       console.error("Admin profile fetch error:", err);
-      toast.error(err?.response?.data?.message || "Failed to load profile");
+
+      toast.error(err?.response?.data?.message || "Failed to load profile", {
+        toastId: "admin-fetch-profile-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -89,7 +92,9 @@ export const AdminProfile = () => {
   // Validate edit form
   const validateEdit = () => {
     if (!formData.name.trim()) {
-      toast.error("Name is required");
+      toast.error("Name is required", {
+        toastId: "admin-validation-name-required",
+      });
       return false;
     }
 
@@ -113,11 +118,20 @@ export const AdminProfile = () => {
       );
 
       setProfile(response.data);
-      toast.success("Profile updated successfully!");
+
+      toast.success("Profile updated successfully!", {
+        toastId: "admin-profile-update-success",
+      });
       setEditMode(false);
     } catch (error) {
       console.error("Update error:", error);
-      toast.error(error?.response?.data?.message || "Failed to update profile");
+
+      toast.error(
+        error?.response?.data?.message || "Failed to update profile",
+        {
+          toastId: "admin-profile-update-error",
+        },
+      );
     } finally {
       setUpdating(false);
     }
@@ -135,15 +149,21 @@ export const AdminProfile = () => {
     const { currentPassword, newPassword, confirmPassword } = passwordData;
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error("All password fields are required");
+      toast.error("All password fields are required", {
+        toastId: "admin-password-fields-required",
+      });
       return;
     }
     if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters");
+      toast.error("New password must be at least 6 characters", {
+        toastId: "admin-password-length-error",
+      });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("New password and confirmation do not match");
+      toast.error("New password and confirmation do not match", {
+        toastId: "admin-password-mismatch",
+      });
       return;
     }
 
@@ -155,7 +175,10 @@ export const AdminProfile = () => {
         { currentPassword, newPassword },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      toast.success("Password changed successfully!");
+
+      toast.success("Password changed successfully!", {
+        toastId: "admin-password-change-success",
+      });
       setShowPasswordModal(false);
       setPasswordData({
         currentPassword: "",
@@ -164,8 +187,12 @@ export const AdminProfile = () => {
       });
     } catch (error) {
       console.error("Password change error:", error);
+
       toast.error(
         error?.response?.data?.message || "Failed to change password",
+        {
+          toastId: "admin-password-change-error",
+        },
       );
     } finally {
       setChangingPassword(false);
@@ -241,37 +268,8 @@ export const AdminProfile = () => {
                 <h2 className="text-xl font-bold text-gray-800">
                   {profile.name}
                 </h2>
-                <p className="text-sm text-teal-600 font-medium mt-1 flex items-center justify-center gap-1">
-                  <Shield size={14} />
-                  Administrator
-                </p>
-                <div className="mt-3 flex justify-center">
-                  <span
-                    className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
-                      profile.is_active === 1 || profile.is_active === true
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {profile.is_active === 1 || profile.is_active === true ? (
-                      <>
-                        <CheckCircle size={12} />
-                        Active Account
-                      </>
-                    ) : (
-                      <>
-                        <XCircle size={12} />
-                        Inactive
-                      </>
-                    )}
-                  </span>
-                </div>
               </div>
               <div className="border-t border-gray-100 px-6 py-4 space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail size={16} className="text-gray-400" />
-                  <span className="text-gray-600">{profile.email}</span>
-                </div>
                 <div className="flex items-center gap-3 text-sm">
                   <Calendar size={16} className="text-gray-400" />
                   <span className="text-gray-600">
@@ -288,26 +286,6 @@ export const AdminProfile = () => {
                 Admin Details
               </h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Role</span>
-                  <span className="font-medium text-gray-700 capitalize">
-                    {profile.role}
-                  </span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Status</span>
-                  <span
-                    className={`font-medium ${
-                      profile.is_active === 1 || profile.is_active === true
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {profile.is_active === 1 || profile.is_active === true
-                      ? "Active"
-                      : "Inactive"}
-                  </span>
-                </div>
                 <div className="flex justify-between py-2">
                   <span className="text-gray-500">Last Updated</span>
                   <span className="font-medium text-gray-700">
