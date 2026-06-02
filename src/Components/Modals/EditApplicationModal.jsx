@@ -1,5 +1,5 @@
 // EditApplicationModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { BASE_URL } from "../../Content/Url";
@@ -148,6 +148,10 @@ export default function EditApplicationModal({
       setLoadingEducation(false);
     }
   };
+
+  const counselingStudents = useMemo(() => {
+    return students.filter((student) => student.status === "counseling");
+  }, [students]);
 
   useEffect(() => {
     if (application) {
@@ -385,11 +389,21 @@ export default function EditApplicationModal({
                   className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
                 >
                   <option value="">Select Student</option>
-                  {students.map((s) => (
+                  {/* {students.map((s) => (
                     <option key={s.id} value={s.user_id || s.id}>
                       {s.name} - {s.email}
                     </option>
-                  ))}
+                  ))} */}
+
+                  {counselingStudents.map(
+                    (
+                      s, // ← use filtered list
+                    ) => (
+                      <option key={s.id} value={s.user_id || s.id}>
+                        {s.name} - {s.email}
+                      </option>
+                    ),
+                  )}
                 </select>
                 <p className="text-xs text-gray-400 mt-1">
                   Student cannot be changed after creation

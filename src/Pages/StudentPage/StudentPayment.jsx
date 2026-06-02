@@ -81,7 +81,8 @@ function MakePaymentModal({
     let value = parseFloat(e.target.value);
     if (value > maxAmount) {
       toast.error(
-        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,  { toastId: "pay-not-exceed" }
+        `Amount cannot exceed remaining amount of PKR${maxAmount.toLocaleString()}`,
+        { toastId: "pay-not-exceed" },
       );
       setFormData({ ...formData, amount: maxAmount.toString() });
     } else {
@@ -94,19 +95,24 @@ function MakePaymentModal({
 
     const amountNum = parseFloat(formData.amount);
     if (!formData.amount || amountNum <= 0) {
-      toast.error("Please enter a valid amount" , { toastId: "enter right amount" });
+      toast.error("Please enter a valid amount", {
+        toastId: "enter right amount",
+      });
       return;
     }
 
     if (amountNum > maxAmount) {
       toast.error(
-        `Amount cannot exceed remaining amount of pkr${maxAmount.toLocaleString()}`,  { toastId: "pay-not-access" }
+        `Amount cannot exceed remaining amount of PKR${maxAmount.toLocaleString()}`,
+        { toastId: "pay-not-access" },
       );
       return;
     }
 
     if (formData.mode === "online" && !proofFile) {
-      toast.error("Please upload payment screenshot for online payment" , { toastId: "pay-screenshot" });
+      toast.error("Please upload payment screenshot for online payment", {
+        toastId: "pay-screenshot",
+      });
       return;
     }
 
@@ -131,7 +137,7 @@ function MakePaymentModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      toast.success(data.message , { toastId: "congrat" });
+      toast.success(data.message, { toastId: "congrat" });
       onSuccess();
       onClose();
       setFormData({
@@ -142,7 +148,7 @@ function MakePaymentModal({
       });
       removeFile();
     } catch (err) {
-      toast.error(err.message , { toastId: "sad" });
+      toast.error(err.message, { toastId: "sad" });
     } finally {
       setLoading(false);
     }
@@ -193,7 +199,7 @@ function MakePaymentModal({
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-600">Total Fees:</span>
               <span className="font-semibold">
-                pkr {totalFees?.toLocaleString() || "0"}
+                PKR {totalFees?.toLocaleString() || "0"}
               </span>
             </div>
             {scholarshipAmount > 0 && (
@@ -203,7 +209,7 @@ function MakePaymentModal({
                     <Award size={12} /> Scholarship{" "}
                     {scholarshipType ? `(${scholarshipType})` : ""}:
                   </span>
-                  <span>- pkr{scholarshipAmount.toLocaleString()}</span>
+                  <span>- PKR{scholarshipAmount.toLocaleString()}</span>
                 </div>
                 {scholarshipRemarks && (
                   <p className="text-xs text-gray-500 italic mt-1">
@@ -213,7 +219,7 @@ function MakePaymentModal({
                 <div className="flex justify-between text-sm mb-1 font-semibold">
                   <span>Final Fees:</span>
                   <span className="text-teal-600">
-                    pkr{finalFees?.toLocaleString() || "0"}
+                    PKR{finalFees?.toLocaleString() || "0"}
                   </span>
                 </div>
               </>
@@ -221,13 +227,13 @@ function MakePaymentModal({
             <div className="flex justify-between text-sm mb-1">
               <span className="text-gray-600">Paid Amount:</span>
               <span className="font-semibold text-green-600">
-                pkr {totalPaid?.toLocaleString() || "0"}
+                PKR {totalPaid?.toLocaleString() || "0"}
               </span>
             </div>
             <div className="flex justify-between text-sm pt-1 border-t border-gray-200">
               <span className="text-gray-600">Remaining:</span>
               <span className="font-semibold text-amber-600">
-                pkr {remainingAmount?.toLocaleString() || "0"}
+                PKR {remainingAmount?.toLocaleString() || "0"}
               </span>
             </div>
           </div>
@@ -240,7 +246,7 @@ function MakePaymentModal({
             </label>
             <div className="relative">
               <span className="absolute left-1 top-1/2 -translate-y-1/2 text-gray-500">
-                pkr
+                PKR
               </span>
               <input
                 type="number"
@@ -254,7 +260,7 @@ function MakePaymentModal({
               />
             </div>
             <p className="text-xs text-gray-400 mt-1">
-              Maximum: pkr{maxAmount.toLocaleString()}
+              Maximum: PKR{maxAmount.toLocaleString()}
             </p>
           </div>
 
@@ -424,7 +430,7 @@ export default function StudentPayments() {
       );
     } catch (err) {
       console.error("Fetch payments error:", err);
-      toast.error("Failed to load payment history" , { toastId: "pa-not-load" });
+      toast.error("Failed to load payment history", { toastId: "pa-not-load" });
     }
   };
 
@@ -543,7 +549,7 @@ export default function StudentPayments() {
       );
     } catch (err) {
       console.error("Fetch applications error:", err);
-      toast.error("Failed to load applications" , { toastId: "app-fal" });
+      toast.error("Failed to load applications", { toastId: "app-fal" });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -673,32 +679,6 @@ export default function StudentPayments() {
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
-      <div className="mb-6">
-        <div className="bg-[#009E99] text-white rounded-3xl p-7 shadow-xl">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
-                Financial History
-              </p>
-              <h1 className="text-2xl font-bold">My Payments</h1>
-              <p className="text-blue-200 text-sm mt-1">
-                Track all your payment transactions
-              </p>
-            </div>
-            <button
-              onClick={refreshAllData}
-              disabled={refreshing}
-              className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition flex items-center gap-2"
-            >
-              <RefreshCw
-                size={18}
-                className={refreshing ? "animate-spin" : ""}
-              />
-              <span className="text-sm hidden md:inline">Refresh</span>
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -707,7 +687,7 @@ export default function StudentPayments() {
             <div>
               <p className="text-xs text-gray-400 font-medium">Total Paid</p>
               <p className="text-2xl font-bold text-gray-800">
-                pkr {summary.total_paid?.toLocaleString() || "0"}
+                PKR {summary.total_paid?.toLocaleString() || "0"}
               </p>
             </div>
             <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
@@ -722,7 +702,7 @@ export default function StudentPayments() {
                 Pending Verification
               </p>
               <p className="text-2xl font-bold text-amber-600">
-                pkr {summary.total_pending?.toLocaleString() || "0"}
+                PKR {summary.total_pending?.toLocaleString() || "0"}
               </p>
             </div>
             <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
@@ -819,7 +799,7 @@ export default function StudentPayments() {
                           Total Fees:
                         </span>
                         <span className="font-semibold">
-                          pkr {(app.total_fees || 0).toLocaleString()}
+                          PKR {(app.total_fees || 0).toLocaleString()}
                         </span>
                       </div>
                       {app.scholarship_amount > 0 && (
@@ -833,7 +813,7 @@ export default function StudentPayments() {
                               :
                             </span>
                             <span className="font-semibold">
-                              - pkr {app.scholarship_amount.toLocaleString()}
+                              - PKR {app.scholarship_amount.toLocaleString()}
                             </span>
                           </div>
                           {app.scholarship_remarks && (
@@ -845,11 +825,11 @@ export default function StudentPayments() {
                           <div className="flex justify-between font-bold">
                             <span className="text-sm">Final Fees to Pay:</span>
                             <span className="text-teal-600">
-                              pkr {(app.final_fees || 0).toLocaleString()}
+                              PKR {(app.final_fees || 0).toLocaleString()}
                             </span>
                           </div>
                           <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                            <CheckCircle size={12} /> You saved pkr
+                            <CheckCircle size={12} /> You saved PKR
                             {app.scholarship_amount.toLocaleString()} with
                             scholarship!
                           </p>
@@ -860,7 +840,7 @@ export default function StudentPayments() {
                         <div className="flex justify-between font-bold pt-2">
                           <span className="text-sm">Amount to Pay:</span>
                           <span className="text-teal-600">
-                            pkr {(app.total_fees || 0).toLocaleString()}
+                            PKR {(app.total_fees || 0).toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -872,7 +852,7 @@ export default function StudentPayments() {
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-600">Payment Progress</span>
                       <span className="font-semibold">
-                        pkr {(app.total_paid || 0).toLocaleString()} / pkr
+                        PKR {(app.total_paid || 0).toLocaleString()} / PKR
                         &nbsp;
                         {(
                           app.final_fees ||
@@ -891,10 +871,10 @@ export default function StudentPayments() {
                     </div>
                     <div className="flex justify-between text-xs mt-2">
                       <span className="text-gray-500">
-                        Paid: pkr {(app.total_paid || 0).toLocaleString()}
+                        Paid: PKR {(app.total_paid || 0).toLocaleString()}
                       </span>
                       <span className="text-amber-600 font-semibold">
-                        Remaining: pkr
+                        Remaining: PKR
                         {(app.remaining_amount || 0).toLocaleString()}
                       </span>
                     </div>
@@ -983,7 +963,7 @@ export default function StudentPayments() {
                       </div>
                       <div>
                         <p className="text-xl font-bold text-gray-800">
-                          pkr {parseFloat(payment.amount).toLocaleString()}
+                          PKR {parseFloat(payment.amount).toLocaleString()}
                         </p>
                         <p className="text-xs text-gray-400 capitalize">
                           {payment.payment_type?.replace(/_/g, " ") ||
@@ -1071,7 +1051,9 @@ export default function StudentPayments() {
           refreshAllData();
           fetchPaymentStats();
 
-          toast.success("Payment submitted! Admin will verify it soon." , { toastId: "pay-sbmt" });
+          toast.success("Payment submitted! Admin will verify it soon.", {
+            toastId: "pay-sbmt",
+          });
         }}
         application={selectedApplication}
         totalFees={selectedAppSummary.total_fees}

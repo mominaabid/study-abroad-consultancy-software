@@ -1,5 +1,5 @@
 // CreateApplicationModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { Title } from "../Title";
@@ -152,6 +152,10 @@ export default function CreateApplicationModal({
       return newErrs;
     });
   };
+
+  const counselingStudents = useMemo(() => {
+    return students.filter((student) => student.status === "counseling");
+  }, [students]);
 
   // Reset modal when opened/closed or when a preselected student is provided
   useEffect(() => {
@@ -452,7 +456,14 @@ export default function CreateApplicationModal({
                   name="user_id"
                   value={formData.user_id}
                   onChange={handleFieldChange}
-                  options={students.map((s) => ({
+                  // options={students.map((s) => ({
+                  //   value: String(s.user_id || s.id),
+                  //   label: `${s.name} - ${s.email}`,
+                  //   icon: <User size={14} className="text-slate-400" />,
+                  // }))}
+
+                  options={counselingStudents.map((s) => ({
+                    // ← use filtered list
                     value: String(s.user_id || s.id),
                     label: `${s.name} - ${s.email}`,
                     icon: <User size={14} className="text-slate-400" />,

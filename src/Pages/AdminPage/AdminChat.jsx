@@ -6,30 +6,13 @@ import { BASE_URL } from "../../Content/Url";
 import {
   Search,
   MessageSquare,
-  Users,
-  Activity,
   ChevronRight,
-  ChevronLeft,
-  Send,
-  MoreVertical,
-  Phone,
-  Video,
   Info,
-  Star,
-  Archive,
-  Trash2,
-  CheckCheck,
-  Clock,
-  User,
-  UserCheck,
-  Sparkles,
-  Filter,
-  PlusCircle,
   MessageCircle,
-  Inbox,
+  Eye,
+  X,
+  Menu,
   ArrowLeft,
-  Circle,
-  Bot,
 } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -86,13 +69,15 @@ function avatarColor(name = "") {
   return colors[Math.abs(h) % colors.length];
 }
 
-// ── Conversation List Component ──────────────────────────────────────────────
+// ── Conversation List Component (always visible on desktop, toggle on mobile) ──
 function ConversationList({
   conversations,
   activeId,
   onSelect,
   search,
   setSearch,
+  isMobile,
+  onCloseMobile, // close the list when a conversation is selected (mobile)
 }) {
   const filtered = conversations.filter((conv) => {
     const q = search.toLowerCase();
@@ -102,12 +87,30 @@ function ConversationList({
     );
   });
 
+  const handleSelect = (conv) => {
+    onSelect(conv);
+    if (isMobile && onCloseMobile) {
+      onCloseMobile();
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
       <div className="px-5 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="font-bold text-gray-800 text-lg">Conversations</h2>
+          <div className="flex items-center gap-2">
+            {isMobile && (
+              <button
+                onClick={onCloseMobile}
+                className="p-1 -ml-1 mr-1 rounded-lg hover:bg-gray-100 md:hidden"
+                aria-label="Close conversation list"
+              >
+                <ArrowLeft size={20} className="text-gray-500" />
+              </button>
+            )}
+            <h2 className="font-bold text-gray-800 text-lg">Conversations</h2>
+          </div>
           <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2 py-1 rounded-full">
             {conversations.length} total
           </span>
@@ -117,7 +120,7 @@ function ConversationList({
         </p>
       </div>
 
-      {/* Search */}
+      {/* Search with clear button */}
       <div className="px-4 py-3 border-b border-gray-100">
         <div className="relative">
           <Search
@@ -128,8 +131,16 @@ function ConversationList({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name..."
-            className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+            className="w-full pl-9 pr-8 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -150,12 +161,10 @@ function ConversationList({
         ) : (
           filtered.map((conv) => {
             const isActive = conv._id === activeId;
-            const hasUnread = false; // You can implement unread logic here
-
             return (
               <div
                 key={conv._id}
-                onClick={() => onSelect(conv)}
+                onClick={() => handleSelect(conv)}
                 className={`px-4 py-4 cursor-pointer transition-all duration-200 border-b border-gray-50 relative
                   ${
                     isActive
@@ -163,48 +172,26 @@ function ConversationList({
                       : "hover:bg-gray-50"
                   }`}
               >
-                {/* Header with avatars and time */}
                 <div className="flex items-center gap-2 mb-2">
-                  {/* Student avatar */}
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm ${avatarColor(conv.student_name)}`}
                   >
                     {avatarInitial(conv.student_name)}
                   </div>
-
-                  {/* Arrow indicator */}
                   <div className="flex items-center gap-0.5">
                     <div className="w-4 h-px bg-gray-300" />
                     <ChevronRight size={10} className="text-gray-300" />
                     <div className="w-4 h-px bg-gray-300" />
                   </div>
-
-                  {/* Counsellor avatar */}
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm ${avatarColor(conv.counsellor_name)}`}
                   >
                     {avatarInitial(conv.counsellor_name)}
                   </div>
-
-                  {/* Time */}
                   <span className="ml-auto text-[10px] text-gray-400 flex-shrink-0">
                     {timeAgo(conv.last_message_at)}
                   </span>
                 </div>
-
-                {/* Names */}
-                {/* <div className="flex items-center gap-1 mb-1.5">
-                  <span className={`text-sm font-semibold ${isActive ? 'text-teal-700' : 'text-gray-800'}`}>
-                    {conv.student_name || 'Student'}
-                  </span>
-                  <span className="text-xs text-gray-400">↔</span>
-                  <span className={`text-sm font-semibold ${isActive ? 'text-teal-700' : 'text-gray-800'}`}>
-                    {conv.counsellor_name || 'Counsellor'}
-                  </span>
-                  {hasUnread && (
-                    <span className="ml-2 w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
-                  )}
-                </div> */}
 
                 <div className="flex items-center gap-1 mb-1.5">
                   <span
@@ -218,19 +205,12 @@ function ConversationList({
                   >
                     {conv.counsellor_name || "Counsellor"}
                   </span>
-                  {/* {!conv.is_currently_assigned && (
-                    <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                      unassigned
-                    </span>
-                  )} */}
                 </div>
 
-                {/* Last message preview */}
                 <p className="text-xs text-gray-400 truncate">
                   {conv.last_message || " No messages yet"}
                 </p>
 
-                {/* Message count badge */}
                 {conv.message_count > 0 && (
                   <div className="absolute right-4 bottom-4">
                     <span className="text-[10px] font-semibold text-gray-400">
@@ -247,8 +227,8 @@ function ConversationList({
   );
 }
 
-// ── Chat Window Component ────────────────────────────────────────────────────
-function ChatWindow({ conversation }) {
+// ── Chat Window Component (with back button for mobile) ─────────────────────────
+function ChatWindow({ conversation, onBack, isMobile }) {
   const [messages, setLocalMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -291,7 +271,6 @@ function ChatWindow({ conversation }) {
     );
   }
 
-  // Group messages by day
   const grouped = messages.reduce((acc, msg) => {
     const day = formatDay(msg.createdAt);
     if (!acc[day]) acc[day] = [];
@@ -302,8 +281,20 @@ function ChatWindow({ conversation }) {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Chat Header */}
-      <div className="px-5 py-4 border-b border-gray-100 bg-white flex-shrink-0 shadow-sm">
-        <div className="flex items-center gap-3">
+      <div className="px-4 sm:px-5 py-4 border-b border-gray-100 bg-white flex-shrink-0 shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Mobile back button */}
+          {isMobile && onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 mr-1 rounded-xl hover:bg-gray-100 transition md:hidden"
+              aria-label="Back to conversations"
+            >
+              <ArrowLeft size={20} className="text-gray-500" />
+            </button>
+          )}
+
+          {/* Desktop menu button (visible only on mobile when no conversation? Actually handle in parent) */}
           {/* Student */}
           <div className="flex items-center gap-3">
             <div
@@ -320,13 +311,13 @@ function ChatWindow({ conversation }) {
           </div>
 
           {/* Arrow */}
-          <div className="flex flex-col items-center px-2">
-            <div className="flex items-center gap-1 text-gray-300">
-              <div className="w-6 h-px bg-gray-200" />
+          <div className="flex flex-col items-center px-1 sm:px-2">
+            <div className="flex items-center gap-0.5 sm:gap-1 text-gray-300">
+              <div className="w-4 sm:w-6 h-px bg-gray-200" />
               <ChevronRight size={12} className="text-gray-300" />
-              <div className="w-6 h-px bg-gray-200" />
+              <div className="w-4 sm:w-6 h-px bg-gray-200" />
             </div>
-            <span className="text-[8px] text-gray-400 font-medium uppercase tracking-wider">
+            <span className="text-[8px] text-gray-400 font-medium uppercase tracking-wider hidden sm:block">
               Chat
             </span>
           </div>
@@ -348,7 +339,7 @@ function ChatWindow({ conversation }) {
 
           {/* Stats and Actions */}
           <div className="ml-auto flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5">
+            <div className="hidden sm:flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5">
               <MessageSquare size={12} className="text-gray-400" />
               <span className="text-xs text-gray-600 font-medium">
                 {messages.length} messages
@@ -370,7 +361,7 @@ function ChatWindow({ conversation }) {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <p className="text-xs text-gray-400 mb-1">Conversation ID</p>
-                <p className="text-xs font-mono text-gray-500">
+                <p className="text-xs font-mono text-gray-500 break-all">
                   {conversation._id}
                 </p>
               </div>
@@ -386,7 +377,7 @@ function ChatWindow({ conversation }) {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 bg-gradient-to-b from-gray-50 to-white">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 bg-gradient-to-b from-gray-50 to-white">
         {loading && (
           <div className="flex justify-center py-10">
             <div className="w-6 h-6 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
@@ -409,7 +400,6 @@ function ChatWindow({ conversation }) {
 
         {Object.entries(grouped).map(([day, dayMsgs]) => (
           <div key={day}>
-            {/* Day divider */}
             <div className="flex items-center gap-3 my-6">
               <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
               <span className="text-[11px] text-gray-400 font-medium px-3 py-1 bg-gray-100 rounded-full">
@@ -419,8 +409,6 @@ function ChatWindow({ conversation }) {
             </div>
 
             {dayMsgs.map((msg, idx) => {
-              // ✅ Student always LEFT, counsellor always RIGHT
-              
               const isStudent = msg.sender_role === "student";
               const showLabel =
                 idx === 0 || dayMsgs[idx - 1]?.sender_id !== msg.sender_id;
@@ -430,52 +418,47 @@ function ChatWindow({ conversation }) {
                   key={msg._id}
                   className={`flex items-end gap-2 mb-1.5 ${isStudent ? "justify-start" : "justify-end"}`}
                 >
-                  {/* Student avatar — LEFT side only */}
                   {isStudent && (
                     <div
-                      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[11px] font-bold
-          ${showLabel ? avatarColor(conversation.student_name) : "opacity-0"}`}
+                      className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] sm:text-[11px] font-bold
+                        ${showLabel ? avatarColor(conversation.student_name) : "opacity-0"}`}
                     >
                       {avatarInitial(conversation.student_name)}
                     </div>
                   )}
 
                   <div
-                    className={`flex flex-col max-w-[60%] ${isStudent ? "items-start" : "items-end"}`}
+                    className={`flex flex-col max-w-[75%] sm:max-w-[60%] ${isStudent ? "items-start" : "items-end"}`}
                   >
-                    {/* Role label */}
                     {showLabel && (
                       <span
-                        className={`text-[10px] font-semibold mb-1 px-1
-            ${isStudent ? "text-teal-600" : "text-violet-600"}`}
+                        className={`text-[9px] sm:text-[10px] font-semibold mb-1 px-1 ${isStudent ? "text-teal-600" : "text-violet-600"}`}
                       >
                         {msg.sender_name} ·{" "}
                         {isStudent ? "Student" : "Counsellor"}
                       </span>
                     )}
 
-                    {/* Bubble — white for student, purple for counsellor */}
                     <div
-                      className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm
-          ${
-            isStudent
-              ? "bg-white text-gray-800 rounded-bl-sm border border-gray-100"
-              : "bg-violet-600 text-white rounded-br-sm"
-          }`}
+                      className={`px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm
+                      ${
+                        isStudent
+                          ? "bg-white text-gray-800 rounded-bl-sm border border-gray-100"
+                          : "bg-violet-600 text-white rounded-br-sm"
+                      }`}
                     >
                       {msg.content}
                     </div>
 
-                    <span className="text-[10px] text-gray-400 mt-1 mx-1">
+                    <span className="text-[9px] sm:text-[10px] text-gray-400 mt-1 mx-1">
                       {timeStr(msg.createdAt)}
                     </span>
                   </div>
 
-                  {/* Counsellor avatar — RIGHT side only */}
                   {!isStudent && (
                     <div
-                      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[11px] font-bold
-          ${showLabel ? avatarColor(conversation.counsellor_name) : "opacity-0"}`}
+                      className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] sm:text-[11px] font-bold
+                        ${showLabel ? avatarColor(conversation.counsellor_name) : "opacity-0"}`}
                     >
                       {avatarInitial(conversation.counsellor_name)}
                     </div>
@@ -489,10 +472,10 @@ function ChatWindow({ conversation }) {
       </div>
 
       {/* Read-only Footer */}
-      <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+      <div className="px-4 sm:px-5 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
         <div className="flex items-center justify-center gap-2 text-gray-400 py-1">
-          <Eye size={14} className="text-amber-500" />
-          <p className="text-xs font-medium">
+          <Eye size={14} className="text-amber-500 flex-shrink-0" />
+          <p className="text-xs font-medium text-center">
             You are viewing this conversation as an administrator. This is a
             read-only view.
           </p>
@@ -502,16 +485,35 @@ function ChatWindow({ conversation }) {
   );
 }
 
-// ── Main Admin Chat Page ─────────────────────────────────────────────────────
+// ── Main Admin Chat Page (responsive: side-by-side on desktop, stacked on mobile) ──
 export default function AdminChatPage() {
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActive] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [stats, setStats] = useState({ total: 0, active: 0, today: 0 });
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileListOpen, setMobileListOpen] = useState(true);
 
-  // Fetch all conversations
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768); // 768px is md breakpoint in Tailwind
+    };
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
+  // On desktop, always ensure both panels are logically accessible
+  // On mobile, when a conversation is selected, close the list
+  useEffect(() => {
+    if (!isMobile) {
+      // On desktop, we don't use mobileListOpen state, but we ensure it's true for consistency
+      setMobileListOpen(true);
+    }
+  }, [isMobile]);
+
+  // Fetch conversations
   useEffect(() => {
     async function fetchAll() {
       try {
@@ -520,32 +522,12 @@ export default function AdminChatPage() {
         });
         const data = await res.json();
         let convs = Array.isArray(data) ? data : [];
-
-        // ✅ Keep only conversations that have at least one message
         convs = convs.filter(
           (conv) =>
             conv.message_count > 0 ||
             (conv.last_message && conv.last_message.trim() !== ""),
         );
-
         setConversations(convs);
-
-        // Recalculate stats based on filtered conversations
-        const today = new Date().toDateString();
-        const todayConvs = convs.filter((c) => {
-          const lastMsgDate = c.last_message_at
-            ? new Date(c.last_message_at).toDateString()
-            : null;
-          return lastMsgDate === today;
-        });
-
-        setStats({
-          total: convs.length,
-          active: convs.filter((c) => c.last_message).length,
-          today: todayConvs.length,
-        });
-
-        // If the currently active conversation was removed, reset active chat
         if (
           activeConversation &&
           !convs.some((c) => c._id === activeConversation._id)
@@ -559,64 +541,49 @@ export default function AdminChatPage() {
       }
     }
     fetchAll();
-  }, []); // Make sure to include activeConversation in dependency array if you want to handle reset properly, or use a ref
+  }, []);
 
-  return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-      {/* Top Banner */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-blue-950 via-blue-900 to-teal-900 text-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
-                <MessageSquare size={16} className="text-teal-300" />
-              </div>
-              <h1 className="font-bold text-xl">Chat Monitor</h1>
-            </div>
-            <p className="text-blue-200 text-sm">
-              View all conversations between counsellors and students
-            </p>
+  const handleSelectConversation = (conv) => {
+    setActive(conv);
+  };
+
+  const handleBackToList = () => {
+    setMobileListOpen(true);
+  };
+
+  // Determine what to render based on screen size
+  const renderDesktop = () => (
+    <div className="flex h-full">
+      {/* Sidebar - fixed width */}
+      <div className="w-80 flex-shrink-0 border-r border-gray-100 bg-white flex flex-col">
+        {loading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="w-8 h-8 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
           </div>
-
-          {/* Stats Cards */}
-          <div className="flex items-center gap-3">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 text-center border border-white/20">
-              <p className="text-2xl font-bold">{stats.total}</p>
-              <p className="text-[10px] text-blue-300 font-medium">
-                Total Chats
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 text-center border border-white/20">
-              <p className="text-2xl font-bold">{stats.active}</p>
-              <p className="text-[10px] text-blue-300 font-medium">Active</p>
-            </div>
-          </div>
-
-          {/* Mobile toggle button */}
-          <button
-            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-            className="lg:hidden p-2 rounded-lg bg-white/10 hover:bg-white/20 transition"
-          >
-            {isMobileSidebarOpen ? (
-              <ChevronLeft size={20} />
-            ) : (
-              <ChevronRight size={20} />
-            )}
-          </button>
-        </div>
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            activeId={activeConversation?._id}
+            onSelect={handleSelectConversation}
+            search={search}
+            setSearch={setSearch}
+            isMobile={false}
+          />
+        )}
       </div>
 
-      {/* Main Area */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar */}
-        <div
-          className={`
-          w-80 flex-shrink-0 border-r border-gray-100 bg-white flex flex-col
-          transition-all duration-300 ease-in-out
-          ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          fixed lg:relative inset-y-0 left-0 z-20 lg:z-auto shadow-xl lg:shadow-none
-        `}
-        >
+      {/* Chat View */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <ChatWindow conversation={activeConversation} isMobile={false} />
+      </div>
+    </div>
+  );
+
+  const renderMobile = () => (
+    <div className="flex h-full">
+      {mobileListOpen ? (
+        // Show conversation list
+        <div className="w-full h-full bg-white">
           {loading ? (
             <div className="flex justify-center items-center h-full">
               <div className="w-8 h-8 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
@@ -625,49 +592,43 @@ export default function AdminChatPage() {
             <ConversationList
               conversations={conversations}
               activeId={activeConversation?._id}
-              onSelect={(conv) => {
-                setActive(conv);
-                if (window.innerWidth < 1024) setIsMobileSidebarOpen(false);
-              }}
+              onSelect={handleSelectConversation}
               search={search}
               setSearch={setSearch}
+              isMobile={true}
+              onCloseMobile={() => setMobileListOpen(false)}
             />
           )}
         </div>
-
-        {/* Overlay for mobile */}
-        {isMobileSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-10 lg:hidden"
-            onClick={() => setIsMobileSidebarOpen(false)}
+      ) : (
+        // Show chat window with back button
+        <div className="w-full h-full bg-white">
+          <ChatWindow
+            conversation={activeConversation}
+            onBack={handleBackToList}
+            isMobile={true}
           />
-        )}
-
-        {/* Chat View */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <ChatWindow conversation={activeConversation} />
         </div>
-      </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="h-screen overflow-hidden bg-gray-50">
+      {isMobile ? renderMobile() : renderDesktop()}
     </div>
   );
 }
 
-// Add missing Eye import if not already present
-import { Eye } from "lucide-react";
-
-// Add animation styles (add to your global CSS or use Tailwind)
-const styles = `
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
+// Add animation styles (only once)
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  .animate-fadeIn {
-    animation: fadeIn 0.3s ease-out;
-  }
-`;
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  `;
+  document.head.appendChild(styleSheet);
+}

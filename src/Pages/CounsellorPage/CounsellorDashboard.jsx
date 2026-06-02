@@ -148,34 +148,6 @@ export const CounsellorDashboard = () => {
   return (
     <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* ── Welcome Banner ── */}
-      <div className="mb-3">
-        <div className="bg-[#009E99] text-white rounded-xl p-8 shadow-xl">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="text-purple-200 text-sm font-medium mb-1">
-                Counsellor Portal
-              </p>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Welcome back, {user?.name?.split(" ")[0] || "Counsellor"} 👋
-              </h1>
-              <p className="mt-2 text-purple-100 text-base">
-                You have <strong>{activeLeads}</strong> active leads to manage
-                today.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3 border border-white/20">
-              <Calendar size={18} className="text-purple-200" />
-              <span className="text-sm font-medium">
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
@@ -368,7 +340,6 @@ export const CounsellorDashboard = () => {
                         {s.count} ({pct}%)
                       </span>
                     </div>
-                   
 
                     <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       {pct > 0 && (

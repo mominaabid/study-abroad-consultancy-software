@@ -160,13 +160,50 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
     }
   }, [activeTab, lead.id]);
 
+  useEffect(() => {
+    let isMounted = true;
+    let currentLeadId = lead.id;
+
+    const fetchLogs = async () => {
+      if (!currentLeadId) return;
+      try {
+        const res = await fetch(
+          `${BASE_URL}/admin/leads/${currentLeadId}/logs`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
+        const data = await res.json();
+        if (isMounted && currentLeadId === lead.id) {
+          setLogs(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchLogs();
+    return () => {
+      isMounted = false;
+    };
+  }, [lead.id]);
+
+  useEffect(() => {
+    fetchNotes();
+    return () => setStageNotes({});
+  }, [lead.id]);
+
   const openStageModal = (stage) => {
     const ti = stageOrder.indexOf(stage.key);
     if (
       (stage.key === "success" || stage.key === "rejected") &&
       lead.status !== "visa"
     ) {
-      toast.error(`Must reach "Visa" stage before marking as ${stage.label}.` , { toastId: "reach-vsa" });
+      toast.error(`Must reach "Visa" stage before marking as ${stage.label}.`, {
+        toastId: "reach-vsa",
+      });
       return;
     }
     const SEQUENTIAL = [
@@ -179,7 +216,8 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
     ];
     if (ti > currentIndex + 1 && SEQUENTIAL.includes(stage.key)) {
       toast.error(
-        `Complete "${STAGES[currentIndex + 1]?.label}" first before skipping ahead.`,  { toastId: "full-first" }
+        `Complete "${STAGES[currentIndex + 1]?.label}" first before skipping ahead.`,
+        { toastId: "full-first" },
       );
       return;
     }
@@ -189,12 +227,13 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
   };
 
   const handleStageConfirm = () => {
-    if (!stageNote.trim()) return toast.error("Note is required!" , { toastId: "note-chahiye" });
+    if (!stageNote.trim())
+      return toast.error("Note is required!", { toastId: "note-chahiye" });
     const finalNote = `[${targetStage.label}] ${stageNote}`;
     onStage(lead.id, targetStage.key, finalNote);
     setStageNote("");
     setShowStageModal(false);
-    toast.success(`Moved to ${targetStage.label}` , { toastId: "moved" });
+    toast.success(`Moved to ${targetStage.label}`, { toastId: "moved" });
     setTimeout(fetchNotes, 700);
   };
 
@@ -463,12 +502,6 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                       Stage notes
                     </span>
                   </div>
-                  <button
-                    onClick={() => setShowHistory(true)}
-                    className="text-[#00A78E] hover:underline flex items-center gap-1 text-xs"
-                  >
-                    <History size={14} /> Full history
-                  </button>
                 </div>
 
                 {(stageNotes[lead.status] || []).length > 0 ? (

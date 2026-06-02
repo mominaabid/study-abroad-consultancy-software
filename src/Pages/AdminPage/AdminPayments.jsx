@@ -1183,14 +1183,6 @@ export default function AdminPayments() {
   return (
     <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
-      <div className="mb-6">
-        <div className="bg-[#009E99] text-white rounded-2xl p-6 shadow-xl">
-          <h1 className="text-xl md:text-2xl font-bold">Payment Management</h1>
-          <p className="text-blue-200 text-sm mt-1">
-            Manage student payments, set fees, and verify transactions
-          </p>
-        </div>
-      </div>
 
       {/* Summary Cards - Responsive Grid */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">

@@ -436,49 +436,6 @@ export const StudentDashboard = () => {
       )}
 
       {/* Welcome Banner (unchanged) */}
-      <div className="mb-3">
-        <div className="relative bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-500 text-white rounded-xl p-3 shadow-xl overflow-hidden">
-          <div className="absolute -right-8 -top-8 w-48 h-48 bg-white/10 rounded-full" />
-          <div className="absolute -right-2 top-20 w-24 h-24 bg-white/5 rounded-full" />
-          <div className="absolute right-32 -bottom-6 w-32 h-32 bg-white/5 rounded-full" />
-          <div className="relative flex items-start justify-between flex-wrap gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={14} className="text-teal-200" />
-                <p className="text-teal-100 text-sm font-medium">
-                  Student Portal
-                </p>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Hello, {user?.name?.split(" ")[0] || "Student"} 👋
-              </h1>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {counsellorName !== "Not Assigned" && (
-                  <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
-                    <Award size={11} /> {counsellorName}
-                  </span>
-                )}
-                {activeApplicationsCount > 0 && (
-                  <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-medium backdrop-blur-sm">
-                    <FileText size={11} /> {activeApplicationsCount} Active
-                    Application{activeApplicationsCount > 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 bg-white/15 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20 self-center">
-              <Calendar size={16} className="text-teal-100" />
-              <span className="text-sm font-medium text-white">
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "short",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Stats Grid (global counts – optional but kept) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">

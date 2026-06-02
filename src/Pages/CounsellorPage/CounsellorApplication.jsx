@@ -419,7 +419,9 @@ function CounsellorDocumentModal({
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error("Please fix the errors" , { toastId: "upload-validation-error" });
+      toast.error("Please fix the errors", {
+        toastId: "upload-validation-error",
+      });
       return;
     }
 
@@ -437,7 +439,9 @@ function CounsellorDocumentModal({
         formDataObj,
       );
       if (res.data.success) {
-        toast.success("Document shared with student successfully!" , { toastId: "doc-share-success" });
+        toast.success("Document shared with student successfully!", {
+          toastId: "doc-share-success",
+        });
         onSuccess();
         onClose();
         setFile(null);
@@ -446,7 +450,9 @@ function CounsellorDocumentModal({
       }
     } catch (err) {
       console.error("Upload error:", err);
-      toast.error(err.response?.data?.message || "Upload failed"  , { toastId: "doc-upload-failed" });
+      toast.error(err.response?.data?.message || "Upload failed", {
+        toastId: "doc-upload-failed",
+      });
     } finally {
       setLoading(false);
     }
@@ -713,7 +719,7 @@ export const CounsellorApplication = () => {
       }
     } catch (err) {
       console.error("Error fetching data:", err);
-      toast.error("Failed to load data" ,  { toastId: "load-data-failed" });
+      toast.error("Failed to load data", { toastId: "load-data-failed" });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -735,14 +741,16 @@ export const CounsellorApplication = () => {
         `${BASE_URL}/counsellor/documents/${docId}/verify`,
       );
       if (res.data.message) {
-
-        toast.success("Document verified successfully", { toastId: "doc-verify-success" })
-
+        toast.success("Document verified successfully", {
+          toastId: "doc-verify-success",
+        });
 
         await fetchData();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Verification failed" , { toastId: "doc-verify-failed" });
+      toast.error(err.response?.data?.message || "Verification failed", {
+        toastId: "doc-verify-failed",
+      });
     }
   };
 
@@ -753,11 +761,13 @@ export const CounsellorApplication = () => {
         { reason },
       );
       if (res.data.message) {
-        toast.success("Document rejected" , { toastId: "doc-reject-success" });
+        toast.success("Document rejected", { toastId: "doc-reject-success" });
         await fetchData();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Rejection failed" , { toastId: "doc-reject-success" });
+      toast.error(err.response?.data?.message || "Rejection failed", {
+        toastId: "doc-reject-success",
+      });
     }
   };
 
@@ -767,11 +777,15 @@ export const CounsellorApplication = () => {
       await authAxios.delete(
         `${BASE_URL}/counsellor/applications/${selectedApplication.id}`,
       );
-      toast.success("Application deleted successfully" , { toastId: "delete-success" });
+      toast.success("Application deleted successfully", {
+        toastId: "delete-success",
+      });
       setShowDeleteModal(false);
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Delete failed" , { toastId: "delete-failed" });
+      toast.error(err.response?.data?.message || "Delete failed", {
+        toastId: "delete-failed",
+      });
     }
   };
 
@@ -862,26 +876,13 @@ export const CounsellorApplication = () => {
     <div className="p-4 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="bg-[#009E99] text-white rounded-2xl p-6 shadow-xl">
-          <div className="flex justify-between items-center flex-wrap gap-4">
-            <div>
-              <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
-                {isAdmin ? "Admin Portal" : "Counsellor Portal"}
-              </p>
-              <h1 className="text-2xl font-bold">Student Applications</h1>
-              <p className="text-blue-200 text-sm mt-1">
-                {isAdmin
-                  ? "Manage all student applications (create, edit, delete)"
-                  : "Manage student applications, documents, and share files"}
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition shadow-md"
-            >
-              <Plus size={18} /> New Application
-            </button>
-          </div>
+        <div className="flex justify-end flex-wrap gap-4">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition shadow-md"
+          >
+            <Plus size={18} /> New Application
+          </button>
         </div>
       </div>
 

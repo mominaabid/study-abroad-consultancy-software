@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -29,14 +29,12 @@ export const MainContent = () => {
   });
 
   // New dynamic stats
-  const [chatsCount, setChatsCount] = useState(0);
   const [counsellorsCount, setCounsellorsCount] = useState(0);
   const [paymentsCount, setPaymentsCount] = useState(0);
   const [applicationsWithOfferCount, setApplicationsWithOfferCount] =
     useState(0);
 
   // Change percentages for new stats
-  const [chatsChange, setChatsChange] = useState("0%");
   const [counsellorsChange, setCounsellorsChange] = useState("0%");
   const [paymentsCountChange, setPaymentsCountChange] = useState("0%");
   const [applicationsOfferChange, setApplicationsOfferChange] = useState("0%");
@@ -48,6 +46,40 @@ export const MainContent = () => {
   const notifications = useSelector(selectNotifications);
   const user = useSelector(selectUser);
 
+  // --- DATE FILTER STATE ---
+  const [dateFilter, setDateFilter] = useState("daily"); // 'daily', 'weekly', 'monthly'
+
+  // Helper: get start and end date based on filter
+  const getDateRange = useCallback(() => {
+    const now = new Date();
+    let start, end;
+    switch (dateFilter) {
+      case "daily":
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        break;
+      case "weekly":
+        const day = now.getDay(); // 0 = Sunday
+        const diffToMonday = day === 0 ? -6 : 1 - day;
+        start = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() + diffToMonday,
+        );
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start);
+        end.setDate(start.getDate() + 7);
+        break;
+      case "monthly":
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        break;
+      default:
+        return { start: null, end: null };
+    }
+    return { start: start.toISOString(), end: end.toISOString() };
+  }, [dateFilter]);
+
   // Helper: calculate percentage change
   const getPercentageChange = (current, previous) => {
     if (previous === 0) return current > 0 ? "+100%" : "0%";
@@ -55,33 +87,97 @@ export const MainContent = () => {
     return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
   };
 
-  // 1. Fetch Leads
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-        const res = await fetch(`${BASE_URL}/admin/leads`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch leads");
-        const data = await res.json();
-        const leadsData = Array.isArray(data) ? data : data.data || [];
-        setLeads(leadsData);
-      } catch (err) {
-        console.error("Dashboard API error:", err);
-      } finally {
+  // --- FETCH ALL DATA WITH DATE RANGE ---
+  const fetchAllFilteredData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
         setLoading(false);
+        return;
       }
-    };
-    fetchLeads();
-  }, []);
+
+      const { start, end } = getDateRange();
+      const query = start && end ? `?start=${start}&end=${end}` : "";
+      const authHeaders = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
+      // 1. Fetch Leads
+      const leadsRes = await fetch(`${BASE_URL}/admin/leads${query}`, {
+        headers: authHeaders,
+      });
+      if (!leadsRes.ok) throw new Error("Failed to fetch leads");
+      const leadsData = await leadsRes.json();
+      const leadsArray = Array.isArray(leadsData)
+        ? leadsData
+        : leadsData.data || [];
+      setLeads(leadsArray);
+
+      // 2. Fetch Payments
+      const paymentsRes = await fetch(`${BASE_URL}/admin/payments${query}`, {
+        headers: authHeaders,
+      });
+      if (!paymentsRes.ok) throw new Error("Failed to fetch payments");
+      const paymentsData = await paymentsRes.json();
+      const paymentsArray = paymentsData.payments || [];
+      setPayments(paymentsArray);
+      setPaymentsCount(paymentsArray.length);
+
+      // 3. Fetch Applications (Counsellor Applications)
+      const appsRes = await fetch(
+        `${BASE_URL}/counsellor/applications/students${query}`,
+        {
+          headers: authHeaders,
+        },
+      );
+      if (!appsRes.ok) throw new Error("Failed to fetch applications");
+      const appsData = await appsRes.json();
+      let allApps = [];
+      if (appsData.success && appsData.students) {
+        appsData.students.forEach((student) => {
+          if (student.applications && Array.isArray(student.applications)) {
+            student.applications.forEach((app) => {
+              allApps.push({
+                id: app.id || app._id,
+                ...app,
+                student_name: student.name,
+                student_email: student.email,
+                student_id: student.id,
+              });
+            });
+          }
+        });
+      }
+      setApplications(allApps);
+
+      // 5. Fetch Counsellors
+      const counsellorsRes = await fetch(
+        `${BASE_URL}/admin/getCounsellors${query}`,
+        {
+          headers: authHeaders,
+        },
+      );
+      if (!counsellorsRes.ok) throw new Error("Failed to fetch counsellors");
+      const counsellorsData = await counsellorsRes.json();
+      const counsellorsList = Array.isArray(counsellorsData)
+        ? counsellorsData
+        : counsellorsData.counsellors || [];
+      setCounsellorsCount(counsellorsList.length);
+    } catch (err) {
+      console.error("Dashboard filtered data error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [getDateRange]);
+
+  // Refetch when date filter changes
+  useEffect(() => {
+    fetchAllFilteredData();
+  }, [fetchAllFilteredData]);
+
+  // --- PERCENTAGE CHANGE CALCULATIONS (based on filtered data) ---
 
   // Leads change
   useEffect(() => {
@@ -93,76 +189,12 @@ export const MainContent = () => {
     const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0);
     const totalNow = leads.length;
     const totalPreviousMonth = leads.filter(
-      (lead) => new Date(lead.createdAt) <= endOfPreviousMonth,
+      (lead) => new Date(lead.created_at) <= endOfPreviousMonth,
     ).length;
     setLeadsChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [leads]);
 
-  // 2. Fetch Payments (for revenue + transaction count)
-  useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        const res = await fetch(`${BASE_URL}/admin/payments`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch payments");
-        const data = await res.json();
-        const paymentsData = data.payments || [];
-        setPayments(paymentsData);
-        setPaymentsCount(paymentsData.length);
-
-        // Monthly revenue calculation
-        const now = new Date();
-        const thisMonth = now.getMonth();
-        const thisYear = now.getFullYear();
-        const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-        const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-
-        const monthlyRevenue = paymentsData
-          .filter((p) => {
-            const paidDate = new Date(p.paid_at);
-            return (
-              p.status === "completed" &&
-              paidDate.getMonth() === thisMonth &&
-              paidDate.getFullYear() === thisYear
-            );
-          })
-          .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-
-        const lastMonthRevenue = paymentsData
-          .filter((p) => {
-            const paidDate = new Date(p.paid_at);
-            return (
-              p.status === "completed" &&
-              paidDate.getMonth() === lastMonth &&
-              paidDate.getFullYear() === lastMonthYear
-            );
-          })
-          .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-
-        let revenueChange = "+0%";
-        if (lastMonthRevenue > 0) {
-          const change =
-            ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
-          revenueChange = `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
-        } else if (monthlyRevenue > 0) {
-          revenueChange = "+100%";
-        }
-
-        setPaymentStats({ monthlyRevenue, revenueChange });
-      } catch (err) {
-        console.error("Payments API error:", err);
-      }
-    };
-    fetchPayments();
-  }, []);
-
-  // Payments count change (month-over-month)
+  // Payments count change
   useEffect(() => {
     if (payments.length === 0) {
       setPaymentsCountChange("0%");
@@ -177,49 +209,51 @@ export const MainContent = () => {
     setPaymentsCountChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [payments]);
 
-  // 3. Fetch Counsellor Applications (existing logic)
+  // Payment Stats (Revenue and change) – recalc when payments change
   useEffect(() => {
-    const fetchCounsellorApplications = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        const res = await fetch(
-          `${BASE_URL}/counsellor/applications/students`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          },
+    if (payments.length === 0) {
+      setPaymentStats({ monthlyRevenue: 0, revenueChange: "+0%" });
+      return;
+    }
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+
+    const monthlyRevenue = payments
+      .filter((p) => {
+        const paidDate = new Date(p.paid_at);
+        return (
+          p.status === "completed" &&
+          paidDate.getMonth() === thisMonth &&
+          paidDate.getFullYear() === thisYear
         );
-        if (!res.ok) throw new Error("Failed to fetch counsellor applications");
-        const data = await res.json();
-        if (data.success && data.students) {
-          const allApps = [];
-          data.students.forEach((student) => {
-            if (student.applications && Array.isArray(student.applications)) {
-              student.applications.forEach((app) => {
-                allApps.push({
-                  id: app.id || app._id,
-                  ...app,
-                  student_name: student.name,
-                  student_email: student.email,
-                  student_id: student.id,
-                });
-              });
-            }
-          });
-          setApplications(allApps);
-        } else {
-          setApplications([]);
-        }
-      } catch (err) {
-        console.error("Counsellor applications API error:", err);
-        setApplications([]);
-      }
-    };
-    fetchCounsellorApplications();
-  }, []);
+      })
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+    const lastMonthRevenue = payments
+      .filter((p) => {
+        const paidDate = new Date(p.paid_at);
+        return (
+          p.status === "completed" &&
+          paidDate.getMonth() === lastMonth &&
+          paidDate.getFullYear() === lastMonthYear
+        );
+      })
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+    let revenueChange = "+0%";
+    if (lastMonthRevenue > 0) {
+      const change =
+        ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+      revenueChange = `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
+    } else if (monthlyRevenue > 0) {
+      revenueChange = "+100%";
+    }
+
+    setPaymentStats({ monthlyRevenue, revenueChange });
+  }, [payments]);
 
   // Applications total change
   useEffect(() => {
@@ -236,7 +270,7 @@ export const MainContent = () => {
     setApplicationsChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [applications]);
 
-  // 4. Applications with Offer Letter Received
+  // Applications with Offer Letter Received
   useEffect(() => {
     const offerApps = applications.filter(
       (app) => app.status === "offer letter received",
@@ -263,68 +297,6 @@ export const MainContent = () => {
     );
   }, [applicationsWithOfferCount, applications]);
 
-  // 5. Fetch Chats
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        const res = await fetch(`${BASE_URL}/chat/admin/conversations`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch chats");
-        const data = await res.json();
-        const conversations = Array.isArray(data)
-          ? data
-          : data.conversations || [];
-        setChatsCount(conversations.length);
-      } catch (err) {
-        console.error("Chats API error:", err);
-        setChatsCount(0);
-      }
-    };
-    fetchChats();
-  }, []);
-
-  // Chats change (if createdAt available)
-  useEffect(() => {
-    if (chatsCount === 0) {
-      setChatsChange("0%");
-      return;
-    }
-    // Placeholder – replace with real logic if your chat objects have createdAt
-    setChatsChange("N/A");
-  }, [chatsCount]);
-
-  // 6. Fetch Counsellors
-  useEffect(() => {
-    const fetchCounsellors = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch counsellors");
-        const data = await res.json();
-        const counsellorsList = Array.isArray(data)
-          ? data
-          : data.counsellors || [];
-        setCounsellorsCount(counsellorsList.length);
-      } catch (err) {
-        console.error("Counsellors API error:", err);
-        setCounsellorsCount(0);
-      }
-    };
-    fetchCounsellors();
-  }, []);
-
   // Counsellors change
   useEffect(() => {
     if (counsellorsCount === 0) {
@@ -334,19 +306,7 @@ export const MainContent = () => {
     setCounsellorsChange("N/A");
   }, [counsellorsCount]);
 
-  // --- Navigation Handlers ---
-  const handleNavigateToLeads = () => navigate("/admin/leads");
-  const handleNavigateToCounseling = () => navigate("/admin/counsellors");
-  const handleNavigateToChats = () => navigate("/admin/chats");
-  const handleNavigateToPayments = () => navigate("/admin/payments");
-  const handleNavigateToApplications = () => navigate("/admin/applications");
-  const handleNavigateToActiveStudents = () => navigate("/admin/leads");
-  const handleNavigateToCounsellorsList = () => navigate("/admin/counsellors");
-  const handleNavigateToPaymentsList = () => navigate("/admin/payments");
-  const handleNavigateToOfferLetterApps = () =>
-    navigate("/admin/applications?filter=offer_letter");
-
-  // --- Funnel and other logic (unchanged) ---
+  // --- Derived stats for funnel and active students (based on filtered leads) ---
   const now = new Date();
   const newCount = leads.filter(
     (l) => l.status?.toLowerCase() === "new",
@@ -368,7 +328,6 @@ export const MainContent = () => {
 
   const getActiveStudentsChange = () => {
     if (totalLeadsCount === 0) return "0%";
-    const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
 
@@ -502,41 +461,30 @@ export const MainContent = () => {
     }
   };
 
+  // --- Navigation Handlers ---
+  const handleNavigateToLeads = () => navigate("/admin/leads");
+
+  const handleNavigateToPayments = () => navigate("/admin/payments");
+  const handleNavigateToApplications = () => navigate("/admin/applications");
+  const handleNavigateToActiveStudents = () => navigate("/admin/leads");
+  const handleNavigateToCounsellorsList = () => navigate("/admin/counsellors");
+  const handleNavigateToPaymentsList = () => navigate("/admin/payments");
+  const handleNavigateToOfferLetterApps = () =>
+    navigate("/admin/applications?filter=offer_letter");
+
   return (
     <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      <div className="mb-3">
-        <div className="bg-gradient-to-r from-[#009E99] via-teal-700 to-cyan-700 text-white rounded-xl p-3 shadow-xl">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <p className="text-teal-100 text-sm font-medium mb-1 tracking-wider">
-                Management Portal
-              </p>
-              <h1 className="text-4xl font-bold tracking-tight">
-                Welcome back, {user?.name?.split(" ")[0] || "Admin"} 👋
-              </h1>
-              <p className="mt-2 text-white/90 text-lg">
-                You have{" "}
-                <strong className="text-yellow-300">
-                  {activeStudentsCount}
-                </strong>{" "}
-                active students to manage today.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-xl px-5 py-1 border border-white/20 shadow-inner">
-              <Calendar size={20} className="text-teal-100" />
-              <div className="flex flex-col">
-                <span className="text-xs text-teal-100 font-bold">Today</span>
-                <span className="text-sm font-medium">
-                  {new Date().toLocaleDateString("en-US", {
-                    weekday: "short",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Filter Dropdown - Top Right */}
+      <div className="flex justify-end items-center mb-4">
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-medium"
+        >
+          <option value="daily">Today</option>
+          <option value="weekly">This Week (Mon–Sun)</option>
+          <option value="monthly">This Month</option>
+        </select>
       </div>
 
       {/* Stats Grid */}
@@ -560,7 +508,11 @@ export const MainContent = () => {
         />
         <StatCard
           title="Total Application Fees Paid"
-          value={`pkr ${(paymentStats.monthlyRevenue / 1000).toFixed(1)}K`}
+          value={
+            paymentStats.monthlyRevenue >= 1000
+              ? `PKR ${(paymentStats.monthlyRevenue / 1000).toFixed(1)}K`
+              : `PKR ${paymentStats.monthlyRevenue.toLocaleString()}`
+          }
           change={paymentStats.revenueChange}
           isNegative={paymentStats.revenueChange.startsWith("-")}
           icon={<DollarSign />}
@@ -577,14 +529,6 @@ export const MainContent = () => {
           onClick={handleNavigateToApplications}
         />
 
-        <StatCard
-          title="Chats"
-          value={chatsCount}
-          change={chatsChange}
-          icon={<MessageCircle />}
-          color="from-orange-500 to-rose-500"
-          onClick={handleNavigateToChats}
-        />
         <StatCard
           title="Counsellors"
           value={counsellorsCount}
@@ -658,7 +602,7 @@ export const MainContent = () => {
             </h3>
             <div className="text-right">
               <p className="text-sm font-bold text-gray-800">
-                pkr {paymentStats.monthlyRevenue.toLocaleString()}
+                PKR {paymentStats.monthlyRevenue.toLocaleString()}
               </p>
               <p className="text-xs text-gray-400">This Month</p>
             </div>
@@ -835,7 +779,11 @@ const StatCard = ({
       </div>
       <div className="mt-6 flex items-center gap-2">
         <div
-          className={`flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${isNegative ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"}`}
+          className={`flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${
+            isNegative
+              ? "bg-red-50 text-red-600"
+              : "bg-emerald-50 text-emerald-600"
+          }`}
         >
           {isNegative ? "↓" : "↑"} {change}
         </div>

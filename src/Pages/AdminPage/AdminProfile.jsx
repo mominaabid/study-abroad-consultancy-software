@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState} from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import {
@@ -9,66 +9,253 @@ import {
   CheckCircle,
   XCircle,
   Edit3,
-  X,
-  Save,
   Camera,
   Briefcase,
-  Lock,
-  Eye,
-  EyeOff,
+  X,
+  Save,
 } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
+
+// Helper component for displaying each info card (unchanged)
+const ProfileInfoCard = ({
+  icon: Icon,
+  label,
+  value,
+  valueColor = "text-gray-900",
+}) => (
+  <div className="flex items-start gap-4">
+    <div className="p-3 bg-teal-50 rounded-xl">
+      <Icon size={24} className="text-teal-600" />
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-500 mb-1">{label}</p>
+      <p className={`text-lg font-semibold ${valueColor} break-all`}>{value}</p>
+    </div>
+  </div>
+);
+
+// Edit Profile Modal – exactly same design as AddCounsellorModal (unchanged)
+const EditProfileModal = ({
+  isOpen,
+  onClose,
+  currentName,
+  email,
+  role,
+  isActive,
+  registeredDate,
+  onNameUpdate,
+  isUpdatingName,
+}) => {
+  const [name, setName] = useState(currentName);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(currentName);
+    }
+  }, [isOpen, currentName]);
+
+  const handleSave = (e) => {
+    if (e) e.preventDefault();
+    if (!name.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    onNameUpdate(name.trim());
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const statusText = isActive ? "Active" : "Inactive";
+  const StatusIcon = isActive ? CheckCircle : XCircle;
+  const statusColor = isActive ? "text-green-600" : "text-red-600";
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-800">Edit Profile</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSave} className="p-6 pt-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name <span className="text-teal-600">(editable)</span>
+            </label>
+            <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-teal-200 focus-within:border-teal-400 transition">
+              <User size={18} className="text-gray-400" />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
+                placeholder="Your full name"
+                disabled={isUpdatingName}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700">
+                <Mail size={18} className="text-gray-400" />
+                <span className="flex-1">{email}</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700">
+                <Briefcase size={18} className="text-gray-400" />
+                <span className="flex-1 capitalize">{role}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+                <StatusIcon size={18} className={statusColor} />
+                <span className={`font-medium ${statusColor}`}>
+                  {statusText}
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Registered Date
+              </label>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700">
+                <Calendar size={18} className="text-gray-400" />
+                <span className="flex-1">{registeredDate}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
+            >
+              Close
+            </button>
+            <button
+              type="submit"
+              disabled={isUpdatingName}
+              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition disabled:opacity-70"
+            >
+              {isUpdatingName ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Save size={18} />
+              )}
+              {isUpdatingName ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 export const AdminProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-  });
-
-  // Password change state
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-
     const date = new Date(dateString);
-
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
-
     return `${day}-${month}-${year}`;
   };
 
-  // Fetch admin profile
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WEBP images are allowed");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("profileImage", file);
+
+    setUploading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post(
+        `${BASE_URL}/admin/upload-admin-profile-image`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+
+      setProfile((prev) => ({
+        ...prev,
+        profile_image: response.data.profilePicturePath,
+        profilePictureUrl: response.data.profilePictureUrl,
+      }));
+
+      toast.success("Profile picture updated successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+
+      toast.error(error?.response?.data?.message || "Failed to upload image");
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
+  };
+
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(`${BASE_URL}/admin/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = res.data;
-      setProfile(data);
-      setFormData({
-        name: data.name || "",
-        email: data.email || "",
-      });
+      setProfile(res.data);
     } catch (err) {
       console.error("Admin profile fetch error:", err);
-
       toast.error(err?.response?.data?.message || "Failed to load profile", {
         toastId: "admin-fetch-profile-error",
       });
@@ -81,127 +268,29 @@ export const AdminProfile = () => {
     fetchProfile();
   }, []);
 
-  // Handle edit form changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === "name" && value.length > 50) return;
-    if (name === "email" && value.length > 100) return;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Validate edit form
-  const validateEdit = () => {
-    if (!formData.name.trim()) {
-      toast.error("Name is required", {
-        toastId: "admin-validation-name-required",
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  // Submit updated profile
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    if (!validateEdit()) return;
-
-    setUpdating(true);
+  const handleUpdateName = async (newName) => {
+    setIsUpdatingName(true);
     try {
       const token = localStorage.getItem("token");
       const response = await axios.put(
         `${BASE_URL}/admin/profile`,
-        {
-          name: formData.name,
-        },
+        { name: newName },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-
-      setProfile(response.data);
-
-      toast.success("Profile updated successfully!", {
-        toastId: "admin-profile-update-success",
-      });
-      setEditMode(false);
+      setProfile((prev) => ({ ...prev, ...response.data }));
+      toast.success("Name updated successfully!");
+      setModalOpen(false);
     } catch (error) {
-      console.error("Update error:", error);
-
-      toast.error(
-        error?.response?.data?.message || "Failed to update profile",
-        {
-          toastId: "admin-profile-update-error",
-        },
-      );
+      console.error("Update name error:", error);
+      toast.error(error?.response?.data?.message || "Failed to update name");
     } finally {
-      setUpdating(false);
-    }
-  };
-
-  // Handle password form changes
-  const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
-    setPasswordData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Validate and submit password change
-  const handlePasswordSubmit = async (e) => {
-    e.preventDefault();
-    const { currentPassword, newPassword, confirmPassword } = passwordData;
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error("All password fields are required", {
-        toastId: "admin-password-fields-required",
-      });
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters", {
-        toastId: "admin-password-length-error",
-      });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error("New password and confirmation do not match", {
-        toastId: "admin-password-mismatch",
-      });
-      return;
-    }
-
-    setChangingPassword(true);
-    try {
-      const token = localStorage.getItem("token");
-      await axios.post(
-        `${BASE_URL}/admin/change-password`,
-        { currentPassword, newPassword },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      toast.success("Password changed successfully!", {
-        toastId: "admin-password-change-success",
-      });
-      setShowPasswordModal(false);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-    } catch (error) {
-      console.error("Password change error:", error);
-
-      toast.error(
-        error?.response?.data?.message || "Failed to change password",
-        {
-          toastId: "admin-password-change-error",
-        },
-      );
-    } finally {
-      setChangingPassword(false);
+      setIsUpdatingName(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-teal-700 font-medium text-lg">
@@ -214,10 +303,10 @@ export const AdminProfile = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X size={40} className="text-red-500" />
+            <XCircle size={40} className="text-red-500" />
           </div>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             Unable to Load Profile
@@ -227,7 +316,7 @@ export const AdminProfile = () => {
           </p>
           <button
             onClick={fetchProfile}
-            className="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition"
+            className="mt-6 px-6 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition font-medium"
           >
             Retry
           </button>
@@ -236,357 +325,135 @@ export const AdminProfile = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Main Content */}
-      <div className="p-4 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Profile Summary Card */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Profile Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="relative h-28 bg-gradient-to-r from-teal-500 to-emerald-500">
-                <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
-                  <div className="relative">
-                    <div className="w-28 h-28 bg-white rounded-full p-1 shadow-lg">
-                      <div className="w-full h-full bg-gradient-to-br from-teal-100 to-teal-200 rounded-full flex items-center justify-center">
-                        <span className="text-4xl font-bold text-teal-700">
-                          {profile.name?.charAt(0).toUpperCase() || "A"}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      disabled
-                      className="absolute bottom-0 right-0 bg-teal-600 p-1.5 rounded-full text-white shadow-md opacity-50 cursor-not-allowed"
-                    >
-                      <Camera size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="pt-16 pb-6 px-6 text-center">
-                <h2 className="text-xl font-bold text-gray-800">
-                  {profile.name}
-                </h2>
-              </div>
-              <div className="border-t border-gray-100 px-6 py-4 space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Calendar size={16} className="text-gray-400" />
-                  <span className="text-gray-600">
-                    Joined {formatDate(profile.createdAt)}
-                  </span>
-                </div>
-              </div>
-            </div>
+  const statusInfo = {
+    text:
+      profile.is_active === 1 || profile.is_active === true
+        ? "Active"
+        : "Inactive",
+    color:
+      profile.is_active === 1 || profile.is_active === true
+        ? "text-green-600"
+        : "text-red-600",
+  };
 
-            {/* Quick Info Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Briefcase size={18} className="text-teal-600" />
-                Admin Details
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-500">Last Updated</span>
-                  <span className="font-medium text-gray-700">
-                    {formatDate(profile.updatedAt)}
-                  </span>
+  const cardItems = [
+    { icon: User, label: "Full Name", value: profile.name },
+    { icon: Mail, label: "Email Address", value: profile.email },
+    {
+      icon: statusInfo.text === "Active" ? CheckCircle : XCircle,
+      label: "Status",
+      value: statusInfo.text,
+      valueColor: statusInfo.color,
+    },
+    {
+      icon: Calendar,
+      label: "Registered Date",
+      value: formatDate(profile.createdAt),
+    },
+    {
+      icon: Briefcase,
+      label: "Role",
+      value: profile.role || "admin",
+      valueColor: "text-teal-600",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      {/* Main container - flex on large screens, column on mobile */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* Left Section */}
+          <div className="lg:w-1/3 lg:border-r lg:border-gray-200 lg:pr-6">
+            <div className="text-center sticky top-6">
+              <div className="relative inline-block mx-auto mb-4">
+                <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-teal-100 bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
+                  {profile.profilePictureUrl ? (
+                    <img
+                      src={profile.profilePictureUrl}
+                      alt={profile.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-5xl font-bold text-teal-700">
+                      {profile.name?.charAt(0).toUpperCase() || "A"}
+                    </span>
+                  )}
                 </div>
+
+                <label
+                  htmlFor="admin-profile-upload"
+                  className={`absolute bottom-1 right-1 bg-white p-2 rounded-full text-teal-600 shadow-md border border-gray-200 cursor-pointer hover:bg-teal-50 transition ${
+                    uploading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <Camera size={16} />
+                </label>
+
+                <input
+                  id="admin-profile-upload"
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={uploading}
+                />
               </div>
+
+              <h2 className="text-xl font-bold text-gray-900">
+                {profile.name}
+              </h2>
+
+              <button
+                onClick={() => setModalOpen(true)}
+                className="mt-6 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-teal-600 hover:bg-teal-50 text-teal-700 rounded-xl font-semibold transition"
+              >
+                <Edit3 size={18} />
+                Edit Profile
+              </button>
             </div>
           </div>
 
-          {/* Right Column - Editable Form & Password Change */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Edit Profile Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="border-b border-gray-100 px-6 py-4">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  {editMode
-                    ? "Edit Personal Information"
-                    : "Personal Information"}
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {editMode
-                    ? "Update your details below and save changes."
-                    : "Your profile information is read-only. Click edit to make changes."}
-                </p>
-              </div>
-              <form onSubmit={handleUpdate} className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User size={18} className="text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        disabled={!editMode}
-                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition ${
-                          editMode
-                            ? "bg-white border-gray-200 hover:border-gray-300"
-                            : "bg-gray-50 border-gray-100 text-gray-600"
-                        }`}
-                        placeholder="Enter full name"
-                      />
-                    </div>
-                  </div>
+          {/* Right Section */}
+          <div className="lg:w-2/3">
+            <div className="mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                Personal Information
+              </h1>
 
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Mail size={18} className="text-gray-400" />
-                      </div>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        readOnly
-                        disabled
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-600 cursor-not-allowed"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Role (read-only) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Role
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={profile.role || "admin"}
-                        disabled
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Status (read-only) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Status
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={
-                          profile.is_active === 1 || profile.is_active === true
-                            ? "Active"
-                            : "Inactive"
-                        }
-                        disabled
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Edit button (only when not in edit mode) */}
-                {!editMode && (
-                  <div className="mt-8 flex justify-end pt-4 border-t border-gray-100">
-                    <button
-                      type="button"
-                      onClick={() => setEditMode(true)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium shadow-sm transition duration-200"
-                    >
-                      <Edit3 size={18} />
-                      Edit Profile
-                    </button>
-                  </div>
-                )}
-
-                {/* Save/Cancel Buttons (only in edit mode) */}
-                {editMode && (
-                  <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditMode(false);
-                        setFormData({
-                          name: profile.name || "",
-                          email: profile.email || "",
-                        });
-                      }}
-                      className="px-6 py-2.5 rounded-xl font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={updating}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-xl font-medium hover:bg-teal-700 transition shadow-sm disabled:opacity-70"
-                    >
-                      <Save size={18} />
-                      {updating ? "Saving..." : "Save Changes"}
-                    </button>
-                  </div>
-                )}
-              </form>
+              <p className="text-gray-500 mt-1">
+                Review your profile details. Click 'Edit Profile' to make
+                changes.
+              </p>
             </div>
 
-            {/* Change Password Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="border-b border-gray-100 px-6 py-4">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <Lock size={18} className="text-teal-600" />
-                  Change Password
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Update your password to keep your account secure.
-                </p>
-              </div>
-              <div className="p-6">
-                <button
-                  onClick={() => setShowPasswordModal(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition"
-                >
-                  <Lock size={16} />
-                  Change Password
-                </button>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {cardItems.map((item, idx) => (
+                <ProfileInfoCard
+                  key={idx}
+                  icon={item.icon}
+                  label={item.label}
+                  value={item.value}
+                  valueColor={item.valueColor}
+                />
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Password Change Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex justify-between items-center border-b border-gray-100 px-6 py-4">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Change Password
-              </h3>
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handlePasswordSubmit} className="p-6 space-y-5">
-              {/* Current Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Current Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    type={showCurrentPassword ? "text" : "password"}
-                    name="currentPassword"
-                    value={passwordData.currentPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition"
-                    placeholder="Enter current password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    {showCurrentPassword ? (
-                      <EyeOff size={18} />
-                    ) : (
-                      <Eye size={18} />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* New Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  New Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    type={showNewPassword ? "text" : "password"}
-                    name="newPassword"
-                    value={passwordData.newPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition"
-                    placeholder="Enter new password (min 6 characters)"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Confirm New Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock size={18} className="text-gray-400" />
-                  </div>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    value={passwordData.confirmPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition"
-                    placeholder="Confirm new password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={18} />
-                    ) : (
-                      <Eye size={18} />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  className="px-4 py-2 rounded-xl font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={changingPassword}
-                  className="px-4 py-2 rounded-xl font-medium bg-teal-600 text-white hover:bg-teal-700 transition disabled:opacity-70"
-                >
-                  {changingPassword ? "Updating..." : "Update Password"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        currentName={profile.name}
+        email={profile.email}
+        role={profile.role || "admin"}
+        isActive={profile.is_active === 1 || profile.is_active === true}
+        registeredDate={formatDate(profile.createdAt)}
+        onNameUpdate={handleUpdateName}
+        isUpdatingName={isUpdatingName}
+      />
     </div>
   );
 };

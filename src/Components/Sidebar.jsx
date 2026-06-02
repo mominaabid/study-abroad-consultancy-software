@@ -10,6 +10,8 @@ import {
   FileText,
 } from "lucide-react";
 import logo from "../assets/favicon.png";
+import ExpandedLogo from "../assets/Educatia-Logo.png";
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, selectRole } from "../redux/slices/authSlice";
@@ -175,15 +177,21 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
         {/* Logo */}
         <div className="flex items-center justify-between mb-8">
           <div
-            className="flex items-center gap-3 min-w-max cursor-pointer"
+            className="flex items-center gap-3 min-w-max cursor-pointer w-full"
             onClick={() => navigate(homePath)}
           >
-            <img src={logo} alt="Logo" className="h-8 w-12 object-contain" />
-
-            {isExpanded && (
-              <span className="text-lg font-bold text-gray-800 transition-opacity duration-300">
-                Educatia
-              </span>
+            {isExpanded ? (
+              <img 
+                src={ExpandedLogo} 
+                alt="Educatia Logo" 
+                className="h-12 w-180 object-contain transition-all duration-300" 
+              />
+            ) : (
+              <img 
+                src={logo} 
+                alt="Favicon" 
+                className="h-8 w-12 object-contain transition-all duration-300" 
+              />
             )}
           </div>
         </div>

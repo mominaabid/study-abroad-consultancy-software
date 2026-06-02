@@ -161,18 +161,21 @@ export const Header = () => {
         { path: "/admin/payments", name: "Payments" },
         { path: "/admin/chats", name: "Chats" },
         { path: "/admin/counsellors", name: "Counsellors" },
+        { path: "/admin/profile", name: "Profile" },
       ],
       counsellor: [
         { path: "/counsellor/dashboard", name: "Dashboard" },
         { path: "/counsellor/leads", name: "Leads" },
         { path: "/counsellor/applications", name: "Applications" },
         { path: "/counsellor/chats", name: "Chats" },
+        { path: "/counsellor/profile", name: "Profile" },
       ],
       student: [
         { path: "/student/dashboard", name: "Dashboard" },
         { path: "/student/application", name: "Applications" },
         { path: "/student/payments", name: "Payments" },
         { path: "/student/chats", name: "Chats" },
+        { path: "/student/profile", name: "Profile" },
       ],
     };
 

@@ -91,7 +91,7 @@ function DocumentUploadModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) {
-      toast.error("Please select a file" , { toastId: "choose file" });
+      toast.error("Please select a file", { toastId: "choose file" });
       return;
     }
 
@@ -107,12 +107,16 @@ function DocumentUploadModal({
         formData,
       );
       if (res.data) {
-        toast.success("Document uploaded successfully!" , { toastId: "doc-load" });
+        toast.success("Document uploaded successfully!", {
+          toastId: "doc-load",
+        });
         onSuccess();
         onClose();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Upload failed" , { toastId: "viral load" });
+      toast.error(err.response?.data?.message || "Upload failed", {
+        toastId: "viral load",
+      });
     } finally {
       setLoading(false);
     }
@@ -553,9 +557,13 @@ export const StudentApplication = () => {
     } catch (err) {
       console.error("Error fetching applications:", err);
       if (err.response?.status === 401) {
-        toast.error("Session expired. Please login again." , { toastId: "sign-in again" });
+        toast.error("Session expired. Please login again.", {
+          toastId: "sign-in again",
+        });
       } else {
-        toast.error("Failed to load applications" , { toastId: "app-load-failed" });
+        toast.error("Failed to load applications", {
+          toastId: "app-load-failed",
+        });
       }
     } finally {
       setLoading(false);
@@ -589,31 +597,6 @@ export const StudentApplication = () => {
   return (
     <div className="p-4 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header */}
-      <div className="mb-6">
-        <div className="bg-[#009E99] text-white rounded-2xl p-6 shadow-xl">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">
-                Student Portal
-              </p>
-              <h1 className="text-2xl font-bold">My Applications</h1>
-              <p className="text-blue-200 text-sm mt-1">
-                View and track your university applications
-              </p>
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2 bg-white/10 rounded-xl hover:bg-white/20 transition"
-            >
-              <RefreshCw
-                size={18}
-                className={refreshing ? "animate-spin" : ""}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Applications List */}
       {applications.length === 0 ? (
