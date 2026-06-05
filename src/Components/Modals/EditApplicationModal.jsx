@@ -1,4 +1,3 @@
-// EditApplicationModal.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -27,7 +26,6 @@ import coursesList from "../../constants/courses.json";
 import CountrySelect from "../../Components/InputFields/CountrySelect";
 import { Title } from "../Title";
 import SearchableSelect from "../SearchableSelect";
-import { ViewIcon } from "../CustomButtons/ViewIcon";
 
 const getToken = () => localStorage.getItem("token") || "";
 
@@ -115,6 +113,7 @@ export default function EditApplicationModal({
     year_awarded: "",
     board_university: "",
     counselor_notes: "",
+    consultancy_fee: "", // <-- added
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -155,6 +154,9 @@ export default function EditApplicationModal({
 
   useEffect(() => {
     if (application) {
+      console.log("Application object received:", application);
+      console.log("consultancy_fee value:", application.consultancy_fee);
+
       setFormData({
         user_id: application.user_id || application.student_id || "",
         target_university: application.target_university || "",
@@ -175,6 +177,7 @@ export default function EditApplicationModal({
         year_awarded: "",
         board_university: "",
         counselor_notes: application.counselor_notes || "",
+        consultancy_fee: application.consultancy_fee || "", // <-- added
       });
       fetchLeadEducation(application.user_id || application.student_id);
     } else {
@@ -247,6 +250,25 @@ export default function EditApplicationModal({
       }
     }
 
+    // *** Consultancy fee validation (added) ***
+    if (!formData.consultancy_fee || formData.consultancy_fee.trim() === "") {
+      newErrors.consultancy_fee = "Consultancy fee is required";
+    } else {
+      const feeValue = formData.consultancy_fee.trim();
+      const fee = parseFloat(feeValue);
+      if (feeValue.length < 3) {
+        newErrors.consultancy_fee =
+          "Consultancy fee must be at least 3 characters";
+      } else if (feeValue.length > 12) {
+        newErrors.consultancy_fee =
+          "Consultancy fee cannot exceed 12 characters";
+      } else if (isNaN(fee) || fee < 0) {
+        newErrors.consultancy_fee = "Consultancy fee must be a positive number";
+      } else if (feeValue.includes(".") && feeValue.split(".")[1]?.length > 2) {
+        newErrors.consultancy_fee = "Fee can have at most 2 decimal places";
+      }
+    }
+
     return newErrors;
   };
 
@@ -276,6 +298,12 @@ export default function EditApplicationModal({
 
     if (name === "counselor_notes" && value.length > 255) return;
 
+    // *** Consultancy fee input mask & length limit (added) ***
+    if (name === "consultancy_fee") {
+      if (value.length > 12) return;
+      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {
@@ -304,6 +332,11 @@ export default function EditApplicationModal({
         formData.year_awarded === "" ? null : formData.year_awarded;
       const gradesCgpaValue =
         formData.grades_cgpa === "" ? null : formData.grades_cgpa;
+      // *** Consultancy fee conversion (added) ***
+      const consultancyFeeValue =
+        formData.consultancy_fee === ""
+          ? null
+          : parseFloat(formData.consultancy_fee);
 
       const payload = {
         user_id: parseInt(formData.user_id),
@@ -322,6 +355,7 @@ export default function EditApplicationModal({
         year_awarded: yearAwardedValue,
         board_university: formData.board_university,
         counselor_notes: formData.counselor_notes,
+        consultancy_fee: consultancyFeeValue, // <-- added
       };
 
       const res = await authAxios.put(
@@ -348,24 +382,6 @@ export default function EditApplicationModal({
     }
   };
 
-  const handleAutofillFromEducation = (edu) => {
-    setFormData((prev) => ({
-      ...prev,
-      study_level: edu.degree || "",
-      grades_cgpa: edu.grades_cgpa || "",
-      year_awarded: edu.year_awarded || "",
-      board_university: edu.board_university || "",
-    }));
-    setErrors((prev) => {
-      const newErrs = { ...prev };
-      delete newErrs.study_level;
-      delete newErrs.grades_cgpa;
-      delete newErrs.year_awarded;
-      delete newErrs.board_university;
-      return newErrs;
-    });
-  };
-
   if (!isOpen || !application) return null;
 
   return (
@@ -389,21 +405,11 @@ export default function EditApplicationModal({
                   className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
                 >
                   <option value="">Select Student</option>
-                  {/* {students.map((s) => (
+                  {counselingStudents.map((s) => (
                     <option key={s.id} value={s.user_id || s.id}>
                       {s.name} - {s.email}
                     </option>
-                  ))} */}
-
-                  {counselingStudents.map(
-                    (
-                      s, // ← use filtered list
-                    ) => (
-                      <option key={s.id} value={s.user_id || s.id}>
-                        {s.name} - {s.email}
-                      </option>
-                    ),
-                  )}
+                  ))}
                 </select>
                 <p className="text-xs text-gray-400 mt-1">
                   Student cannot be changed after creation
@@ -448,19 +454,45 @@ export default function EditApplicationModal({
                 </FormField>
               </div>
 
-              <FormField label="Status">
-                <SearchableSelect
-                  name="status"
-                  value={formData.status}
-                  onChange={handleFieldChange}
-                  options={STATUS_OPTIONS.map((opt) => ({
-                    value: opt.value,
-                    label: opt.label,
-                    icon: "",
-                  }))}
-                  placeholder="Search or select status..."
-                />
-              </FormField>
+              {/* *** Consultancy Fee + Status row (replaces old single Status field) *** */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  label="Consultancy Fee"
+                  required
+                  error={errors.consultancy_fee}
+                >
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-medium">
+                      PKR
+                    </span>
+                    <input
+                      type="text"
+                      name="consultancy_fee"
+                      value={formData.consultancy_fee}
+                      onChange={handleFieldChange}
+                      placeholder="Enter consultancy fee"
+                      required // ← add HTML5 required
+                      minLength={3}
+                      maxLength={12}
+                      className="w-full border border-slate-300 rounded-xl pl-14 pr-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
+                    />
+                  </div>
+                </FormField>
+
+                <FormField label="Status">
+                  <SearchableSelect
+                    name="status"
+                    value={formData.status}
+                    onChange={handleFieldChange}
+                    options={STATUS_OPTIONS.map((opt) => ({
+                      value: opt.value,
+                      label: opt.label,
+                      icon: "",
+                    }))}
+                    placeholder="Search or select status..."
+                  />
+                </FormField>
+              </div>
             </InfoSection>
 
             <InfoSection title="Student Details">
@@ -525,59 +557,6 @@ export default function EditApplicationModal({
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
-
-                {/* READ-ONLY EDUCATION FIELDS START */}
-                <FormField label="Degree">
-                  <input
-                    type="text"
-                    placeholder="Degree"
-                    name="study_level"
-                    value={formData.study_level}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
-
-                <FormField label="Grades" error={errors.grades_cgpa}>
-                  <input
-                    type="text"
-                    placeholder="CGPA"
-                    name="grades_cgpa"
-                    value={formData.grades_cgpa}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
-
-                <FormField label="Year Awarded" error={errors.year_awarded}>
-                  <input
-                    type="text"
-                    placeholder="e.g., 2022"
-                    name="year_awarded"
-                    value={formData.year_awarded}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
-
-                <FormField
-                  label="Board / University"
-                  error={errors.board_university}
-                >
-                  <input
-                    type="text"
-                    placeholder="e.g., University of London"
-                    name="board_university"
-                    value={formData.board_university}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
-                {/* READ-ONLY EDUCATION FIELDS END */}
               </div>
             </InfoSection>
 
@@ -604,15 +583,6 @@ export default function EditApplicationModal({
                       key={edu.id}
                       className="group relative bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
                     >
-                      <div
-                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Copy to student details"
-                      >
-                        <ViewIcon
-                          handleView={() => handleAutofillFromEducation(edu)}
-                        />
-                      </div>
-
                       <div className="flex items-start gap-4">
                         <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg">
                           {edu.degree?.charAt(0)?.toUpperCase() || "D"}

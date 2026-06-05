@@ -8,6 +8,7 @@ import {
   DollarSign,
   LogOut,
   FileText,
+  CreditCard, // ✅ Added for Accounts menu
 } from "lucide-react";
 import logo from "../assets/favicon.png";
 import ExpandedLogo from "../assets/Educatia-Logo.png";
@@ -26,7 +27,12 @@ const ADMIN_MENU = [
     icon: <Settings size={20} />,
     path: "/admin/applications",
   },
-  { name: "Payments", icon: <DollarSign size={20} />, path: "/admin/payments" },
+  {
+    name: "Accounts", // ✅ New Accounts menu
+    icon: <CreditCard size={20} />,
+    path: "/admin/accounts",
+  },
+  // { name: "Payments", icon: <DollarSign size={20} />, path: "/admin/payments" },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/admin/chats" },
   { name: "Counsellors", icon: <User size={20} />, path: "/admin/counsellors" },
 ];
@@ -47,6 +53,11 @@ const COUNSELLOR_MENU = [
     icon: <FileText size={20} />,
     path: "/counsellor/applications",
   },
+  // {
+  //   name: "Accounts", // ✅ New Accounts menu
+  //   icon: <CreditCard size={20} />,
+  //   path: "/counsellor/accounts",
+  // },
   {
     name: "Chats",
     icon: <MessageSquare size={20} />,
@@ -61,10 +72,16 @@ const STUDENT_MENU = [
     icon: <FileText size={20} />,
     path: "/student/application",
   },
+  // {
+  //   name: "Payments",
+  //   icon: <DollarSign size={20} />,
+  //   path: "/student/payments",
+  // },
+
   {
-    name: "Payments",
-    icon: <DollarSign size={20} />,
-    path: "/student/payments",
+    name: "Accounts",
+    icon: <CreditCard size={20} />,
+    path: "/student/accounts",
   },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/student/chats" },
 ];
@@ -181,16 +198,16 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
             onClick={() => navigate(homePath)}
           >
             {isExpanded ? (
-              <img 
-                src={ExpandedLogo} 
-                alt="Educatia Logo" 
-                className="h-12 w-180 object-contain transition-all duration-300" 
+              <img
+                src={ExpandedLogo}
+                alt="Educatia Logo"
+                className="h-12 w-180 object-contain transition-all duration-300"
               />
             ) : (
-              <img 
-                src={logo} 
-                alt="Favicon" 
-                className="h-8 w-12 object-contain transition-all duration-300" 
+              <img
+                src={logo}
+                alt="Favicon"
+                className="h-8 w-12 object-contain transition-all duration-300"
               />
             )}
           </div>

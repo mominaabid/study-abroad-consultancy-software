@@ -28,7 +28,6 @@ import universitieslist from "../../constants/universities.json";
 import CourseSelect from "../../Components/InputFields/CourseSelect";
 import coursesList from "../../constants/courses.json";
 import CountrySelect from "../../Components/InputFields/CountrySelect";
-import { ViewIcon } from "../CustomButtons/ViewIcon"; // eye icon component
 
 const getToken = () => localStorage.getItem("token") || "";
 
@@ -97,6 +96,7 @@ export default function CreateApplicationModal({
     year_awarded: "",
     board_university: "",
     counselor_notes: "",
+    consultancy_fee: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -133,26 +133,6 @@ export default function CreateApplicationModal({
     }
   };
 
-  // Autofill the read‑only educational fields from a selected education card
-  const handleAutofillFromEducation = (edu) => {
-    setFormData((prev) => ({
-      ...prev,
-      study_level: edu.degree || "",
-      grades_cgpa: edu.grades_cgpa || "",
-      year_awarded: edu.year_awarded || "",
-      board_university: edu.board_university || "",
-    }));
-    // Clear any validation errors for these fields
-    setErrors((prev) => {
-      const newErrs = { ...prev };
-      delete newErrs.study_level;
-      delete newErrs.grades_cgpa;
-      delete newErrs.year_awarded;
-      delete newErrs.board_university;
-      return newErrs;
-    });
-  };
-
   const counselingStudents = useMemo(() => {
     return students.filter((student) => student.status === "counseling");
   }, [students]);
@@ -181,6 +161,7 @@ export default function CreateApplicationModal({
         year_awarded: "", // do NOT auto‑fill
         board_university: "", // do NOT auto‑fill
         counselor_notes: "",
+        consultancy_fee: "",
       });
       fetchLeadEducation(
         selectedStudentForCreate.user_id || selectedStudentForCreate.id,
@@ -203,6 +184,7 @@ export default function CreateApplicationModal({
         year_awarded: "",
         board_university: "",
         counselor_notes: "",
+        consultancy_fee: "",
       });
       setEducationEntries([]);
     }
@@ -268,6 +250,24 @@ export default function CreateApplicationModal({
         newErrors.counselor_notes = "Description must be at least 3 characters";
       } else if (len > 255) {
         newErrors.counselor_notes = "Description cannot exceed 255 characters";
+      }
+    }
+
+    if (!formData.consultancy_fee || formData.consultancy_fee.trim() === "") {
+      newErrors.consultancy_fee = "Consultancy fee is required";
+    } else {
+      const feeValue = formData.consultancy_fee.trim();
+      const fee = parseFloat(feeValue);
+      if (feeValue.length < 3) {
+        newErrors.consultancy_fee =
+          "Consultancy fee must be at least 3 characters";
+      } else if (feeValue.length > 12) {
+        newErrors.consultancy_fee =
+          "Consultancy fee cannot exceed 12 characters";
+      } else if (isNaN(fee) || fee < 0) {
+        newErrors.consultancy_fee = "Consultancy fee must be a positive number";
+      } else if (feeValue.includes(".") && feeValue.split(".")[1]?.length > 2) {
+        newErrors.consultancy_fee = "Fee can have at most 2 decimal places";
       }
     }
 
@@ -362,6 +362,12 @@ export default function CreateApplicationModal({
       return;
     }
 
+    if (name === "consultancy_fee") {
+      if (value.length > 12) return;
+
+      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => {
@@ -395,6 +401,11 @@ export default function CreateApplicationModal({
           ? null
           : formData.english_test_overall_score;
 
+      const sanitizedConsultancyFee =
+        formData.consultancy_fee === ""
+          ? null
+          : parseFloat(formData.consultancy_fee);
+
       const payload = {
         user_id: parseInt(formData.user_id),
         target_university: formData.target_university,
@@ -412,6 +423,7 @@ export default function CreateApplicationModal({
         year_awarded: sanitizedYear,
         board_university: formData.board_university,
         counselor_notes: formData.counselor_notes,
+        consultancy_fee: sanitizedConsultancyFee,
       };
 
       const res = await authAxios.post(
@@ -537,20 +549,45 @@ export default function CreateApplicationModal({
                 </FormField>
               </div>
 
-              <FormField label="Initial Status *">
-                <SearchableSelect
-                  name="status"
-                  value={formData.status}
-                  onChange={handleFieldChange}
-                  options={STATUS_OPTIONS.map((opt) => ({
-                    value: opt.value,
-                    label: opt.label,
-                    icon: "",
-                  }))}
-                  placeholder="Search or select status..."
-                  required={false}
-                />
-              </FormField>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  label="Consultancy Fee"
+                  required
+                  error={errors.consultancy_fee}
+                >
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                      PKR
+                    </span>
+                    <input
+                      type="text"
+                      name="consultancy_fee"
+                      value={formData.consultancy_fee}
+                      onChange={handleFieldChange}
+                      placeholder="Enter consultancy fee"
+                      required // ← add HTML5 required attribute
+                      minLength={3}
+                      maxLength={12}
+                      className="w-full border border-slate-300 rounded-xl pl-12 pr-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
+                    />
+                  </div>
+                </FormField>
+
+                <FormField label="Initial Status *">
+                  <SearchableSelect
+                    name="status"
+                    value={formData.status}
+                    onChange={handleFieldChange}
+                    options={STATUS_OPTIONS.map((opt) => ({
+                      value: opt.value,
+                      label: opt.label,
+                      icon: "",
+                    }))}
+                    placeholder="Search or select status..."
+                    required={false}
+                  />
+                </FormField>
+              </div>
             </InfoSection>
 
             {/* Student Details Section – read‑only educational fields */}
@@ -616,58 +653,6 @@ export default function CreateApplicationModal({
                     className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
-
-                {/* READ‑ONLY EDUCATIONAL FIELDS (like EditApplicationModal) */}
-                <FormField label="Degree">
-                  <input
-                    type="text"
-                    placeholder="Degree"
-                    name="study_level"
-                    value={formData.study_level}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
-
-                <FormField label="Grades" error={errors.grades_cgpa}>
-                  <input
-                    type="text"
-                    placeholder="CGPA"
-                    name="grades_cgpa"
-                    value={formData.grades_cgpa}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
-
-                <FormField label="Year Awarded" error={errors.year_awarded}>
-                  <input
-                    type="text"
-                    placeholder="e.g., 2022"
-                    name="year_awarded"
-                    value={formData.year_awarded}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
-
-                <FormField
-                  label="Board / University"
-                  error={errors.board_university}
-                >
-                  <input
-                    type="text"
-                    placeholder="e.g., University of London"
-                    name="board_university"
-                    value={formData.board_university}
-                    onChange={handleFieldChange}
-                    readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                </FormField>
               </div>
             </InfoSection>
 
@@ -692,14 +677,6 @@ export default function CreateApplicationModal({
                       key={edu.id}
                       className="group relative bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
                     >
-                      <div
-                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Copy to student details"
-                      >
-                        <ViewIcon
-                          handleView={() => handleAutofillFromEducation(edu)}
-                        />
-                      </div>
                       <div className="flex items-start gap-4">
                         <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg">
                           {edu.degree?.charAt(0)?.toUpperCase() || "D"}

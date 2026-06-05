@@ -28,6 +28,8 @@ import { Counsellor } from "./Pages/AdminPage/Counsellor";
 import AdminPayments from "./Pages/AdminPage/AdminPayments";
 // import { AdminApplications } from "./Pages/AdminPage/AdminApplications"; // ✅ reuses CounsellorApplication
 import { AdminProfile } from "./Pages/AdminPage/AdminProfile";
+import Accounts from "./Components/Accounts/Accounts";
+
 
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
@@ -140,6 +142,7 @@ export default function App() {
               <Route path="payments" element={<AdminPayments />} />
               <Route path="applications" element={<CounsellorApplication />} />
               <Route path="profile" element={<AdminProfile />} />
+              <Route path="accounts" element={<Accounts />} />
             </Route>
           </Route>
 
@@ -168,6 +171,8 @@ export default function App() {
               <Route path="chats" element={<StudentChat />} />
               <Route path="profile" element={<StudentProfile />} />
               <Route path="payments" element={<StudentPayments />} />
+              <Route path="accounts" element={<Accounts />} />
+
             </Route>
           </Route>
 

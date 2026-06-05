@@ -409,7 +409,6 @@ export default function StudentPayments() {
     pending_count: 0,
     rejected_count: 0,
   });
-  // New state for fully paid applications count
   const [fullyPaidCount, setFullyPaidCount] = useState(0);
 
   const fetchPayments = async () => {
@@ -453,8 +452,6 @@ export default function StudentPayments() {
         },
       );
 
-      // Sync fully paid count with completed_count
-      // setFullyPaidCount(data.stats?.completed_count || 0);
       setFullyPaidCount(0);
     } catch (err) {
       console.error("Fetch payment stats error:", err);
@@ -504,35 +501,53 @@ export default function StudentPayments() {
           final_fees: 0,
         };
 
-        const finalFees = fees.final_fees || fees.total_fees;
+        // -------------------------------------------
+        // NEW: Use consultancy_fee if it exists and > 0
+        // -------------------------------------------
+        const consultancyFee = parseFloat(app.consultancy_fee) || 0;
+        const useConsultancy = consultancyFee > 0;
+
+        let totalFee,
+          finalFees,
+          scholarshipAmount,
+          scholarshipType,
+          scholarshipRemarks;
+
+        if (useConsultancy) {
+          totalFee = consultancyFee;
+          finalFees = consultancyFee;
+          scholarshipAmount = 0;
+          scholarshipType = "";
+          scholarshipRemarks = "";
+        } else {
+          totalFee = fees.total_fees;
+          finalFees = fees.final_fees || fees.total_fees;
+          scholarshipAmount = fees.scholarship_amount || 0;
+          scholarshipType = fees.scholarship_type || "";
+          scholarshipRemarks = fees.scholarship_remarks || "";
+        }
+
         const remaining = finalFees - totalPaid;
 
         return {
           ...app,
-          total_fees: fees.total_fees,
-          scholarship_amount: fees.scholarship_amount,
-          scholarship_type: fees.scholarship_type,
-          scholarship_remarks: fees.scholarship_remarks,
+          total_fees: totalFee,
+          scholarship_amount: scholarshipAmount,
+          scholarship_type: scholarshipType,
+          scholarship_remarks: scholarshipRemarks,
           final_fees: finalFees,
           total_paid: totalPaid,
           remaining_amount: remaining > 0 ? remaining : 0,
           is_fully_paid: remaining <= 0,
+          use_consultancy: useConsultancy, // flag for UI adjustments
         };
       });
 
       setApplications(appsWithSummary);
 
-      // Calculate fully paid applications count
-      // const fullyPaidApps = appsWithSummary.filter(
-      //   (app) => app.remaining_amount <= 0,
-      // ).length;
-      // setFullyPaidCount(fullyPaidApps);
-
-      // Count only applications whose payment is completely finished
       const fullyPaidApps = appsWithSummary.filter((app) => {
         const finalFees = parseFloat(app.final_fees || app.total_fees || 0);
         const totalPaid = parseFloat(app.total_paid || 0);
-
         return finalFees > 0 && totalPaid >= finalFees;
       }).length;
 
@@ -567,7 +582,6 @@ export default function StudentPayments() {
     }
   }, [payments]);
 
-  // Auto-refresh when page gets focus
   useEffect(() => {
     const handleFocus = () => {
       fetchApplications();
@@ -710,7 +724,6 @@ export default function StudentPayments() {
             </div>
           </div>
         </div>
-        {/* Completed Card - Now shows fully paid applications count */}
         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -787,22 +800,26 @@ export default function StudentPayments() {
                     )}
                   </div>
 
-                  {/* Fee Breakdown with Scholarship */}
+                  {/* Fee Breakdown with Scholarship or Consultancy */}
                   <div className="bg-gray-50 rounded-xl p-4 mb-4">
                     <h4 className="font-semibold text-gray-700 text-sm mb-2 flex items-center gap-2">
                       <DollarSign size={14} className="text-teal-500" />
-                      Fee Breakdown
+                      {app.use_consultancy
+                        ? "Consultancy Fee Breakdown"
+                        : "Fee Breakdown"}
                     </h4>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">
-                          Total Fees:
+                          {app.use_consultancy
+                            ? "Consultancy Fee:"
+                            : "Total Fees:"}
                         </span>
                         <span className="font-semibold">
                           PKR {(app.total_fees || 0).toLocaleString()}
                         </span>
                       </div>
-                      {app.scholarship_amount > 0 && (
+                      {!app.use_consultancy && app.scholarship_amount > 0 && (
                         <>
                           <div className="flex justify-between text-green-600">
                             <span className="text-sm flex items-center gap-1">
@@ -835,10 +852,21 @@ export default function StudentPayments() {
                           </p>
                         </>
                       )}
-                      {(!app.scholarship_amount ||
-                        app.scholarship_amount === 0) && (
+                      {!app.use_consultancy &&
+                        (!app.scholarship_amount ||
+                          app.scholarship_amount === 0) && (
+                          <div className="flex justify-between font-bold pt-2">
+                            <span className="text-sm">Amount to Pay:</span>
+                            <span className="text-teal-600">
+                              PKR {(app.total_fees || 0).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      {app.use_consultancy && (
                         <div className="flex justify-between font-bold pt-2">
-                          <span className="text-sm">Amount to Pay:</span>
+                          <span className="text-sm">
+                            Consultancy Fee to Pay:
+                          </span>
                           <span className="text-teal-600">
                             PKR {(app.total_fees || 0).toLocaleString()}
                           </span>

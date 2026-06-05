@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -28,28 +28,23 @@ export const MainContent = () => {
     revenueChange: "+0%",
   });
 
-  // New dynamic stats
   const [counsellorsCount, setCounsellorsCount] = useState(0);
   const [paymentsCount, setPaymentsCount] = useState(0);
   const [applicationsWithOfferCount, setApplicationsWithOfferCount] =
     useState(0);
 
-  // Change percentages for new stats
   const [counsellorsChange, setCounsellorsChange] = useState("0%");
   const [paymentsCountChange, setPaymentsCountChange] = useState("0%");
   const [applicationsOfferChange, setApplicationsOfferChange] = useState("0%");
 
-  // Existing stat changes
   const [leadsChange, setLeadsChange] = useState("+0%");
   const [applicationsChange, setApplicationsChange] = useState("+0%");
 
   const notifications = useSelector(selectNotifications);
   const user = useSelector(selectUser);
 
-  // --- DATE FILTER STATE ---
-  const [dateFilter, setDateFilter] = useState("daily"); // 'daily', 'weekly', 'monthly'
+  const [dateFilter, setDateFilter] = useState("daily");
 
-  // Helper: get start and end date based on filter
   const getDateRange = useCallback(() => {
     const now = new Date();
     let start, end;
@@ -59,7 +54,7 @@ export const MainContent = () => {
         end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
         break;
       case "weekly":
-        const day = now.getDay(); // 0 = Sunday
+        const day = now.getDay();
         const diffToMonday = day === 0 ? -6 : 1 - day;
         start = new Date(
           now.getFullYear(),
@@ -80,7 +75,6 @@ export const MainContent = () => {
     return { start: start.toISOString(), end: end.toISOString() };
   }, [dateFilter]);
 
-  // Helper: calculate percentage change
   const getPercentageChange = (current, previous) => {
     if (previous === 0) return current > 0 ? "+100%" : "0%";
     const change = ((current - previous) / previous) * 100;
@@ -104,7 +98,6 @@ export const MainContent = () => {
         Authorization: `Bearer ${token}`,
       };
 
-      // 1. Fetch Leads
       const leadsRes = await fetch(`${BASE_URL}/admin/leads${query}`, {
         headers: authHeaders,
       });
@@ -115,7 +108,6 @@ export const MainContent = () => {
         : leadsData.data || [];
       setLeads(leadsArray);
 
-      // 2. Fetch Payments
       const paymentsRes = await fetch(`${BASE_URL}/admin/payments${query}`, {
         headers: authHeaders,
       });
@@ -125,12 +117,9 @@ export const MainContent = () => {
       setPayments(paymentsArray);
       setPaymentsCount(paymentsArray.length);
 
-      // 3. Fetch Applications (Counsellor Applications)
       const appsRes = await fetch(
         `${BASE_URL}/counsellor/applications/students${query}`,
-        {
-          headers: authHeaders,
-        },
+        { headers: authHeaders },
       );
       if (!appsRes.ok) throw new Error("Failed to fetch applications");
       const appsData = await appsRes.json();
@@ -152,12 +141,9 @@ export const MainContent = () => {
       }
       setApplications(allApps);
 
-      // 5. Fetch Counsellors
       const counsellorsRes = await fetch(
         `${BASE_URL}/admin/getCounsellors${query}`,
-        {
-          headers: authHeaders,
-        },
+        { headers: authHeaders },
       );
       if (!counsellorsRes.ok) throw new Error("Failed to fetch counsellors");
       const counsellorsData = await counsellorsRes.json();
@@ -172,14 +158,11 @@ export const MainContent = () => {
     }
   }, [getDateRange]);
 
-  // Refetch when date filter changes
   useEffect(() => {
     fetchAllFilteredData();
   }, [fetchAllFilteredData]);
 
-  // --- PERCENTAGE CHANGE CALCULATIONS (based on filtered data) ---
-
-  // Leads change
+  // --- PERCENTAGE CHANGE CALCULATIONS ---
   useEffect(() => {
     if (leads.length === 0) {
       setLeadsChange("0%");
@@ -194,7 +177,6 @@ export const MainContent = () => {
     setLeadsChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [leads]);
 
-  // Payments count change
   useEffect(() => {
     if (payments.length === 0) {
       setPaymentsCountChange("0%");
@@ -209,7 +191,6 @@ export const MainContent = () => {
     setPaymentsCountChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [payments]);
 
-  // Payment Stats (Revenue and change) – recalc when payments change
   useEffect(() => {
     if (payments.length === 0) {
       setPaymentStats({ monthlyRevenue: 0, revenueChange: "+0%" });
@@ -251,11 +232,9 @@ export const MainContent = () => {
     } else if (monthlyRevenue > 0) {
       revenueChange = "+100%";
     }
-
     setPaymentStats({ monthlyRevenue, revenueChange });
   }, [payments]);
 
-  // Applications total change
   useEffect(() => {
     if (applications.length === 0) {
       setApplicationsChange("0%");
@@ -270,7 +249,6 @@ export const MainContent = () => {
     setApplicationsChange(getPercentageChange(totalNow, totalPreviousMonth));
   }, [applications]);
 
-  // Applications with Offer Letter Received
   useEffect(() => {
     const offerApps = applications.filter(
       (app) => app.status === "offer letter received",
@@ -278,7 +256,6 @@ export const MainContent = () => {
     setApplicationsWithOfferCount(offerApps);
   }, [applications]);
 
-  // Offer-letter apps change
   useEffect(() => {
     if (applicationsWithOfferCount === 0) {
       setApplicationsOfferChange("0%");
@@ -297,7 +274,6 @@ export const MainContent = () => {
     );
   }, [applicationsWithOfferCount, applications]);
 
-  // Counsellors change
   useEffect(() => {
     if (counsellorsCount === 0) {
       setCounsellorsChange("0%");
@@ -306,7 +282,86 @@ export const MainContent = () => {
     setCounsellorsChange("N/A");
   }, [counsellorsCount]);
 
-  // --- Derived stats for funnel and active students (based on filtered leads) ---
+  // -----------------------------------------------------------------
+  // Helper for chart labels – must be defined BEFORE getChartData
+  const formatChartLabel = (date, filter) => {
+    if (filter === "daily" || filter === "weekly") {
+      return date.toLocaleDateString("en-US", { weekday: "short" });
+    } else {
+      return date.getDate().toString();
+    }
+  };
+  // -----------------------------------------------------------------
+
+  const periodTotalRevenue = useMemo(() => {
+    return payments
+      .filter((p) => p.status === "completed")
+      .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+  }, [payments]);
+
+  const getChartData = useCallback(() => {
+    const { start, end } = getDateRange();
+    if (!start || !end) return [];
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const days = [];
+    let current = new Date(startDate);
+    while (current < endDate) {
+      days.push({
+        date: new Date(current),
+        label: formatChartLabel(current, dateFilter),
+        amount: 0,
+      });
+      current.setDate(current.getDate() + 1);
+    }
+
+    const paymentsByDay = {};
+    payments.forEach((p) => {
+      if (p.status !== "completed") return;
+      const paidDate = new Date(p.paid_at);
+      const dayKey = paidDate.toISOString().split("T")[0];
+      paymentsByDay[dayKey] =
+        (paymentsByDay[dayKey] || 0) + parseFloat(p.amount);
+    });
+
+    days.forEach((day) => {
+      const dayKey = day.date.toISOString().split("T")[0];
+      if (paymentsByDay[dayKey]) {
+        day.amount = paymentsByDay[dayKey];
+      }
+    });
+
+    return days;
+  }, [getDateRange, payments, dateFilter]);
+
+  const chartData = useMemo(() => getChartData(), [getChartData]);
+
+  const maxRevenue = useMemo(() => {
+    if (chartData.length === 0) return 1000;
+    return Math.max(...chartData.map((d) => d.amount), 1000);
+  }, [chartData]);
+
+  const generateChartPaths = useCallback(() => {
+    if (chartData.length === 0) return { linePath: "", areaPath: "" };
+    const width = 400;
+    const height = 90;
+    const step = width / (chartData.length - 1);
+    let linePath = `M 0 ${height - (chartData[0].amount / maxRevenue) * height}`;
+    let areaPath = `M 0 ${height} L 0 ${height - (chartData[0].amount / maxRevenue) * height}`;
+    for (let i = 1; i < chartData.length; i++) {
+      const x = i * step;
+      const y = height - (chartData[i].amount / maxRevenue) * height;
+      linePath += ` L ${x} ${y}`;
+      areaPath += ` L ${x} ${y}`;
+    }
+    areaPath += ` L ${width} ${height} Z`;
+    return { linePath, areaPath };
+  }, [chartData, maxRevenue]);
+
+  const chartPaths = generateChartPaths();
+
+  // --- Derived stats for funnel and active students ---
   const now = new Date();
   const newCount = leads.filter(
     (l) => l.status?.toLowerCase() === "new",
@@ -368,63 +423,6 @@ export const MainContent = () => {
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 4);
 
-  const getMonthlyRevenueData = () => {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    const monthlyTotals = new Array(12).fill(0);
-    payments.forEach((payment) => {
-      if (payment.status === "completed" && payment.amount > 0) {
-        const date = new Date(payment.paid_at);
-        const month = date.getMonth();
-        monthlyTotals[month] += parseFloat(payment.amount);
-      }
-    });
-    const currentMonth = now.getMonth();
-    const last6Months = [];
-    for (let i = 5; i >= 0; i--) {
-      const monthIndex = currentMonth - i;
-      const monthIdx = monthIndex < 0 ? 12 + monthIndex : monthIndex;
-      last6Months.push({
-        month: months[monthIdx],
-        amount: monthlyTotals[monthIdx],
-      });
-    }
-    return last6Months;
-  };
-
-  const revenueData = getMonthlyRevenueData();
-  const maxRevenue = Math.max(...revenueData.map((d) => d.amount), 1000);
-
-  const generateChartPath = () => {
-    if (revenueData.length === 0) return { linePath: "", areaPath: "" };
-    const width = 400;
-    const height = 90;
-    const step = width / (revenueData.length - 1);
-    let linePath = `M 0 ${height - (revenueData[0].amount / maxRevenue) * height}`;
-    let areaPath = `M 0 ${height} L 0 ${height - (revenueData[0].amount / maxRevenue) * height}`;
-    for (let i = 1; i < revenueData.length; i++) {
-      const x = i * step;
-      const y = height - (revenueData[i].amount / maxRevenue) * height;
-      linePath += ` L ${x} ${y}`;
-      areaPath += ` L ${x} ${y}`;
-    }
-    areaPath += ` L ${width} ${height} Z`;
-    return { linePath, areaPath };
-  };
-  const chartPaths = generateChartPath();
-
   const getNotificationDescription = (notification) => {
     const { type, metadata } = notification;
     switch (type) {
@@ -461,9 +459,7 @@ export const MainContent = () => {
     }
   };
 
-  // --- Navigation Handlers ---
   const handleNavigateToLeads = () => navigate("/admin/leads");
-
   const handleNavigateToPayments = () => navigate("/admin/payments");
   const handleNavigateToApplications = () => navigate("/admin/applications");
   const handleNavigateToActiveStudents = () => navigate("/admin/leads");
@@ -474,7 +470,6 @@ export const MainContent = () => {
 
   return (
     <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      {/* Filter Dropdown - Top Right */}
       <div className="flex justify-end items-center mb-4">
         <select
           value={dateFilter}
@@ -487,7 +482,6 @@ export const MainContent = () => {
         </select>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
         <StatCard
           title="Total Leads"
@@ -507,14 +501,16 @@ export const MainContent = () => {
           onClick={handleNavigateToActiveStudents}
         />
         <StatCard
-          title="Total Application Fees Paid"
+          title="Total Revenue"
           value={
-            paymentStats.monthlyRevenue >= 1000
-              ? `PKR ${(paymentStats.monthlyRevenue / 1000).toFixed(1)}K`
-              : `PKR ${paymentStats.monthlyRevenue.toLocaleString()}`
+            loading
+              ? "..."
+              : periodTotalRevenue >= 1000
+                ? `PKR ${(periodTotalRevenue / 1000).toFixed(1)}K`
+                : `PKR ${periodTotalRevenue.toLocaleString()}`
           }
-          change={paymentStats.revenueChange}
-          isNegative={paymentStats.revenueChange.startsWith("-")}
+          change="this period"
+          isNegative={false}
           icon={<DollarSign />}
           color="from-violet-500 to-indigo-600"
           onClick={handleNavigateToPayments}
@@ -528,7 +524,6 @@ export const MainContent = () => {
           color="from-rose-500 to-pink-600"
           onClick={handleNavigateToApplications}
         />
-
         <StatCard
           title="Counsellors"
           value={counsellorsCount}
@@ -545,15 +540,6 @@ export const MainContent = () => {
           icon={<DollarSign />}
           color="from-emerald-500 to-teal-500"
           onClick={handleNavigateToPaymentsList}
-        />
-        <StatCard
-          title="Applications with Offer Letter Received"
-          value={applicationsWithOfferCount}
-          change={applicationsOfferChange}
-          isNegative={applicationsOfferChange.startsWith("-")}
-          icon={<FileText />}
-          color="from-purple-500 to-pink-600"
-          onClick={handleNavigateToOfferLetterApps}
         />
       </div>
 
@@ -598,13 +584,20 @@ export const MainContent = () => {
         <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-semibold text-xl text-gray-800">
-              Application's Fees Overview
+              Total Revenue Overview
             </h3>
             <div className="text-right">
               <p className="text-sm font-bold text-gray-800">
-                PKR {paymentStats.monthlyRevenue.toLocaleString()}
+                PKR {periodTotalRevenue.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-400">This Month</p>
+              <p className="text-xs text-gray-400">
+                Total this{" "}
+                {dateFilter === "daily"
+                  ? "day"
+                  : dateFilter === "weekly"
+                    ? "week"
+                    : "month"}
+              </p>
             </div>
           </div>
           <div className="h-64 bg-gradient-to-br from-slate-50 via-white to-teal-50 rounded-xl p-4">
@@ -640,13 +633,13 @@ export const MainContent = () => {
             </svg>
           </div>
           <div className="flex justify-around mt-3 px-2">
-            {revenueData.map((data, idx) => (
+            {chartData.map((data, idx) => (
               <div key={idx} className="text-center">
                 <div className="text-xs font-medium text-gray-500">
-                  {data.month}
+                  {data.label}
                 </div>
                 <div className="text-[10px] text-gray-400 mt-1">
-                  ${(data.amount / 1000).toFixed(0)}K
+                  PKR {(data.amount / 1000).toFixed(1)}K
                 </div>
               </div>
             ))}
@@ -779,11 +772,7 @@ const StatCard = ({
       </div>
       <div className="mt-6 flex items-center gap-2">
         <div
-          className={`flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${
-            isNegative
-              ? "bg-red-50 text-red-600"
-              : "bg-emerald-50 text-emerald-600"
-          }`}
+          className={`flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${isNegative ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"}`}
         >
           {isNegative ? "↓" : "↑"} {change}
         </div>

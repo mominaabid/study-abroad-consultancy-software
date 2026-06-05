@@ -710,6 +710,7 @@ export const CounsellorApplication = () => {
               student_id: student.id,
               user_id: student.user_id,
               documents: appDocuments,
+              consultancy_fee: app.consultancy_fee,
             });
           });
         });
@@ -865,8 +866,13 @@ export const CounsellorApplication = () => {
     return blocked;
   }, [selectedAppForDoc, applications]);
 
-  // Filtered list for sidebar (all assigned leads)
-  const filteredStudents = allAssignedStudents.filter(
+  const counselingStudents = useMemo(() => {
+    return allAssignedStudents.filter(
+      (s) => s.status?.toLowerCase() === "counseling",
+    );
+  }, [allAssignedStudents]);
+
+  const filteredStudents = counselingStudents.filter(
     (s) =>
       s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.email?.toLowerCase().includes(searchTerm.toLowerCase()),
