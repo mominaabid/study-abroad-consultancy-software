@@ -34,7 +34,7 @@ const getCountryByName = (countryName) => {
   );
 };
 
-// Country selector component (same as before, used inside modal)
+// Country selector component (responsive)
 const CountrySelector = ({ value, onChange, disabled, error }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,13 +71,13 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
         type="button"
         onClick={() => !disabled && setDropdownOpen((prev) => !prev)}
         disabled={disabled}
-        className={`w-full flex items-center justify-between px-4 py-2.5 border rounded-xl bg-white transition ${
+        className={`w-full flex items-center justify-between px-3 py-2.5 sm:px-4 border rounded-xl bg-white transition ${
           disabled
             ? "bg-gray-50 border-gray-100 text-gray-600 cursor-not-allowed"
             : "border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-teal-400"
         }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 truncate">
           {selectedCountry ? (
             <>
               <CountryFlag
@@ -86,7 +86,7 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
                 style={{ width: "1.4em", height: "1.1em", borderRadius: "2px" }}
                 title={selectedCountry.name}
               />
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-gray-700 truncate">
                 {selectedCountry.name} ({selectedCountry.value})
               </span>
             </>
@@ -97,7 +97,7 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
         {!disabled && (
           <ChevronDown
             size={16}
-            className={`text-gray-400 transition-transform ${
+            className={`text-gray-400 transition-transform shrink-0 ${
               dropdownOpen ? "rotate-180" : ""
             }`}
           />
@@ -115,7 +115,7 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search country..."
-                className="flex-1 bg-transparent text-sm focus:outline-none text-gray-700"
+                className="flex-1 bg-transparent text-sm focus:outline-none text-gray-700 min-w-0"
               />
             </div>
           </div>
@@ -133,7 +133,7 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
                       : "text-gray-700"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 truncate">
                     <CountryFlag
                       countryCode={country.iso}
                       svg
@@ -143,9 +143,11 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
                         borderRadius: "2px",
                       }}
                     />
-                    <span>{country.name}</span>
+                    <span className="truncate">{country.name}</span>
                   </div>
-                  <span className="text-xs text-gray-400">{country.value}</span>
+                  <span className="text-xs text-gray-400 shrink-0 ml-2">
+                    {country.value}
+                  </span>
                 </div>
               ))
             )}
@@ -157,27 +159,31 @@ const CountrySelector = ({ value, onChange, disabled, error }) => {
   );
 };
 
-// Profile Info Card component (same as CounsellorProfile)
+// Profile Info Card component (responsive)
 const ProfileInfoCard = ({
   icon: Icon,
   label,
   value,
   valueColor = "text-gray-900",
 }) => (
-  <div className="flex items-start gap-4">
-    <div className="p-3 bg-teal-50 rounded-xl">
-      <Icon size={24} className="text-teal-600" />
+  <div className="flex items-start gap-3 sm:gap-4">
+    <div className="p-2 sm:p-3 bg-teal-50 rounded-xl shrink-0">
+      <Icon size={20} className="sm:w-6 sm:h-6 text-teal-600" />
     </div>
-    <div>
-      <p className="text-sm font-medium text-gray-500 mb-1">{label}</p>
-      <p className={`text-lg font-semibold ${valueColor} break-all`}>
+    <div className="min-w-0 flex-1">
+      <p className="text-xs sm:text-sm font-medium text-gray-500 mb-0.5 sm:mb-1">
+        {label}
+      </p>
+      <p
+        className={`text-base sm:text-lg font-semibold ${valueColor} break-words`}
+      >
         {value || "—"}
       </p>
     </div>
   </div>
 );
 
-// Edit Student Profile Modal (similar to Counsellor's modal)
+// Edit Student Profile Modal (fully responsive, scrollable on mobile)
 const EditStudentProfileModal = ({
   isOpen,
   onClose,
@@ -259,147 +265,158 @@ const EditStudentProfileModal = ({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+      {/* Modal container: full width on small, max-w-2xl on larger, max-h-90vh */}
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+        {/* Fixed header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
           <h2 className="text-xl font-bold text-gray-800">Edit Profile</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Close"
           >
             <X size={20} className="text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="p-6 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            {/* Full Name */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name <span className="text-teal-600">*</span>
-              </label>
-              <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-teal-200 focus-within:border-teal-400 transition">
-                <User size={18} className="text-gray-400" />
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
-                  placeholder="Your full name"
+        {/* Scrollable form area */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-2 sm:pt-4">
+          <form
+            onSubmit={handleSave}
+            id="edit-profile-form"
+            className="space-y-5"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {/* Full Name - full width */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name <span className="text-teal-600">*</span>
+                </label>
+                <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-teal-200 focus-within:border-teal-400 transition">
+                  <User size={18} className="text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400 min-w-0"
+                    placeholder="Your full name"
+                    disabled={isUpdating}
+                  />
+                </div>
+              </div>
+
+              {/* Email (read-only) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700">
+                  <Mail size={18} className="text-gray-400 shrink-0" />
+                  <span className="flex-1 truncate">{profile?.email}</span>
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number <span className="text-teal-600">*</span>
+                </label>
+                <PhoneInputWithCountry
+                  value={formData.phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  name="phone"
+                  labelName=""
+                  defaultCountryCode="+92"
                   disabled={isUpdating}
+                  error={!formData.phone && "Phone is required"}
                 />
               </div>
-            </div>
 
-            {/* Email (read-only) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700">
-                <Mail size={18} className="text-gray-400" />
-                <span className="flex-1">{profile?.email}</span>
-              </div>
-            </div>
-
-            {/* Phone Number */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number <span className="text-teal-600">*</span>
-              </label>
-              <PhoneInputWithCountry
-                value={formData.phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                name="phone"
-                labelName=""
-                defaultCountryCode="+92"
-                disabled={isUpdating}
-                error={!formData.phone && "Phone is required"}
-              />
-            </div>
-
-            {/* Preferred Country */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preferred Country <span className="text-teal-600">*</span>
-              </label>
-              <CountrySelector
-                value={formData.preferred_country}
-                onChange={handleCountryChange}
-                disabled={isUpdating}
-                error={!formData.preferred_country && "Country is required"}
-              />
-            </div>
-
-            {/* Study Level */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Study Level <span className="text-teal-600">*</span>
-              </label>
-              <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-teal-200 focus-within:border-teal-400 transition">
-                <BookOpen size={18} className="text-gray-400" />
-                <input
-                  type="text"
-                  name="study_level"
-                  value={formData.study_level}
-                  onChange={handleChange}
-                  className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
-                  placeholder="e.g., Bachelor, Master, PhD"
+              {/* Preferred Country */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Preferred Country <span className="text-teal-600">*</span>
+                </label>
+                <CountrySelector
+                  value={formData.preferred_country}
+                  onChange={handleCountryChange}
                   disabled={isUpdating}
+                  error={!formData.preferred_country && "Country is required"}
                 />
               </div>
-            </div>
-          </div>
 
-          {/* Status & Registered Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
-                <CheckCircle size={18} className="text-green-600" />
-                <span className="font-medium text-green-600">Active</span>
+              {/* Study Level */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Study Level <span className="text-teal-600">*</span>
+                </label>
+                <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-teal-200 focus-within:border-teal-400 transition">
+                  <BookOpen size={18} className="text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    name="study_level"
+                    value={formData.study_level}
+                    onChange={handleChange}
+                    className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400 min-w-0"
+                    placeholder="e.g., Bachelor, Master, PhD"
+                    disabled={isUpdating}
+                  />
+                </div>
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Registered Date
-              </label>
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700">
-                <Calendar size={18} className="text-gray-400" />
-                <span className="flex-1">
-                  {profile?.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString("en-GB")
-                    : "N/A"}
-                </span>
+
+            {/* Status & Registered Date - stacked on mobile, side by side on tablet+ */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
+                  <CheckCircle size={18} className="text-green-600 shrink-0" />
+                  <span className="font-medium text-green-600">Active</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Registered Date
+                </label>
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700">
+                  <Calendar size={18} className="text-gray-400 shrink-0" />
+                  <span className="flex-1 truncate">
+                    {profile?.createdAt
+                      ? new Date(profile.createdAt).toLocaleDateString("en-GB")
+                      : "N/A"}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          </form>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-6 mt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
-            >
-              Close
-            </button>
-            <button
-              type="submit"
-              disabled={isUpdating}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition disabled:opacity-70"
-            >
-              {isUpdating ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Save size={18} />
-              )}
-              {isUpdating ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
+        {/* Fixed footer with action buttons */}
+        <div className="flex flex-wrap items-center justify-end gap-3 p-4 border-t border-gray-100 bg-white shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-lg font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
+          >
+            Close
+          </button>
+          <button
+            type="submit"
+            form="edit-profile-form"
+            disabled={isUpdating}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition disabled:opacity-70 min-w-[100px]"
+          >
+            {isUpdating ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Save size={18} />
+            )}
+            {isUpdating ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -439,7 +456,6 @@ export const StudentProfile = () => {
     fetchProfile();
   }, []);
 
-  // Handle profile picture upload
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -513,10 +529,10 @@ export const StudentProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-teal-700 font-medium text-lg">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-teal-700 font-medium text-base sm:text-lg">
             Loading profile...
           </p>
         </div>
@@ -526,20 +542,20 @@ export const StudentProfile = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-sm border">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X size={40} className="text-red-500" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center bg-white p-6 sm:p-8 rounded-2xl shadow-sm border max-w-md w-full">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X size={32} className="sm:w-10 sm:h-10 text-red-500" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">
             Unable to Load Profile
           </h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 text-sm sm:text-base">
             Please try again later or contact support.
           </p>
           <button
             onClick={fetchProfile}
-            className="mt-6 px-6 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition font-medium"
+            className="mt-6 px-5 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition font-medium w-full sm:w-auto"
           >
             Retry
           </button>
@@ -548,7 +564,6 @@ export const StudentProfile = () => {
     );
   }
 
-  // Info cards for right section
   const cardItems = [
     { icon: User, label: "Full Name", value: profile.name },
     { icon: Mail, label: "Email Address", value: profile.email },
@@ -579,15 +594,15 @@ export const StudentProfile = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
       {/* Main container */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 md:p-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Left Section - Profile Summary */}
           <div className="lg:w-1/3 lg:border-r lg:border-gray-200 lg:pr-6">
             <div className="text-center sticky top-6">
               <div className="relative inline-block mx-auto mb-4">
-                <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-teal-100 bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
+                <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 lg:w-48 lg:h-48 rounded-full overflow-hidden border-4 border-teal-100 bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
                   {profile.profilePictureUrl ? (
                     <img
                       src={profile.profilePictureUrl}
@@ -595,18 +610,18 @@ export const StudentProfile = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-5xl font-bold text-teal-700">
+                    <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-teal-700">
                       {profile.name?.charAt(0).toUpperCase() || "S"}
                     </span>
                   )}
                 </div>
                 <label
                   htmlFor="profile-upload"
-                  className={`absolute bottom-1 right-1 bg-white p-2 rounded-full text-teal-600 shadow-md border border-gray-200 cursor-pointer hover:bg-teal-50 transition ${
+                  className={`absolute bottom-0 right-0 bg-white p-1.5 sm:p-2 rounded-full text-teal-600 shadow-md border border-gray-200 cursor-pointer hover:bg-teal-50 transition ${
                     uploading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  <Camera size={16} />
+                  <Camera size={14} className="sm:w-4 sm:h-4" />
                 </label>
                 <input
                   id="profile-upload"
@@ -618,13 +633,13 @@ export const StudentProfile = () => {
                 />
               </div>
 
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 px-2">
                 {profile.name}
               </h2>
 
               <button
                 onClick={() => setModalOpen(true)}
-                className="mt-20 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-teal-600 hover:bg-teal-50 text-teal-700 rounded-xl font-semibold transition"
+                className="mt-6 sm:mt-8 lg:mt-20 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-teal-600 hover:bg-teal-50 text-teal-700 rounded-xl font-semibold transition"
               >
                 <Edit3 size={18} />
                 Edit Profile
@@ -634,17 +649,17 @@ export const StudentProfile = () => {
 
           {/* Right Section - Personal Information Cards */}
           <div className="lg:w-2/3">
-            <div className="mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <div className="mb-5 sm:mb-6">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                 Personal Information
               </h1>
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 text-sm sm:text-base mt-1">
                 Review your profile details. Click 'Edit Profile' to make
                 changes.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {cardItems.map((item, idx) => (
                 <ProfileInfoCard
                   key={idx}
@@ -659,43 +674,52 @@ export const StudentProfile = () => {
         </div>
       </div>
 
-      {/* Education Section (if any) */}
+      {/* Education Section */}
       {profile.education && profile.education.length > 0 && (
-        <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+        <div className="mt-5 sm:mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 md:p-8">
           <div className="mb-4">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <BookOpen size={22} className="text-teal-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+              <BookOpen size={20} className="sm:w-5 sm:h-5 text-teal-600" />
               Academic Programs / Degrees
             </h2>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-xs sm:text-sm">
               Your educational qualifications
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {profile.education.map((edu) => (
               <div
                 key={edu.id}
-                className="bg-slate-50 rounded-xl p-4 border border-slate-200 hover:shadow-sm transition"
+                className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-200 hover:shadow-sm transition"
               >
-                <h4 className="font-semibold text-gray-800 text-base">
+                <h4 className="font-semibold text-gray-800 text-sm sm:text-base break-words">
                   {edu.degree}
                 </h4>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-gray-600">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs sm:text-sm text-gray-600">
                   <span className="flex items-center gap-1">
-                    <Calendar size={14} className="text-gray-400" />
+                    <Calendar
+                      size={12}
+                      className="sm:w-3.5 sm:h-3.5 text-gray-400"
+                    />
                     {edu.year_awarded}
                   </span>
                   {edu.grades_cgpa && (
                     <span className="flex items-center gap-1">
-                      <BarChart size={14} className="text-gray-400" />
+                      <BarChart
+                        size={12}
+                        className="sm:w-3.5 sm:h-3.5 text-gray-400"
+                      />
                       {edu.grades_cgpa}
                     </span>
                   )}
                 </div>
                 {edu.board_university && (
-                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-                    <School size={14} className="text-gray-400" />
-                    {edu.board_university}
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1 flex items-center gap-1 break-words">
+                    <School
+                      size={12}
+                      className="sm:w-3.5 sm:h-3.5 text-gray-400 shrink-0"
+                    />
+                    <span className="break-words">{edu.board_university}</span>
                   </p>
                 )}
               </div>

@@ -146,11 +146,9 @@ export const CounsellorDashboard = () => {
   ];
 
   return (
-    <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      {/* ── Welcome Banner ── */}
-
+    <main className="p-3 sm:p-4 md:p-5 lg:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden">
       {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <StatCard
           title="My Total Leads"
           value={loading ? "..." : totalNewLeads}
@@ -190,149 +188,124 @@ export const CounsellorDashboard = () => {
       </div>
 
       {/* ── Main content grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Recent Leads table */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+        {/* Recent Leads - Responsive Table with horizontal scroll on mobile */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="px-6 py-5 border-b bg-gradient-to-r from-slate-50 to-white flex justify-between items-center">
-            <h3 className="font-semibold text-lg text-gray-800">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b bg-gradient-to-r from-slate-50 to-white flex justify-between items-center flex-wrap gap-2">
+            <h3 className="font-semibold text-base sm:text-lg text-gray-800">
               My Recent Leads
             </h3>
             <button
               onClick={() => navigate("/counsellor/leads")}
-              className="text-[#009E99] hover:text-teal-700 font-medium text-sm flex items-center gap-1 transition"
+              className="text-[#009E99] hover:text-teal-700 font-medium text-sm flex items-center gap-1 transition min-h-[44px] px-2 touch-manipulation"
             >
               View All <ChevronRight size={16} />
             </button>
           </div>
 
           {loading ? (
-            <div className="p-12 text-center text-gray-400">
+            <div className="p-8 sm:p-12 text-center text-gray-400">
               Loading leads...
             </div>
           ) : recentLeads.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">
+            <div className="p-8 sm:p-12 text-center text-gray-400">
               No leads assigned yet
             </div>
           ) : (
-            <table className="w-full">
-              <thead className="bg-zinc-50 text-xs uppercase tracking-wider text-gray-500">
-                <tr>
-                  <th className="px-6 py-4 text-left">Student</th>
-                  <th className="px-6 py-4 text-left">Country</th>
-                  <th className="px-6 py-4 text-left">Program</th>
-                  <th className="px-6 py-4 text-left">Status</th>
-                  <th className="px-6 py-4 text-left">Added</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {/* {recentLeads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className="hover:bg-purple-50/40 transition-colors cursor-pointer"
-                    onClick={() => navigate("/counsellor/leads")}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                          {lead.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {lead.name}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {lead.email || "—"}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {lead.preferred_country || "—"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {lead.study_level || "—"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[lead.status] || "bg-gray-100 text-gray-600"}`}
-                      >
-                        {lead.status?.charAt(0).toUpperCase() +
-                          lead.status?.slice(1) || "New"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-gray-400">
-                      {timeAgo(lead.createdAt)}
-                    </td>
+            // Responsive table container with horizontal scroll on small screens
+            <div className="overflow-x-auto w-full">
+              <table className="min-w-[640px] w-full">
+                <thead className="bg-zinc-50 text-xs uppercase tracking-wider text-gray-500">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-sm">
+                      Student
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-sm">
+                      Country
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-sm hidden xs:table-cell">
+                      Program
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-sm">
+                      Status
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-sm hidden sm:table-cell">
+                      Added
+                    </th>
                   </tr>
-                ))} */}
-
-                {recentLeads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className="hover:bg-purple-50/40 transition-colors cursor-pointer"
-                    onClick={() => navigate("/counsellor/leads")}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                          {lead.name?.charAt(0).toUpperCase()}
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {recentLeads.map((lead) => (
+                    <tr
+                      key={lead.id}
+                      className="hover:bg-purple-50/40 transition-colors cursor-pointer"
+                      onClick={() => navigate("/counsellor/leads")}
+                    >
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {lead.name?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-800 text-xs sm:text-sm truncate max-w-[120px] sm:max-w-[180px]">
+                              {lead.name}
+                            </p>
+                            <p className="text-xs text-gray-400 truncate max-w-[120px] sm:max-w-[180px]">
+                              {lead.email || "—"}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-800 text-sm">
-                            {lead.name}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {lead.email || "—"}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {lead.preferred_country || "—"}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {/* ✅ Updated Program column */}
-                      {lead.education && lead.education.length > 0
-                        ? (() => {
-                            const degrees = lead.education.map((e) => e.degree);
-                            if (degrees.length <= 2) return degrees.join(", ");
-                            return degrees.slice(0, 2).join(", ") + ", ...";
-                          })()
-                        : "—"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLOR[lead.status] || "bg-gray-100 text-gray-600"}`}
-                      >
-                        {lead.status?.charAt(0).toUpperCase() +
-                          lead.status?.slice(1) || "New"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-gray-400">
-                      {timeAgo(lead.createdAt)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600">
+                        {lead.preferred_country || "—"}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 hidden xs:table-cell">
+                        {lead.education && lead.education.length > 0
+                          ? (() => {
+                              const degrees = lead.education.map(
+                                (e) => e.degree,
+                              );
+                              if (degrees.length <= 1) return degrees[0];
+                              if (degrees.length <= 2)
+                                return degrees.join(", ");
+                              return degrees.slice(0, 2).join(", ") + ", ...";
+                            })()
+                          : "—"}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <span
+                          className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold inline-block ${STATUS_COLOR[lead.status] || "bg-gray-100 text-gray-600"}`}
+                        >
+                          {lead.status?.charAt(0).toUpperCase() +
+                            lead.status?.slice(1) || "New"}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs text-gray-400 hidden sm:table-cell">
+                        {timeAgo(lead.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
-        {/* Right column */}
-        <div className="space-y-6">
+        {/* Right column - responsive spacing */}
+        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
           {/* Pipeline stages */}
-          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-            <h3 className="font-semibold text-lg text-gray-800 mb-3 flex items-center gap-2">
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-lg border border-gray-100">
+            <h3 className="font-semibold text-base sm:text-lg text-gray-800 mb-3 flex items-center gap-2">
               <div className="w-2.5 h-2.5 bg-purple-500 rounded-full" />
               My Pipeline
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {stageData.map((s) => {
                 const total = leads.length;
                 const pct = total > 0 ? Math.round((s.count / total) * 100) : 0;
                 return (
                   <div key={s.label}>
-                    <div className="flex justify-between text-sm mb-1.5">
+                    <div className="flex justify-between text-xs sm:text-sm mb-1.5">
                       <span className="font-medium text-gray-700">
                         {s.label}
                       </span>
@@ -340,8 +313,7 @@ export const CounsellorDashboard = () => {
                         {s.count} ({pct}%)
                       </span>
                     </div>
-
-                    <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 sm:h-2.5 bg-gray-100 rounded-full overflow-hidden">
                       {pct > 0 && (
                         <div
                           className="h-full rounded-full transition-all duration-700"
@@ -358,12 +330,12 @@ export const CounsellorDashboard = () => {
             </div>
           </div>
 
-          {/* Quick actions */}
-          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-            <h3 className="font-semibold text-lg text-gray-800 mb-3">
+          {/* Quick actions - touch friendly */}
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-lg border border-gray-100">
+            <h3 className="font-semibold text-base sm:text-lg text-gray-800 mb-3">
               Quick Actions
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <QuickAction
                 icon={<Users size={18} />}
                 label="View My Leads"
@@ -390,38 +362,42 @@ export const CounsellorDashboard = () => {
   );
 };
 
-// ── Reusable sub-components ───────────────────────────────────────────────────
+// ── Reusable sub-components with responsive design ───────────────────────────────────────────────────
 
 const StatCard = ({ title, value, icon, color, sub, onClick, clickable }) => (
   <div
     onClick={onClick}
-    className={`bg-white px-6 py-2 rounded-xl shadow-lg border border-gray-100 transition-all duration-500 relative overflow-hidden group
-      ${clickable ? "cursor-pointer hover:shadow-xl hover:-translate-y-1.5" : ""}`}
+    className={`bg-white px-4 sm:px-5 md:px-6 py-3 sm:py-4 rounded-xl shadow-lg border border-gray-100 transition-all duration-500 relative overflow-hidden group
+      ${clickable ? "cursor-pointer hover:shadow-xl hover:-translate-y-1.5 active:scale-[0.98] touch-manipulation" : ""}`}
   >
     {/* Animated Background Glow */}
     <div
-      className={`absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br ${color} opacity-[0.08] rounded-full 
+      className={`absolute -right-4 -top-4 w-20 sm:w-24 h-20 sm:h-24 bg-gradient-to-br ${color} opacity-[0.08] rounded-full 
       group-hover:scale-[1.8] transition-transform duration-700 ease-out`}
     />
 
-    <div className="relative z-10 flex justify-between items-start">
-      <div>
-        <p className="text-gray-500 text-sm font-medium">{title}</p>
-        <h2 className="text-3xl font-bold text-gray-900 mt-2 tracking-tighter">
+    <div className="relative z-10 flex justify-between items-start gap-2">
+      <div className="flex-1 min-w-0">
+        <p className="text-gray-500 text-xs sm:text-sm font-medium truncate">
+          {title}
+        </p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2 tracking-tighter break-words">
           {value}
         </h2>
       </div>
       <div
-        className={`p-3 rounded-xl bg-gradient-to-br ${color} text-white shadow-inner transition-transform duration-500 group-hover:rotate-3`}
+        className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${color} text-white shadow-inner transition-transform duration-500 group-hover:rotate-3 flex-shrink-0`}
       >
         {icon}
       </div>
     </div>
 
     <div className="relative z-10">
-      {sub && <p className="mt-3 text-xs text-gray-400">{sub}</p>}
+      {sub && (
+        <p className="mt-2 sm:mt-3 text-xs text-gray-400 truncate">{sub}</p>
+      )}
       {clickable && (
-        <p className="mt-1 text-xs text-[#009E99] font-medium">
+        <p className="mt-1 text-xs text-[#009E99] font-medium truncate">
           Click to manage →
         </p>
       )}
@@ -432,15 +408,17 @@ const StatCard = ({ title, value, icon, color, sub, onClick, clickable }) => (
 const QuickAction = ({ icon, label, color, onClick }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-gray-200 group"
+    className="w-full flex items-center gap-3 p-3 sm:p-3.5 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-gray-200 group touch-manipulation min-h-[52px] sm:min-h-[60px]"
   >
-    <div className={`p-2 rounded-xl ${color}`}>{icon}</div>
-    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+    <div className={`p-1.5 sm:p-2 rounded-xl ${color} flex-shrink-0`}>
+      {icon}
+    </div>
+    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 truncate">
       {label}
     </span>
     <ChevronRight
       size={16}
-      className="ml-auto text-gray-400 group-hover:text-gray-600"
+      className="ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"
     />
   </button>
 );

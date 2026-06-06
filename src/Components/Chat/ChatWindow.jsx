@@ -29,10 +29,9 @@ function formatDay(date) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function ChatWindow({ conversation }) {
+export default function ChatWindow({ conversation, onBack }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
-
   const messages = useSelector((s) => s.chat.messages[conversation?._id] || []);
   const onlineUsers = useSelector((s) => s.chat.onlineUsers);
 
@@ -53,10 +52,9 @@ export default function ChatWindow({ conversation }) {
       ? conversation?.counsellor_name
       : conversation?.student_name;
   const isOtherOnline = onlineUsers.includes(otherId);
-
-  // ✅ Check if conversation is currently assigned (active)
   const isActiveChat = conversation?.is_currently_assigned === true;
 
+  // Load messages when conversation changes
   useEffect(() => {
     if (!convId) return;
 
@@ -74,13 +72,11 @@ export default function ChatWindow({ conversation }) {
           setMessages({
             conversationId: convId,
             messages: Array.isArray(data) ? data : [],
-          }),
+          })
         );
-
         dispatch(
-          markConversationRead({ conversationId: convId, role: user?.role }),
+          markConversationRead({ conversationId: convId, role: user?.role })
         );
-
         fetch(`${BASE_URL}/chat/messages/read/${convId}`, {
           method: "PUT",
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -88,8 +84,9 @@ export default function ChatWindow({ conversation }) {
       })
       .catch((err) => console.error("Failed to load messages:", err))
       .finally(() => setLoadingMessages(false));
-  }, [convId]);
+  }, [convId, dispatch, user?.role]);
 
+  // Subscribe to real-time messages
   useEffect(() => {
     if (!convId) return;
 
@@ -98,14 +95,10 @@ export default function ChatWindow({ conversation }) {
 
     subscribeToChannel(`conversation:${convId}`, "new_message", (payload) => {
       const message = payload?.message ?? payload;
-
       if (Number(message.sender_id) === Number(user.id)) return;
 
       dispatch(addMessage(message));
-
-      dispatch(
-        markConversationRead({ conversationId: convId, role: user?.role }),
-      );
+      dispatch(markConversationRead({ conversationId: convId, role: user?.role }));
       fetch(`${BASE_URL}/chat/messages/read/${convId}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -119,19 +112,18 @@ export default function ChatWindow({ conversation }) {
       cancelled = true;
       unsubscribe();
     };
-  }, [convId]);
+  }, [convId, dispatch, user?.id, user?.role]);
 
+  // Auto-scroll on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Send message
   async function sendMessage() {
     if (!input.trim() || !convId || sending) return;
-    // ✅ Block sending for inactive conversations
     if (!isActiveChat) {
-      console.warn(
-        "Cannot send message – conversation is inactive (unassigned)",
-      );
+      console.warn("Cannot send message – conversation is inactive (unassigned)");
       return;
     }
 
@@ -148,7 +140,7 @@ export default function ChatWindow({ conversation }) {
         sender_role: user.role,
         content,
         createdAt: new Date().toISOString(),
-      }),
+      })
     );
 
     try {
@@ -171,7 +163,6 @@ export default function ChatWindow({ conversation }) {
     } catch (err) {
       console.error("Send failed:", err);
       dispatch(removeMessage({ tempId, conversationId: convId }));
-      // Optionally show toast error
     } finally {
       setSending(false);
     }
@@ -180,7 +171,6 @@ export default function ChatWindow({ conversation }) {
   function handleInputChange(e) {
     setInput(e.target.value);
     clearTimeout(typingTimer.current);
-    // Only send typing events if chat is active
     if (isActiveChat) {
       fetch(`${BASE_URL}/chat/typing`, {
         method: "POST",
@@ -210,6 +200,7 @@ export default function ChatWindow({ conversation }) {
     }
   }
 
+  // Group messages by day
   const grouped = messages.reduce((acc, msg) => {
     const day = formatDay(msg.createdAt);
     acc[day] = acc[day] || [];
@@ -220,7 +211,7 @@ export default function ChatWindow({ conversation }) {
   if (!conversation) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">
-        <div className="text-center">
+        <div className="text-center p-4">
           <p className="text-4xl mb-3">💬</p>
           <p className="text-sm">Select a conversation to start chatting</p>
         </div>
@@ -230,17 +221,24 @@ export default function ChatWindow({ conversation }) {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="flex items-center gap-3 px-5 py-4 border-b bg-white">
-        <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center font-bold text-teal-700">
+      {/* Header with optional back button */}
+      <div className="flex items-center gap-3 px-3 py-2 md:px-5 md:py-4 border-b bg-white">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="p-2 -ml-2 text-gray-600 hover:text-gray-900 focus:outline-none md:hidden"
+            aria-label="Back to conversations"
+          >
+            ←
+          </button>
+        )}
+        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-teal-100 flex items-center justify-center font-bold text-teal-700">
           {otherName?.charAt(0)?.toUpperCase()}
         </div>
-        <div>
-          <p className="font-semibold text-sm">{otherName}</p>
-          {/* ✅ Show status indicator */}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm md:text-base truncate">{otherName}</p>
           {!isActiveChat && (
-            <p className="text-xs text-amber-600 font-medium">
-              (unassigned – read only)
-            </p>
+            <p className="text-xs text-amber-600 font-medium">(unassigned – read only)</p>
           )}
           {isActiveChat && isOtherOnline && (
             <p className="text-xs text-green-500 font-medium">Online</p>
@@ -248,7 +246,8 @@ export default function ChatWindow({ conversation }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4 bg-gray-50">
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 md:px-5 md:py-4 bg-gray-50">
         {loadingMessages ? (
           <div className="flex justify-center py-8">
             <div className="w-5 h-5 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
@@ -260,9 +259,7 @@ export default function ChatWindow({ conversation }) {
         ) : (
           Object.entries(grouped).map(([day, msgs]) => (
             <div key={day}>
-              <div className="text-center text-xs text-gray-400 my-3">
-                {day}
-              </div>
+              <div className="text-center text-xs text-gray-400 my-3">{day}</div>
               {msgs.map((msg) => {
                 const isMine = Number(msg.sender_id) === Number(user.id);
                 const isTemp = msg._id?.toString().startsWith("temp_");
@@ -272,7 +269,7 @@ export default function ChatWindow({ conversation }) {
                     className={`flex mb-2 ${isMine ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`px-4 py-2 rounded-xl text-sm max-w-[70%] ${
+                      className={`px-4 py-2 rounded-xl text-sm md:text-base max-w-[85%] md:max-w-[70%] ${
                         isMine ? "bg-teal-600 text-white" : "bg-white border"
                       } ${isTemp ? "opacity-60" : ""}`}
                     >
@@ -280,7 +277,6 @@ export default function ChatWindow({ conversation }) {
                       <div className="text-[10px] mt-1 opacity-60 flex items-center gap-1">
                         {timeStr(msg.createdAt)}
                         {isMine && isTemp && <span>⏳</span>}
-                        {/* {isMine && !isTemp && <span>✓✓</span>} */}
                       </div>
                     </div>
                   </div>
@@ -292,15 +288,15 @@ export default function ChatWindow({ conversation }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* ✅ Chat input footer – disabled for inactive conversations */}
-      <div className="border-t p-3 flex gap-2 bg-white">
+      {/* Input area */}
+      <div className="border-t p-2 md:p-3 flex gap-2 bg-white">
         <textarea
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           disabled={!isActiveChat}
           rows={1}
-          className="flex-1 border rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="flex-1 border rounded-lg p-3 text-sm md:text-base resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           placeholder={
             isActiveChat
               ? "Type a message..."
@@ -310,7 +306,7 @@ export default function ChatWindow({ conversation }) {
         <button
           onClick={sendMessage}
           disabled={!input.trim() || sending || !isActiveChat}
-          className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 rounded-lg transition-colors"
+          className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 md:px-6 rounded-lg transition-colors min-h-[44px] min-w-[70px] md:min-w-[80px]"
         >
           {sending ? "..." : "Send"}
         </button>

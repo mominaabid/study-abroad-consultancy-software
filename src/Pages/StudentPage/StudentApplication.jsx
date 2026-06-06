@@ -77,7 +77,7 @@ const DOC_TYPES = [
   { key: "other", label: "Other Document", required: false, icon: FileText },
 ];
 
-// Document Upload Modal
+// Responsive Document Upload Modal
 function DocumentUploadModal({
   isOpen,
   onClose,
@@ -125,15 +125,17 @@ function DocumentUploadModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">Upload Document</h2>
-          <p className="text-sm text-gray-500">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-md w-full my-auto">
+        <div className="p-4 sm:p-5 border-b border-gray-100">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800">
+            Upload Document
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-500 break-words">
             {docType?.label} for {application?.target_university}
           </p>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select File *
@@ -142,25 +144,25 @@ function DocumentUploadModal({
               type="file"
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
               onChange={(e) => setFile(e.target.files[0])}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:border-teal-400"
               required
             />
             <p className="text-xs text-gray-400 mt-1">
               PDF, DOC, DOCX, JPG, PNG (Max 5MB)
             </p>
           </div>
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+              className="w-full sm:flex-1 px-4 py-2.5 border rounded-xl text-gray-600 hover:bg-gray-50 text-sm font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700"
+              className="w-full sm:flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 text-sm font-medium disabled:opacity-70"
             >
               {loading ? (
                 <RefreshCw size={16} className="animate-spin mx-auto" />
@@ -175,7 +177,7 @@ function DocumentUploadModal({
   );
 }
 
-// Document Card Component
+// Responsive Document Card Component
 function DocumentCard({ doc, onRefresh }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -221,39 +223,41 @@ function DocumentCard({ doc, onRefresh }) {
 
   return (
     <div className="bg-gray-50 rounded-xl p-3 hover:shadow-sm transition">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+      <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white flex items-center justify-center shadow-sm flex-shrink-0">
             <FileText size={18} className="text-teal-600" />
           </div>
-          <div className="flex-1">
-            <p className="font-medium text-gray-800 text-sm">{fileName}</p>
-            <div className="flex items-center gap-2 mt-1">
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-gray-800 text-sm break-words">
+              {fileName}
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               <span
                 className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text} flex items-center gap-1`}
               >
                 <StatusIcon size={10} /> {status.label}
               </span>
               {doc.uploaded_by === "admin" && (
-                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
                   Shared by Admin
                 </span>
               )}
               {doc.uploaded_by === "counsellor" && (
-                <span className="text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full whitespace-nowrap">
                   Shared by Counsellor
                 </span>
               )}
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1 ml-auto sm:ml-0">
           {fileUrl && (
             <a
               href={fileUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1.5 rounded-lg hover:bg-gray-200 transition"
+              className="p-2 rounded-lg hover:bg-gray-200 transition touch-manipulation"
               title="View Document"
             >
               <Eye size={16} className="text-gray-500" />
@@ -261,7 +265,7 @@ function DocumentCard({ doc, onRefresh }) {
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1.5 rounded-lg hover:bg-gray-200 transition"
+            className="p-2 rounded-lg hover:bg-gray-200 transition touch-manipulation"
           >
             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
@@ -281,18 +285,18 @@ function DocumentCard({ doc, onRefresh }) {
             </p>
           )}
           {doc.rejection_reason && (
-            <p className="text-red-600">
+            <p className="text-red-600 break-words">
               <span className="font-medium">Rejection Reason:</span>{" "}
               {doc.rejection_reason}
             </p>
           )}
           {doc.notes && (
-            <p>
+            <p className="break-words">
               <span className="font-medium">Notes:</span> {doc.notes}
             </p>
           )}
           {fileUrl && (
-            <p className="text-blue-600">
+            <p className="text-blue-600 break-words">
               <a href={fileUrl} target="_blank" className="hover:underline">
                 📄 Click to open document
               </a>
@@ -304,7 +308,7 @@ function DocumentCard({ doc, onRefresh }) {
   );
 }
 
-// Application Card Component
+// Responsive Application Card Component
 function ApplicationCard({ application, onRefresh }) {
   const [expanded, setExpanded] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -373,18 +377,18 @@ function ApplicationCard({ application, onRefresh }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Card Header */}
       <div
-        className="p-5 cursor-pointer"
+        className="p-4 sm:p-5 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Building size={16} className="text-teal-600" />
-              <h3 className="font-bold text-gray-800 text-lg">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <Building size={16} className="text-teal-600 flex-shrink-0" />
+              <h3 className="font-bold text-gray-800 text-base sm:text-lg break-words">
                 {application.target_university || "University"}
               </h3>
             </div>
-            <div className="flex items-center gap-3 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <GraduationCap size={14} />{" "}
                 {application.course || "Course not specified"}
@@ -396,9 +400,9 @@ function ApplicationCard({ application, onRefresh }) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor()}`}
+              className={`px-2 sm:px-3 py-1 rounded-full text-xs font-bold ${getStatusColor()} whitespace-nowrap`}
             >
               {getStatusLabel()}
             </span>
@@ -413,18 +417,18 @@ function ApplicationCard({ application, onRefresh }) {
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="border-t border-gray-100 p-5 bg-gray-50/30">
-          {/* Document Checklist - MODIFIED SECTION */}
+        <div className="border-t border-gray-100 p-4 sm:p-5 bg-gray-50/30">
+          {/* Document Checklist */}
           <div className="mb-6">
-            <h4 className="font-semibold text-gray-800 text-sm mb-3 flex items-center gap-2">
+            <h4 className="font-semibold text-gray-800 text-sm mb-3 flex flex-wrap items-center gap-2">
               <FileText size={14} className="text-teal-500" />
               Document Checklist
-              <span className="text-xs text-gray-400 ml-2">
+              <span className="text-xs text-gray-400">
                 ({documents.filter((d) => d.status === "verified").length}/
                 {documents.length} verified)
               </span>
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {DOC_TYPES.map((docType) => {
                 const docStatus = docStatusMap[docType.key];
                 const isUploaded = uploadedTypes.has(docType.key);
@@ -459,24 +463,26 @@ function ApplicationCard({ application, onRefresh }) {
                     label: "Pending",
                   };
 
-                // Show upload/re-upload button if not yet uploaded OR status is rejected
                 const showUploadButton =
                   !isUploaded || docStatus === "rejected";
 
                 return (
                   <div
                     key={docType.key}
-                    className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100"
+                    className="flex flex-wrap items-center justify-between gap-2 p-2 bg-white rounded-lg border border-gray-100"
                   >
-                    <div className="flex items-center gap-2">
-                      <docType.icon size={14} className="text-gray-500" />
-                      <span className="text-sm text-gray-700">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <docType.icon
+                        size={14}
+                        className="text-gray-500 flex-shrink-0"
+                      />
+                      <span className="text-sm text-gray-700 break-words">
                         {docType.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${statusBadge.bg} ${statusBadge.text}`}
+                        className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge.bg} ${statusBadge.text}`}
                       >
                         {statusBadge.label}
                       </span>
@@ -485,7 +491,7 @@ function ApplicationCard({ application, onRefresh }) {
                           onClick={() =>
                             setUploadModal({ isOpen: true, docType: docType })
                           }
-                          className="p-1 rounded-lg hover:bg-teal-50 text-teal-600 transition"
+                          className="p-2 rounded-lg hover:bg-teal-50 text-teal-600 transition touch-manipulation"
                           title={
                             docStatus === "rejected" ? "Re-upload" : "Upload"
                           }
@@ -544,7 +550,7 @@ function ApplicationCard({ application, onRefresh }) {
   );
 }
 
-// Main StudentApplication Component
+// Main StudentApplication Component - Fully Responsive
 export const StudentApplication = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -582,7 +588,7 @@ export const StudentApplication = () => {
 
   if (loading) {
     return (
-      <div className="p-6 bg-slate-50 min-h-screen flex items-center justify-center">
+      <div className="p-4 sm:p-6 bg-slate-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <GraduationCap
             className="text-teal-600 animate-pulse mx-auto mb-4"
@@ -595,12 +601,12 @@ export const StudentApplication = () => {
   }
 
   return (
-    <div className="p-4 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      {/* Header */}
+    <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden">
+      {/* (Optional header space – no extra UI added to preserve existing design) */}
 
       {/* Applications List */}
       {applications.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-gray-100">
+        <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-gray-100">
           <GraduationCap size={48} className="mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 font-semibold">No applications yet</p>
           <p className="text-xs text-gray-400 mt-1">

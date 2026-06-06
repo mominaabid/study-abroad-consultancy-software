@@ -21,23 +21,24 @@ import LeadsTable from "../../Components/LeadsComponents/LeadsTable";
 import { DeleteConfirmationModal } from "../../Components/DeleteConfirmationModal";
 
 // ─── Stat Card ─────────────────────────────────────────────────────────────────
-
 function StatCard({ label, value, icon, color }) {
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-400 shadow-sm px-5 py-4 
-                    flex items-center justify-between transition-all duration-200 
-                    hover:shadow-md hover:-translate-y-0.5"
+      className="bg-white rounded-2xl border border-gray-400 shadow-sm px-4 py-3 sm:px-5 sm:py-4 
+                  flex items-center justify-between transition-all duration-200 
+                  hover:shadow-md hover:-translate-y-0.5"
     >
       {/* Left Content */}
       <div>
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+        <p className="text-[11px] sm:text-xs text-gray-400">{label}</p>
+        <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">
+          {value}
+        </p>
       </div>
 
       {/* Icon Box */}
       <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl border"
+        className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-base sm:text-xl border"
         style={{
           color: color,
           borderColor: color,
@@ -51,7 +52,6 @@ function StatCard({ label, value, icon, color }) {
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
-
 export default function Leads() {
   const navigate = useNavigate();
   const userRole = useSelector(selectRole);
@@ -64,7 +64,6 @@ export default function Leads() {
   const [filterCountry, setFilterCountry] = useState("All Countries");
   const [filterCounsellor, setFilterCounsellor] = useState("All Counsellors");
   const [countrySearch, setCountrySearch] = useState("");
-
   const [counsellorSearch, setCounsellorSearch] = useState("");
   const [countryFilterOpen, setCountryFilterOpen] = useState(false);
   const [counsellorFilterOpen, setCounsellorFilterOpen] = useState(false);
@@ -78,7 +77,6 @@ export default function Leads() {
     total: 0,
   });
   const [draggingLeadId, setDraggingLeadId] = useState(null);
-
   const [drawerLead, setDrawerLead] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -187,7 +185,6 @@ export default function Leads() {
   }, []);
 
   // ── CRUD handlers ──────────────────────────────────────────────────────────
-
   async function handleStage(leadId, status, note = "") {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -303,7 +300,6 @@ export default function Leads() {
     const token = localStorage.getItem("token");
     if (!token) {
       toast.error("Not logged in.", { toastId: "lead-note-error" });
-
       return;
     }
 
@@ -331,7 +327,6 @@ export default function Leads() {
       }
     } catch (error) {
       console.error("Error adding note:", error);
-
       toast.error(error.message || "Failed to add note", {
         toastId: "lead-note-error",
       });
@@ -429,51 +424,56 @@ export default function Leads() {
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
-
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
       {/* ── Stats Bar ── */}
       {!loading && (
-        <div className="flex-shrink-0 grid grid-cols-1 gap-4 px-4 py-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5 sm:px-6">
+        <div className="flex-shrink-0 grid grid-cols-1 gap-3 sm:gap-4 px-3 sm:px-4 py-3 sm:py-4 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
           {stats.map((s) => (
             <StatCard key={s.label} {...s} />
           ))}
         </div>
       )}
 
-      <div className="flex-shrink-0 px-6 py-4 relative z-[60]">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Actions */}
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Search */}
-            <div className="flex items-center gap-2 h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl min-w-[200px] transition-all focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#9ca3af"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                placeholder="Search leads..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-full"
-              />
+      {/* ── Filters & Actions Bar (Responsive Stack) ── */}
+      <div className="flex-shrink-0 px-3 sm:px-4 md:px-6 py-3 sm:py-4 relative z-[60]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          {/* Actions Group - wraps responsively */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Search - full width on mobile, auto on larger */}
+            <div className="flex-1 sm:flex-initial min-w-[160px] sm:min-w-[200px]">
+              <div className="flex items-center gap-2 h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl w-full transition-all focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#9ca3af"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  placeholder="Search leads..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-full"
+                />
+              </div>
             </div>
 
             {/* Counsellor Filter */}
-            <div className="relative" ref={counsellorFilterRef}>
+            <div
+              className="relative flex-1 sm:flex-initial"
+              ref={counsellorFilterRef}
+            >
               <button
                 onClick={() => {
                   setCounsellorFilterOpen((p) => !p);
                   setCounsellorSearch("");
                 }}
-                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[150px]"
+                className="w-full sm:w-auto h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[130px] sm:min-w-[150px]"
               >
                 <svg
                   width="12"
@@ -509,7 +509,7 @@ export default function Leads() {
               </div>
 
               {counsellorFilterOpen && (
-                <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                <div className="absolute z-50 top-full left-0 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
                   <div className="p-2 border-b border-gray-100">
                     <input
                       autoFocus
@@ -579,14 +579,45 @@ export default function Leads() {
               )}
             </div>
 
+            {/* Status filter */}
+            <div className="relative flex-1 sm:flex-initial">
+              <select
+                className="w-full sm:w-auto h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none focus:border-teal-500 appearance-none cursor-pointer"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="All Status">All Status</option>
+                {STAGES.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+            </div>
+
             {/* Country filter */}
-            <div className="relative" ref={countryFilterRef}>
+            <div
+              className="relative flex-1 sm:flex-initial"
+              ref={countryFilterRef}
+            >
               <button
                 onClick={() => {
                   setCountryFilterOpen((p) => !p);
                   setCountrySearch("");
                 }}
-                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[130px]"
+                className="w-full sm:w-auto h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[120px] sm:min-w-[130px]"
               >
                 <span className="truncate max-w-[100px]">
                   {filterCountry === "All Countries"
@@ -608,7 +639,7 @@ export default function Leads() {
               </div>
 
               {countryFilterOpen && (
-                <div className="absolute z-50 top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                <div className="absolute z-50 top-full left-0 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
                   <div className="p-2 border-b border-gray-100">
                     <input
                       autoFocus
@@ -665,45 +696,17 @@ export default function Leads() {
               )}
             </div>
 
-            {/* Status filter */}
-            <div className="relative">
-              <select
-                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none focus:border-teal-500 appearance-none cursor-pointer"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="All Status">All Status</option>
-                {STAGES.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </div>
-            </div>
-
             {/* View Toggle */}
             <div className="flex h-9 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
               {viewButtons.map((v) => (
                 <button
                   key={v.key}
                   onClick={() => setView(v.key)}
-                  className={`flex items-center gap-1.5 px-3.5 text-[12.5px] font-medium transition-all border-r last:border-0 border-gray-200
+                  className={`flex items-center gap-1.5 px-3 sm:px-3.5 text-[11px] sm:text-[12.5px] font-medium transition-all border-r last:border-0 border-gray-200
                     ${view === v.key ? "bg-teal-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
                 >
                   {v.icon}
-                  {v.label}
+                  <span className="hidden xs:inline">{v.label}</span>
                 </button>
               ))}
             </div>
@@ -711,7 +714,7 @@ export default function Leads() {
             {/* Export */}
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 h-9 px-4 border border-gray-200 rounded-xl text-[12.5px] text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
+              className="flex items-center gap-1.5 h-9 px-3 sm:px-4 border border-gray-200 rounded-xl text-[11px] sm:text-[12.5px] text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
             >
               <svg
                 width="13"
@@ -728,10 +731,10 @@ export default function Leads() {
               Export
             </button>
 
-            {/* Add Lead - Navigate to new lead page */}
+            {/* Add Lead */}
             <button
               onClick={() => navigate("/admin/leads/new")}
-              className="flex items-center gap-1.5 h-9 px-4 bg-teal-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap"
+              className="flex items-center gap-1.5 h-9 px-3 sm:px-4 bg-teal-600 text-white rounded-xl text-[11px] sm:text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap"
             >
               <svg
                 width="14"
@@ -743,7 +746,8 @@ export default function Leads() {
               >
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Add Lead
+              <span className="hidden xs:inline">Add Lead</span>
+              <span className="xs:hidden">Add</span>
             </button>
           </div>
         </div>
@@ -761,28 +765,10 @@ export default function Leads() {
       {!loading && view === "kanban" && (
         <div className="flex-1 min-h-0 overflow-x-auto pb-4">
           <div
-            className="flex gap-3 h-full px-6 pt-1"
+            className="flex gap-3 h-full px-3 sm:px-4 md:px-6 pt-1"
             style={{ minWidth: "max-content" }}
           >
             {STAGES.map((stage) => (
-              // <KanbanColumn
-              //   key={stage.key}
-              //   stage={stage}
-              //   leads={leadsByStage[stage.key] || []}
-              //   onOpen={setDrawerLead}
-              //   onMenuAction={(action, l) => {
-              //     if (action === "edit") navigate(`/admin/leads/${l.id}/edit`);
-              //     if (action === "delete") setDeleteConfirm(l);
-              //     if (action === "assign") navigate(`/admin/leads/${l.id}/assign`);
-              //   }}
-              //   onDrop={async (leadId, newStatus) => {
-              //     setDraggingLeadId(null);
-              //     await handleStage(leadId, newStatus);
-              //   }}
-              //   draggingLeadId={draggingLeadId}
-              //   userRole={userRole}
-              // />
-
               <KanbanColumn
                 key={stage.key}
                 stage={stage}
@@ -791,14 +777,9 @@ export default function Leads() {
                 onOpen={setDrawerLead}
                 onMenuAction={(action, l) => {
                   if (action === "edit") navigate(`/admin/leads/${l.id}/edit`);
-
-                  if (action === "delete") {
-                    setDeleteConfirm(l);
-                  }
-
-                  if (action === "assign") {
+                  if (action === "delete") setDeleteConfirm(l);
+                  if (action === "assign")
                     navigate(`/admin/leads/${l.id}/assign`);
-                  }
                 }}
                 onDrop={async (leadId, newStatus) => {
                   setDraggingLeadId(null);
@@ -814,23 +795,25 @@ export default function Leads() {
 
       {/* ── Table View ── */}
       {!loading && view === "table" && (
-        <LeadsTable
-          filteredLeads={filteredLeads}
-          counsellors={counsellors}
-          onRowClick={setDrawerLead}
-          onEdit={(l) => navigate(`/admin/leads/${l.id}/edit`)}
-          onDelete={setDeleteConfirm}
-          onAssignCounsellor={(l) => navigate(`/admin/leads/${l.id}/assign`)}
-          actionMenu={actionMenu}
-          setActionMenu={setActionMenu}
-          pagination={pagination}
-          currentPage={currentPage}
-          onPageChange={(page) => {
-            setCurrentPage(page);
-            fetchLeads(page);
-          }}
-          userRole={userRole}
-        />
+        <div className="flex-1 min-h-0 overflow-auto px-3 sm:px-4 md:px-6 pb-4">
+          <LeadsTable
+            filteredLeads={filteredLeads}
+            counsellors={counsellors}
+            onRowClick={setDrawerLead}
+            onEdit={(l) => navigate(`/admin/leads/${l.id}/edit`)}
+            onDelete={setDeleteConfirm}
+            onAssignCounsellor={(l) => navigate(`/admin/leads/${l.id}/assign`)}
+            actionMenu={actionMenu}
+            setActionMenu={setActionMenu}
+            pagination={pagination}
+            currentPage={currentPage}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              fetchLeads(page);
+            }}
+            userRole={userRole}
+          />
+        </div>
       )}
 
       {/* ── Modals & Overlays ── */}

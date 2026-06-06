@@ -1,5 +1,6 @@
-// Header.jsx - Updated with Change Password Modal
+// Header.jsx - Fixed Notification Dropdown (Portal + Dynamic Positioning)
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -22,7 +23,7 @@ import {
   clearNotifications,
   markAllNotificationsRead,
 } from "../redux/slices/notificationSlice";
-import axios from "axios"; // or use your API client
+import axios from "axios";
 import { BASE_URL } from "../Content/Url";
 
 export const Header = () => {
@@ -40,6 +41,10 @@ export const Header = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Refs for positioning the notification dropdown
+  const bellButtonRef = useRef(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -49,7 +54,6 @@ export const Header = () => {
   const unreadCount = useSelector(selectUnreadCount);
 
   const dropdownRef = useRef(null);
-  const notifRef = useRef(null);
   const modalRef = useRef(null);
 
   // Close dropdowns when clicking outside
@@ -58,13 +62,63 @@ export const Header = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
+      // For portal dropdown, check click outside bell button and dropdown content
+      if (
+        notifOpen &&
+        bellButtonRef.current &&
+        !bellButtonRef.current.contains(event.target) &&
+        !document
+          .querySelector("#notification-dropdown")
+          ?.contains(event.target)
+      ) {
         setNotifOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [notifOpen]);
+
+  // Calculate dropdown position when it opens or on resize/scroll
+  // Calculate dropdown position when it opens or on resize/scroll
+  useEffect(() => {
+    if (!notifOpen) return;
+
+    const updatePosition = () => {
+      if (bellButtonRef.current) {
+        const rect = bellButtonRef.current.getBoundingClientRect();
+        const dropdownWidth = 320;
+        const viewportWidth = window.innerWidth;
+        const isMobile = viewportWidth <= 768; // adjust breakpoint as needed
+
+        let left;
+        if (isMobile) {
+          // Center the dropdown horizontally
+          left = (viewportWidth - dropdownWidth) / 2 + window.scrollX;
+          // Optional: ensure it doesn't go off-screen on very small devices
+          if (left < 8) left = 8;
+          if (left + dropdownWidth > viewportWidth + window.scrollX - 8) {
+            left = viewportWidth + window.scrollX - dropdownWidth - 8;
+          }
+        } else {
+          // Original behavior: align right edge with bell button's right edge
+          left = rect.right - dropdownWidth + window.scrollX;
+        }
+
+        setDropdownPosition({
+          top: rect.bottom + window.scrollY + 8, // 8px gap below button
+          left: left,
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [notifOpen]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -201,7 +255,6 @@ export const Header = () => {
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswordData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user types
     if (error) setError("");
   };
 
@@ -236,7 +289,6 @@ export const Header = () => {
     setError("");
 
     try {
-      // Replace with your actual API endpoint
       const response = await axios.post(
         `${BASE_URL}/auth/change-password`,
         {
@@ -251,9 +303,7 @@ export const Header = () => {
       );
 
       if (response.data.success) {
-        // Show success message (you can integrate a toast library)
         alert("Password changed successfully! Please login again.");
-        // Optionally logout user to force re-login with new password
         dispatch(logout());
         navigate("/login");
       } else {
@@ -281,6 +331,7 @@ export const Header = () => {
         { path: "/admin/chats", name: "Chats" },
         { path: "/admin/counsellors", name: "Counsellors" },
         { path: "/admin/profile", name: "Profile" },
+        { path: "/admin/accounts", name: "Accounts" },
       ],
       counsellor: [
         { path: "/counsellor/dashboard", name: "Dashboard" },
@@ -295,15 +346,14 @@ export const Header = () => {
         { path: "/student/payments", name: "Payments" },
         { path: "/student/chats", name: "Chats" },
         { path: "/student/profile", name: "Profile" },
+        { path: "/student/accounts", name: "Accounts" },
       ],
     };
 
     const routes = menuMap[role] || [];
-
     const match = routes.find((item) =>
       location.pathname.startsWith(item.path),
     );
-
     return match?.name || "Dashboard";
   };
 
@@ -325,9 +375,10 @@ export const Header = () => {
 
           {/* Right Section */}
           <div className="flex items-center space-x-3 sm:space-x-5">
-            {/* Notification Bell Dropdown */}
-            <div className="relative" ref={notifRef}>
+            {/* Notification Bell Button */}
+            <div className="relative">
               <button
+                ref={bellButtonRef}
                 onClick={handleNotifClick}
                 className="text-gray-500 hover:text-teal-600 transition-colors relative p-2 rounded-full hover:bg-gray-50 focus:outline-none"
               >
@@ -338,59 +389,6 @@ export const Header = () => {
                 )}
                 <Bell size={22} />
               </button>
-
-              {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-                    <h3 className="font-bold text-gray-800 text-sm">
-                      Notifications
-                    </h3>
-                    {notifications.length > 0 && (
-                      <button
-                        onClick={() => dispatch(clearNotifications())}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                        title="Clear all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="max-h-[400px] overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="p-10 text-center">
-                        <div className="bg-gray-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Bell size={20} className="text-gray-400" />
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          No new notifications
-                        </p>
-                      </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div
-                          key={n.id}
-                          className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50/30 transition-colors cursor-pointer"
-                          onClick={() => {
-                            setNotifOpen(false); // close dropdown
-                            handleNotificationClick(n);
-                          }}
-                        >
-                          <p className="text-sm text-gray-700 leading-tight font-medium">
-                            {n.message}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1.5 text-gray-400">
-                            <Clock size={10} />
-                            <p className="text-[10px] uppercase tracking-wider font-semibold">
-                              {n.time}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Profile Dropdown */}
@@ -434,7 +432,6 @@ export const Header = () => {
                     Profile
                   </button>
 
-                  {/* Change Password Button */}
                   <button
                     onClick={openChangePassword}
                     className="w-full text-left px-4 py-3 text-sm text-gray-700 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors"
@@ -459,7 +456,67 @@ export const Header = () => {
         </div>
       </nav>
 
-      {/* Change Password Modal */}
+      {/* NOTIFICATION DROPDOWN – RENDERED VIA PORTAL TO STAY ABOVE SIDEBAR */}
+      {notifOpen &&
+        createPortal(
+          <div
+            id="notification-dropdown"
+            className="fixed bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[1000]"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: "320px",
+            }}
+          >
+            <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-bold text-gray-800 text-sm">Notifications</h3>
+              {notifications.length > 0 && (
+                <button
+                  onClick={() => dispatch(clearNotifications())}
+                  className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                  title="Clear all"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-[400px] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-10 text-center">
+                  <div className="bg-gray-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Bell size={20} className="text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-500">No new notifications</p>
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50/30 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setNotifOpen(false);
+                      handleNotificationClick(n);
+                    }}
+                  >
+                    <p className="text-sm text-gray-700 leading-tight font-medium">
+                      {n.message}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1.5 text-gray-400">
+                      <Clock size={10} />
+                      <p className="text-[10px] uppercase tracking-wider font-semibold">
+                        {n.time}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {/* Change Password Modal (unchanged) */}
       {changePasswordOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-200"

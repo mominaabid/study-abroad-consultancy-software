@@ -254,15 +254,17 @@ function ChatWindow({ conversation, onBack, isMobile }) {
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-teal-100 to-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+      <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white px-4">
+        <div className="text-center w-full max-w-sm">
+          <div className="w-20  bg-gradient-to-br from-teal-100 to-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm">
             <MessageSquare size={32} className="text-teal-500" />
           </div>
-          <h3 className="text-lg font-bold text-gray-700 mb-1">
+
+          <h3 className="text-lg font-bold text-gray-700 mb-1  text-center">
             Welcome to Chat Monitor
           </h3>
-          <p className="text-sm text-gray-400 max-w-xs">
+
+          <p className="text-sm text-gray-400 text-center">
             Select a conversation from the left to view messages between
             students and counsellors
           </p>

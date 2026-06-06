@@ -48,43 +48,44 @@ export default function ConversationList({ activeId, onSelect }) {
           <div
             key={conv._id}
             onClick={() => onSelect(conv)}
-            className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all border-b border-gray-100
-              ${isActive ? "bg-teal-50 border-l-4 border-l-teal-500" : "hover:bg-gray-50"}`}
+            className={`flex items-center gap-3 px-4 py-3 md:py-3.5 cursor-pointer transition-all border-b border-gray-100 active:bg-gray-100 ${
+              isActive
+                ? "bg-teal-50 border-l-4 border-l-teal-500"
+                : "hover:bg-gray-50"
+            }`}
           >
+            {/* Avatar with online indicator */}
             <div className="relative flex-shrink-0">
               <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm
-                ${isActive ? "bg-teal-200 text-teal-800" : "bg-gray-100 text-gray-600"}`}
+                className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center font-bold text-sm ${
+                  isActive
+                    ? "bg-teal-200 text-teal-800"
+                    : "bg-gray-100 text-gray-600"
+                }`}
               >
                 {otherName?.charAt(0)?.toUpperCase() || "?"}
               </div>
               {isOnline && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 rounded-full border-2 border-white" />
               )}
             </div>
 
+            {/* Conversation details */}
             <div className="flex-1 min-w-0">
-              {/* <div className="flex items-center justify-between">
-                <p className={`text-sm truncate ${unread > 0 ? 'font-bold' : ''}`}>
-                  {otherName}
-                </p>
-                <span className="text-[10px] text-gray-400">{timeAgo(conv.last_message_at)}</span>
-              </div> */}
-
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 truncate">
                   <p
                     className={`text-sm truncate ${unread > 0 ? "font-bold" : ""}`}
                   >
                     {otherName}
                   </p>
                   {!conv.is_currently_assigned && (
-                    <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full ml-1">
+                    <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                       unassigned
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[10px] text-gray-400 ml-2 flex-shrink-0">
                   {timeAgo(conv.last_message_at)}
                 </span>
               </div>

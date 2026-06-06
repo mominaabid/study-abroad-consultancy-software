@@ -298,6 +298,36 @@ const useSSE = () => {
                 console.log("Payment added by admin notification dispatched");
                 break;
 
+              case "consultancy_fee_added":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "consultancy_fee_added",
+                    metadata: data.metadata,
+                  }),
+                );
+                break;
+
+              case "payment_credited":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "payment_credited",
+                    metadata: data.metadata,
+                  }),
+                );
+                break;
+
+              case "payment_received":
+                dispatch(
+                  addNotification({
+                    message: data.message,
+                    type: "payment_received",
+                    metadata: data.metadata,
+                  }),
+                );
+                break;
+
               default:
                 console.log("Unknown SSE message type:", data.type);
             }

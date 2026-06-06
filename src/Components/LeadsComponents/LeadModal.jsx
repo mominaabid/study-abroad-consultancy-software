@@ -271,10 +271,10 @@ function SearchableDropdown({
           }}
           onFocus={() => setOpen(true)}
         />
-        <ChevronDown
+        {/* <ChevronDown
           size={15}
           className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-        />
+        /> */}
       </div>
       {open && (
         <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
@@ -858,7 +858,6 @@ export default function LeadModal() {
   const handleRemoveEducation = (id) => {
     setEducationEntries((prev) => prev.filter((edu) => edu.id !== id));
     toast.info("Degree removed", { toastId: "degree-removed" });
-
   };
 
   const handleEditEducation = (entry) => {
@@ -1077,7 +1076,7 @@ export default function LeadModal() {
 
     const validationErrors = validate();
     if (validationErrors.length > 0) {
-        toast.error(validationErrors.join(" "), { toastId: "validation-error" });
+      toast.error(validationErrors.join(" "), { toastId: "validation-error" });
 
       return;
     }
@@ -1157,7 +1156,9 @@ export default function LeadModal() {
 
       navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads");
     } catch (err) {
-      toast.error("Failed to save: " + err.message, { toastId: "lead-save-fail" });
+      toast.error("Failed to save: " + err.message, {
+        toastId: "lead-save-fail",
+      });
     } finally {
       setSaving(false);
     }
@@ -1236,10 +1237,6 @@ export default function LeadModal() {
                       </h2>
 
                       <div className="flex flex-wrap items-center gap-2 mt-3">
-                        <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-medium backdrop-blur-sm">
-                          {editLead?.study_level || "No Degree"}
-                        </span>
-
                         <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-medium backdrop-blur-sm">
                           {sourceLabel}
                         </span>
@@ -1706,7 +1703,7 @@ export default function LeadModal() {
                 Educational Information
               </h3>
 
-              <div className="bg-slate-50 p-4 rounded-xl mb-6">
+              <div className="bg-slate-50 p-2 rounded-xl mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SearchableDropdown
                     name="degree"
@@ -1851,14 +1848,13 @@ export default function LeadModal() {
                       )}
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-end gap-2">
+                    <div className="flex flex-col md:flex-row items-stretch md:items-end gap-2">
                       <div className="flex-1">
                         <InputField
                           labelName="Board / University"
                           name="board_university"
                           value={tempDegree.board_university}
                           handlerChange={(e) => {
-                            // 🔹 Trim leading spaces
                             let rawValue = e.target.value;
                             let trimmed = rawValue.replace(/^\s+/, "");
                             setTempDegree((prev) => ({
@@ -1872,28 +1868,30 @@ export default function LeadModal() {
                         />
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleAddOrUpdateEducation}
-                        disabled={!!gradeError}
-                        className={`mb-1 min-w-[120px] h-[46px] px-5 rounded-xl text-white transition-all duration-200 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm hover:shadow-md active:scale-[0.98] ${
-                          gradeError
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-[#009E99] hover:bg-[#00807a]"
-                        }`}
-                      >
-                        {tempDegree.editingId ? "Edit" : "Add"}
-                      </button>
-
-                      {tempDegree.editingId && (
+                      <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
                         <button
                           type="button"
-                          onClick={handleCancelEdit}
-                          className="mb-1 min-w-[110px] h-[46px] px-5 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-sm font-semibold shadow-sm"
+                          onClick={handleAddOrUpdateEducation}
+                          disabled={!!gradeError}
+                          className={`w-full md:w-auto min-w-[120px] h-[46px] px-5 rounded-xl text-white transition-all duration-200 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm hover:shadow-md active:scale-[0.98] ${
+                            gradeError
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-[#009E99] hover:bg-[#00807a]"
+                          }`}
                         >
-                          Cancel
+                          {tempDegree.editingId ? "Edit" : "Add"}
                         </button>
-                      )}
+
+                        {tempDegree.editingId && (
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="w-full md:w-auto min-w-[110px] h-[46px] px-5 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-sm font-semibold shadow-sm"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

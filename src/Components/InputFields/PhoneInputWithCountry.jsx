@@ -76,34 +76,34 @@ export default function PhoneInputWithCountry({
     onChange?.({ target: { name, value: `${c.value} ${number}`.trim() } });
   };
 
- const handleNumberChange = (e) => {
-  let inputValue = e.target.value;
+  const handleNumberChange = (e) => {
+    let inputValue = e.target.value;
 
-  // Prevent leading spaces
-  if (inputValue.startsWith(" ")) {
-    inputValue = inputValue.trimStart();
-  }
+    // Prevent leading spaces
+    if (inputValue.startsWith(" ")) {
+      inputValue = inputValue.trimStart();
+    }
 
-  let num = inputValue.replace(/\D/g, "");
+    let num = inputValue.replace(/\D/g, "");
 
-  // Prevent starting with 0
-  if (num.startsWith("0")) {
-    return;
-  }
+    // Prevent starting with 0
+    if (num.startsWith("0")) {
+      return;
+    }
 
-  if (num.length > 15) {
-    num = num.slice(0, 15);
-  }
+    if (num.length > 15) {
+      num = num.slice(0, 15);
+    }
 
-  setNumber(num);
+    setNumber(num);
 
-  onChange?.({
-    target: {
-      name,
-      value: `${countryCode} ${num}`.trim(),
-    },
-  });
-};
+    onChange?.({
+      target: {
+        name,
+        value: `${countryCode} ${num}`.trim(),
+      },
+    });
+  };
 
   return (
     <div className="flex flex-col">
@@ -227,7 +227,6 @@ export default function PhoneInputWithCountry({
 
         {/* Phone number input */}
         <div className="flex items-center flex-1 px-3 gap-2">
-          <Phone size={14} className="text-gray-400 shrink-0" />
           <input
             type="tel"
             value={number}
@@ -239,7 +238,6 @@ export default function PhoneInputWithCountry({
               text-gray-500
               ${disabled ? "cursor-not-allowed" : ""}
             `}
-            placeholder="1234567890" // updated placeholder
             maxLength={15}
           />
         </div>

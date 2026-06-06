@@ -1,6 +1,11 @@
-// Accounts.jsx - Corrected version with single transaction modal
-
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+// Accounts.jsx (updated with custom dropdowns)
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
@@ -38,7 +43,7 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// ---------- Payment Modal (full original implementation) ----------
+// ---------- Payment Modal (fully responsive) with custom dropdown ----------
 const PaymentModal = ({
   isOpen,
   onClose,
@@ -55,35 +60,47 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedApp, setSelectedApp] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Custom dropdown states
+  const [paymentAppOpen, setPaymentAppOpen] = useState(false);
+  const [paymentAppSearch, setPaymentAppSearch] = useState("");
+  const dropdownRef = useRef(null);
 
   const getAppDisplayText = (app) =>
     `${app.studentName} - ${app.university} (${app.course})`;
 
   const filteredApplications = useMemo(() => {
-    if (!searchQuery.trim()) return applications;
-    const lowerQuery = searchQuery.toLowerCase();
+    if (!paymentAppSearch.trim()) return applications;
+    const lowerQuery = paymentAppSearch.toLowerCase();
     return applications.filter(
       (app) =>
         app.studentName.toLowerCase().includes(lowerQuery) ||
         app.university.toLowerCase().includes(lowerQuery) ||
         app.course.toLowerCase().includes(lowerQuery),
     );
-  }, [applications, searchQuery]);
+  }, [applications, paymentAppSearch]);
 
   const findAppById = (id) =>
     applications.find((a) => a.applicationId === id) || null;
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setPaymentAppOpen(false);
+        setPaymentAppSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (selectedApplicationId) {
       const app = findAppById(selectedApplicationId);
       setSelectedApp(app);
-      if (app) setSearchQuery(getAppDisplayText(app));
-      else setSearchQuery("");
     } else {
       setSelectedApp(null);
-      setSearchQuery("");
     }
   }, [selectedApplicationId, applications]);
 
@@ -94,44 +111,16 @@ const PaymentModal = ({
       setDescription("");
       setError("");
       setSelectedApplicationId(selectedAppId || "");
-      if (selectedAppId) {
-        const app = findAppById(selectedAppId);
-        setSelectedApp(app);
-        setSearchQuery(app ? getAppDisplayText(app) : "");
-      } else {
-        setSelectedApp(null);
-        setSearchQuery("");
-      }
-      setShowDropdown(false);
+      setPaymentAppOpen(false);
+      setPaymentAppSearch("");
     }
   }, [isOpen, selectedAppId, applications]);
 
   const handleSelectApp = (app) => {
     setSelectedApplicationId(app.applicationId);
-    setSearchQuery(getAppDisplayText(app));
-    setShowDropdown(false);
+    setPaymentAppOpen(false);
+    setPaymentAppSearch("");
   };
-
-  const handleSearchChange = (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    setShowDropdown(true);
-    if (value === "") {
-      setSelectedApplicationId("");
-      setSelectedApp(null);
-    } else {
-      const exactMatch = applications.find(
-        (app) => getAppDisplayText(app) === value,
-      );
-      if (exactMatch) setSelectedApplicationId(exactMatch.applicationId);
-      else {
-        setSelectedApplicationId("");
-        setSelectedApp(null);
-      }
-    }
-  };
-
-  const handleInputBlur = () => setTimeout(() => setShowDropdown(false), 150);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -174,49 +163,89 @@ const PaymentModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full">
-        <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-800">Record Payment</h2>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm transition-all">
+      <div className="bg-white rounded-2xl w-full max-w-[95%] sm:max-w-md mx-auto shadow-xl">
+        <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800">
+            Record Payment
+          </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Close"
           >
-            ✕
+            <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
           {!selectedAppId && (
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Select Student/Application
               </label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                onFocus={() => setShowDropdown(true)}
-                onBlur={handleInputBlur}
-                placeholder="Type to search..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none"
-                autoComplete="off"
-              />
-              {showDropdown && filteredApplications.length > 0 && (
-                <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-auto">
-                  {filteredApplications.map((app) => (
-                    <li
-                      key={app.applicationId}
-                      onClick={() => handleSelectApp(app)}
-                      className="px-4 py-2 hover:bg-teal-50 cursor-pointer text-sm text-gray-700"
-                    >
-                      {getAppDisplayText(app)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {showDropdown && filteredApplications.length === 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-3 text-center text-gray-500 text-sm">
-                  No matching applications
+              <button
+                type="button"
+                onClick={() => setPaymentAppOpen(!paymentAppOpen)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-left text-sm sm:text-base flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
+              >
+                <span
+                  className={selectedApp ? "text-gray-800" : "text-gray-400"}
+                >
+                  {selectedApp
+                    ? getAppDisplayText(selectedApp)
+                    : "Choose an application..."}
+                </span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-gray-400"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+
+              {paymentAppOpen && (
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                  <div className="p-2 border-b border-gray-100">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={paymentAppSearch}
+                      onChange={(e) => setPaymentAppSearch(e.target.value)}
+                      placeholder="Search by name, university or course..."
+                      className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+                    />
+                  </div>
+                  <div className="max-h-52 overflow-y-auto py-1">
+                    {filteredApplications.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-gray-400">
+                        No matching applications
+                      </div>
+                    ) : (
+                      filteredApplications.map((app) => (
+                        <div
+                          key={app.applicationId}
+                          onClick={() => handleSelectApp(app)}
+                          className={`px-4 py-2 text-sm cursor-pointer hover:bg-teal-50 transition-colors flex items-center justify-between ${
+                            selectedApplicationId === app.applicationId
+                              ? "bg-teal-50 text-teal-700 font-medium"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          <span className="truncate">
+                            {getAppDisplayText(app)}
+                          </span>
+                          {selectedApplicationId === app.applicationId && (
+                            <span className="text-teal-500 text-xs">✓</span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -231,7 +260,7 @@ const PaymentModal = ({
                   type="text"
                   readOnly
                   value={formatCurrency(selectedApp.payableAmount)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-gray-50"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-gray-50 text-sm sm:text-base"
                 />
               </div>
               <div>
@@ -242,7 +271,7 @@ const PaymentModal = ({
                   type="text"
                   readOnly
                   value={formatCurrency(selectedApp.balance)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold text-sm sm:text-base"
                 />
               </div>
             </>
@@ -257,7 +286,7 @@ const PaymentModal = ({
               min="0.01"
               value={paidAmount}
               onChange={(e) => setPaidAmount(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none text-sm sm:text-base"
               required
             />
           </div>
@@ -269,7 +298,7 @@ const PaymentModal = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none text-sm sm:text-base"
               required
             />
           </div>
@@ -278,10 +307,10 @@ const PaymentModal = ({
               Description (Optional)
             </label>
             <textarea
-              rows="2"
+              rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none resize-none"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none resize-none text-sm sm:text-base"
               placeholder="e.g., First installment"
             />
           </div>
@@ -290,18 +319,18 @@ const PaymentModal = ({
               <AlertCircle size={14} /> {error}
             </div>
           )}
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+              className="w-full sm:flex-1 px-4 py-2.5 border rounded-xl text-gray-600 hover:bg-gray-50 transition-colors touch-manipulation"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50"
+              className="w-full sm:flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors touch-manipulation"
             >
               {loading ? "Processing..." : "Record Payment"}
             </button>
@@ -312,6 +341,7 @@ const PaymentModal = ({
   );
 };
 
+// ---------- Transaction Detail Modal (unchanged) ----------
 const TransactionDetailModal = ({
   isOpen,
   onClose,
@@ -338,98 +368,80 @@ const TransactionDetailModal = ({
   const creditAmount = isCreditEntry ? transaction.credit : null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm transition-all">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
-        {/* Header */}
-        <div className="p-5 border-b border-gray-100 flex justify-between items-start sticky top-0 bg-white rounded-t-2xl z-10">
-          <div className="flex-1">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <FileText size={22} className="text-teal-600" />
-                <h2 className="text-xl font-bold text-gray-800">
-                  Transaction Details
-                </h2>
-              </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-              >
-                <X size={20} />
-              </button>
-            </div>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm transition-all">
+      <div className="bg-white rounded-2xl w-full max-w-[95%] sm:max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+        <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-start sticky top-0 bg-white rounded-t-2xl z-10">
+          <div className="flex items-center gap-2">
+            <FileText size={20} className="text-teal-600 sm:size-[22px]" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+              Transaction Details
+            </h2>
           </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
         </div>
 
-        {/* Vertical Details */}
-        <div className="flex-1 overflow-auto p-5">
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <div className="grid grid-cols-1">
+        <div className="flex-1 overflow-auto p-4 sm:p-5">
+          <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500">Invoice No</p>
-                <p className="font-medium text-gray-800">
+                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">
                   {transaction.invoiceNo || "N/A"}
                 </p>
               </div>
-
               <div>
                 <p className="text-xs text-gray-500">Date</p>
-                <p className="font-medium text-gray-800">
+                <p className="font-medium text-gray-800 text-sm sm:text-base">
                   {formatDate(transaction.date)}
                 </p>
               </div>
-
               <div>
                 <p className="text-xs text-gray-500">Student</p>
-                <p className="font-medium text-gray-800">
+                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">
                   {studentName || "—"}
                 </p>
               </div>
-
               <div>
                 <p className="text-xs text-gray-500">Program</p>
-                <p className="font-medium text-gray-800">{program || "0"}</p>
+                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">
+                  {program || "—"}
+                </p>
               </div>
-
               <div>
                 <p className="text-xs text-red-500">Debit</p>
-                <p className="font-semibold text-red-600">
-                  {debitAmount ? formatCurrency(debitAmount) : "0"}
+                <p className="font-semibold text-red-600 text-sm sm:text-base">
+                  {debitAmount ? formatCurrency(debitAmount) : "—"}
                 </p>
               </div>
-
               <div>
                 <p className="text-xs text-green-500">Credit</p>
-                <p className="font-semibold text-green-600">
-                  {creditAmount ? formatCurrency(creditAmount) : "0"}
+                <p className="font-semibold text-green-600 text-sm sm:text-base">
+                  {creditAmount ? formatCurrency(creditAmount) : "—"}
                 </p>
               </div>
-
               <div>
                 <p className="text-xs text-gray-500">Previous Balance</p>
-                <p className="font-medium text-gray-800">
+                <p className="font-medium text-gray-800 text-sm sm:text-base">
                   {formatCurrency(transaction.previousBalance || 0)}
                 </p>
               </div>
-
               <div>
-                <p className="text-xs text-gray-500">Current Balance</p>
-                <p className="font-medium text-gray-800">
-                  {formatCurrency(transaction.balance || 0)}
-                </p>
-              </div>
-
-              <div className="md:col-span-2">
                 <p className="text-xs text-amber-600">Net Balance</p>
-                <p className="text-lg font-bold text-amber-700">
+                <p className="text-base sm:text-lg font-bold text-amber-700">
                   {formatCurrency(
                     transaction.netBalance || transaction.balance || 0,
                   )}
                 </p>
               </div>
-
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2">
                 <p className="text-xs text-gray-500 mb-1">Description</p>
-                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700">
+                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 break-words">
                   {transaction.description || "—"}
                 </div>
               </div>
@@ -437,11 +449,10 @@ const TransactionDetailModal = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-5 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
+        <div className="p-4 sm:p-5 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+            className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors shadow-sm touch-manipulation"
           >
             Close
           </button>
@@ -451,7 +462,7 @@ const TransactionDetailModal = ({
   );
 };
 
-// ---------- Main Accounts Component (Role‑Aware) ----------
+// ---------- Main Accounts Component (Role‑Aware & Fully Responsive) ----------
 export const Accounts = () => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -462,14 +473,16 @@ export const Accounts = () => {
   const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStudent, setSelectedStudent] = useState("");
-  const [studentSearchInput, setStudentSearchInput] = useState("");
+  // Custom dropdown states for main student filter
+  const [studentFilterOpen, setStudentFilterOpen] = useState(false);
+  const [studentFilterSearch, setStudentFilterSearch] = useState("");
+  const studentFilterRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [applicationsList, setApplicationsList] = useState([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedAppForPayment, setSelectedAppForPayment] = useState(null);
 
-  // New states for single transaction modal
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [selectedStudentName, setSelectedStudentName] = useState("");
@@ -493,6 +506,21 @@ export const Accounts = () => {
     const totalBalance = totalPayable - totalPaid;
     return { totalPayable, totalPaid, totalBalance };
   }, [applicationsList]);
+
+  // Close student dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        studentFilterRef.current &&
+        !studentFilterRef.current.contains(event.target)
+      ) {
+        setStudentFilterOpen(false);
+        setStudentFilterSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -588,130 +616,194 @@ export const Accounts = () => {
     setShowPaymentModal(true);
   };
 
-  const handleStudentSelect = (e) => {
-    const value = e.target.value;
-    setStudentSearchInput(value);
-    if (uniqueStudentNames.includes(value)) {
-      setSelectedStudent(value);
-    } else {
-      setSelectedStudent("");
-    }
+  const handleStudentSelect = (studentName) => {
+    setSelectedStudent(studentName);
+    setStudentFilterOpen(false);
+    setStudentFilterSearch("");
   };
 
   const clearStudentFilter = () => {
     setSelectedStudent("");
-    setStudentSearchInput("");
+    setStudentFilterSearch("");
   };
 
+  const filteredStudentNames = useMemo(() => {
+    if (!studentFilterSearch.trim()) return uniqueStudentNames;
+    const lower = studentFilterSearch.toLowerCase();
+    return uniqueStudentNames.filter((name) =>
+      name.toLowerCase().includes(lower),
+    );
+  }, [uniqueStudentNames, studentFilterSearch]);
+
   return (
-    <div className="p-4 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      {/* Header Section with Filters */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-6">
-        <div className="flex flex-wrap gap-4 items-end">
-          {/* Date Filters */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              From Date
-            </label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
-              To Date
-            </label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500"
-            />
-          </div>
-
-          {/* Student Filter – hidden for students, mandatory for others */}
-          {!isStudent && (
-            <div className="relative">
+    <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
+      {/* Header Section with Filters - Mobile First Responsive */}
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+          <div className="flex flex-wrap items-end gap-3">
+            {/* From Date */}
+            <div className="w-full sm:w-auto">
               <label className="block text-sm font-medium text-gray-600 mb-1">
-                Student *
+                From Date
               </label>
-              <div className="flex gap-2">
-                <input
-                  list="studentList"
-                  value={studentSearchInput}
-                  onChange={handleStudentSelect}
-                  placeholder="Type or select student..."
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64 focus:ring-teal-500 focus:border-teal-500"
-                />
-                {selectedStudent && (
-                  <button
-                    onClick={clearStudentFilter}
-                    className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
-                    title="Clear student filter"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              <datalist id="studentList">
-                {uniqueStudentNames.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500"
+              />
             </div>
-          )}
-        </div>
+            {/* To Date */}
+            <div className="w-full sm:w-auto">
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500"
+              />
+            </div>
 
-        <div className="flex flex-col items-end gap-2">
-          {!isStudent && (
+            {/* Student Filter – custom dropdown for admin/counsellor */}
+            {!isStudent && (
+              <div className="w-full sm:w-64 relative" ref={studentFilterRef}>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                  Student *
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setStudentFilterOpen(!studentFilterOpen)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-left flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
+                    >
+                      <span
+                        className={
+                          selectedStudent ? "text-gray-800" : "text-gray-400"
+                        }
+                      >
+                        {selectedStudent || "Select a student"}
+                      </span>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="text-gray-400"
+                      >
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                    </button>
+                    {studentFilterOpen && (
+                      <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                        <div className="p-2 border-b border-gray-100">
+                          <input
+                            autoFocus
+                            type="text"
+                            value={studentFilterSearch}
+                            onChange={(e) =>
+                              setStudentFilterSearch(e.target.value)
+                            }
+                            placeholder="Search student..."
+                            className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+                          />
+                        </div>
+                        <div className="max-h-52 overflow-y-auto py-1">
+                          {filteredStudentNames.length === 0 ? (
+                            <div className="px-4 py-3 text-sm text-gray-400">
+                              No students found
+                            </div>
+                          ) : (
+                            filteredStudentNames.map((name) => (
+                              <div
+                                key={name}
+                                onClick={() => handleStudentSelect(name)}
+                                className={`px-4 py-2 text-sm cursor-pointer hover:bg-teal-50 transition-colors flex items-center justify-between ${
+                                  selectedStudent === name
+                                    ? "bg-teal-50 text-teal-700 font-medium"
+                                    : "text-gray-700"
+                                }`}
+                              >
+                                <span>{name}</span>
+                                {selectedStudent === name && (
+                                  <span className="text-teal-500 text-xs">
+                                    ✓
+                                  </span>
+                                )}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {selectedStudent && (
+                    <button
+                      onClick={clearStudentFilter}
+                      className="px-3 py-1 text-xs bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors touch-manipulation"
+                      title="Clear student filter"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action buttons group */}
+          <div className="flex flex-col items-stretch sm:items-end gap-2">
             <button
               onClick={openGlobalPaymentModal}
-              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl shadow-sm transition"
+              className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl shadow-sm transition touch-manipulation"
             >
               <Plus size={18} /> Add Payment
             </button>
-          )}
-          <div className="relative w-full md:w-64">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              placeholder="Search by Student, Invoice, Description..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-teal-500 focus:border-teal-500"
-            />
+            <div className="relative w-full sm:w-64">
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder="Search by Student, Invoice, Description..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-teal-500 focus:border-teal-500"
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Student Summary Card (only for students) */}
       {isStudent && (
-        <div className="mb-6 bg-white rounded-xl shadow p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <div className="mb-6 bg-white rounded-xl shadow p-4 sm:p-5">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
             Your Account Summary
           </h3>
-          <div className="flex flex-wrap gap-6">
-            <div>
-              <p className="text-sm text-gray-500">Total Payable</p>
-              <p className="text-xl font-bold text-gray-900">
+          <div className="flex flex-wrap gap-4 sm:gap-6">
+            <div className="flex-1 min-w-[120px]">
+              <p className="text-xs sm:text-sm text-gray-500">Total Payable</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-900 break-words">
                 {formatCurrency(studentSummary.totalPayable)}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Paid</p>
-              <p className="text-xl font-bold text-teal-600">
+            <div className="flex-1 min-w-[120px]">
+              <p className="text-xs sm:text-sm text-gray-500">Total Paid</p>
+              <p className="text-lg sm:text-xl font-bold text-teal-600 break-words">
                 {formatCurrency(studentSummary.totalPaid)}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Remaining Balance</p>
-              <p className="text-xl font-bold text-amber-700">
+            <div className="flex-1 min-w-[120px]">
+              <p className="text-xs sm:text-sm text-gray-500">
+                Remaining Balance
+              </p>
+              <p className="text-lg sm:text-xl font-bold text-amber-700 break-words">
                 {formatCurrency(studentSummary.totalBalance)}
               </p>
             </div>
@@ -724,14 +816,19 @@ export const Accounts = () => {
           <RefreshCw className="animate-spin mx-auto text-teal-600" size={32} />
         </div>
       ) : filteredTransactions.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center">
-          <FileText size={48} className="mx-auto text-gray-300 mb-3" />
+        <div className="bg-white rounded-2xl p-8 sm:p-12 text-center">
+          <FileText
+            size={40}
+            className="mx-auto text-gray-300 mb-3 sm:size-12"
+          />
           {!isStudent && !selectedStudent ? (
-            <p className="text-gray-500">
+            <p className="text-sm sm:text-base text-gray-500">
               Please select a student from the dropdown to view transactions.
             </p>
           ) : (
-            <p className="text-gray-500">No transactions found</p>
+            <p className="text-sm sm:text-base text-gray-500">
+              No transactions found
+            </p>
           )}
         </div>
       ) : (
@@ -739,34 +836,34 @@ export const Accounts = () => {
           {/* Transactions Table */}
           <div className="bg-white rounded-xl shadow overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-[800px] md:min-w-full w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Sr#
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Invoice No
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Debit
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Credit
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Balance
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Previous Balance
+                    <th className="px-3 py-3 sm:px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Prev Balance
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Net Balance
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 sm:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -774,37 +871,38 @@ export const Accounts = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedTransactions.map((tx, idx) => (
                     <tr key={tx.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-700">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700">
                         {(currentPage - 1) * rowsPerPage + idx + 1}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-500 whitespace-nowrap">
                         {new Date(tx.date).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-sm font-mono text-gray-600">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-mono text-gray-600">
                         {tx.invoiceNo}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-red-600">
-                        {tx.debit ? formatCurrency(tx.debit) : "0"}
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-right text-red-600">
+                        {tx.debit ? formatCurrency(tx.debit) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-teal-600">
-                        {tx.credit ? formatCurrency(tx.credit) : "0"}
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-right text-teal-600">
+                        {tx.credit ? formatCurrency(tx.credit) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-800">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-right text-gray-800">
                         {formatCurrency(tx.balance)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-500">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-right text-gray-500">
                         {formatCurrency(tx.previousBalance)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right font-semibold text-amber-700">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-right font-semibold text-amber-700">
                         {formatCurrency(tx.netBalance)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-center">
+                      <td className="px-3 py-2 sm:px-4 sm:py-3 text-center">
                         <button
                           onClick={() => handleViewTransaction(tx)}
-                          className="text-gray-600 hover:text-gray-800"
+                          className="text-gray-600 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
                           title="View Invoice Details"
+                          aria-label="View details"
                         >
-                          <Eye size={16} />
+                          <Eye size={16} className="sm:size-[18px]" />
                         </button>
                       </td>
                     </tr>
@@ -815,21 +913,21 @@ export const Accounts = () => {
           </div>
 
           {/* Pagination */}
-          <div className="flex justify-between items-center mt-4">
-            <div className="text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+            <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
               Showing {(currentPage - 1) * rowsPerPage + 1} to{" "}
               {Math.min(currentPage * rowsPerPage, filteredTransactions.length)}{" "}
               of {filteredTransactions.length} entries
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-center items-center gap-2">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border rounded-md disabled:opacity-50"
+                className="px-3 py-1.5 border rounded-md disabled:opacity-50 text-sm touch-manipulation"
               >
                 Previous
               </button>
-              <span className="px-3 py-1">
+              <span className="px-3 py-1 text-sm">
                 Page {currentPage} of {totalPages}
               </span>
               <button
@@ -837,7 +935,7 @@ export const Accounts = () => {
                   setCurrentPage((p) => Math.min(totalPages, p + 1))
                 }
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded-md disabled:opacity-50"
+                className="px-3 py-1.5 border rounded-md disabled:opacity-50 text-sm touch-manipulation"
               >
                 Next
               </button>
@@ -847,7 +945,7 @@ export const Accounts = () => {
                   setRowsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="ml-2 border rounded-md px-2"
+                className="ml-0 sm:ml-2 border rounded-md px-2 py-1.5 text-sm"
               >
                 <option value={10}>10 / page</option>
                 <option value={25}>25 / page</option>
@@ -856,13 +954,15 @@ export const Accounts = () => {
             </div>
           </div>
 
-          {/* Global Summary – only for admins/counsellors */}
+          {/* Global Summary */}
           {!isStudent && filteredTransactions.length > 0 && (
             <div className="mt-6 flex justify-end">
-              <div className="bg-white rounded-lg shadow p-4 w-full md:w-80 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Fees Received:</span>
-                  <span className="font-semibold text-teal-600">
+              <div className="bg-white rounded-lg shadow p-4 w-full md:w-80">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">
+                    Total Fees Received:
+                  </span>
+                  <span className="font-semibold text-teal-600 text-base">
                     {formatCurrency(globalSummary.totalCredit)}
                   </span>
                 </div>

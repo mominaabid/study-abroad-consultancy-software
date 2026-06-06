@@ -1,4 +1,4 @@
-// CounsellorLeads.jsx (fixed)
+// CounsellorLeads.jsx (fully responsive)
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -24,20 +24,22 @@ import LeadDrawer from "../../Components/LeadsComponents/LeadDrawer";
 import { KanbanColumn } from "../../Components/LeadsComponents/KanbanBoard";
 import LeadsTable from "../../Components/LeadsComponents/LeadsTable";
 
-// ─── Stat Card ─────────────────────────────────────────────────────────────────
+// ─── Stat Card (responsive) ─────────────────────────────────────────────────
 function StatCard({ label, value, icon, color }) {
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-400 shadow-sm px-5 py-4
+      className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm px-3 md:px-5 py-3 md:py-4
                     flex items-center justify-between transition-all duration-200
                     hover:shadow-md hover:-translate-y-0.5"
     >
       <div>
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+        <p className="text-[11px] md:text-xs text-gray-400">{label}</p>
+        <p className="text-xl md:text-2xl font-bold text-gray-900 mt-0.5 md:mt-1">
+          {value}
+        </p>
       </div>
       <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl border"
+        className="w-9 h-9 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-base md:text-xl border"
         style={{ color, borderColor: color, backgroundColor: `${color}10` }}
       >
         {icon}
@@ -46,7 +48,23 @@ function StatCard({ label, value, icon, color }) {
   );
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
+// ─── Helper to keep dropdown inside viewport ──────────────────────────────
+function getAdjustedDropdownPosition(buttonRect) {
+  const { top, left, width } = buttonRect;
+  const dropdownWidth = 256; // w-56 = 14rem = 224px, but we use 256 as safe margin
+  const viewportWidth = window.innerWidth;
+  let adjustedLeft = left;
+  if (left + dropdownWidth > viewportWidth) {
+    adjustedLeft = viewportWidth - dropdownWidth - 8;
+  }
+  if (adjustedLeft < 8) adjustedLeft = 8;
+  return {
+    top: top + window.scrollY + buttonRect.height + 4,
+    left: adjustedLeft + window.scrollX,
+  };
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────
 export default function CounsellorLeads() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -73,7 +91,7 @@ export default function CounsellorLeads() {
     left: 0,
   });
 
-  // ── Fetch MY leads only ────────────────────────────────────────────────────
+  // ── Fetch MY leads only ─────────────────────────────────────────────────
   const fetchLeads = useCallback(async (page = 1) => {
     setLoading(true);
     try {
@@ -131,20 +149,18 @@ export default function CounsellorLeads() {
     return () => document.removeEventListener("click", handler);
   }, []);
 
-  // Update dropdown position before opening
+  // Open country filter with viewport‑aware positioning
   const openCountryFilter = () => {
     if (countryFilterRef.current) {
       const rect = countryFilterRef.current.getBoundingClientRect();
-      setCountryFilterPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-      });
+      const adjusted = getAdjustedDropdownPosition(rect);
+      setCountryFilterPosition(adjusted);
     }
     setCountryFilterOpen(true);
     setCountrySearch("");
   };
 
-  // ─── Update stage (counsellor can change stage of their leads) ──────────────
+  // ─── Update stage (counsellor can change stage of their leads) ──────────
   async function handleStage(leadId, status, note = "") {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -165,14 +181,16 @@ export default function CounsellorLeads() {
         body: JSON.stringify({ status, note }),
       });
       if (!res.ok) throw new Error();
-      toast.success(`Lead moved to ${status} stage` , { toastId: "lead-moved" });
+      toast.success(`Lead moved to ${status} stage`, { toastId: "lead-moved" });
     } catch {
-      toast.error("Failed to update lead status" , { toastId: "filed-edit-lead-status" });
+      toast.error("Failed to update lead status", {
+        toastId: "filed-edit-lead-status",
+      });
       fetchLeads();
     }
   }
 
-  // ─── Delete Lead (counsellor can delete their leads) ────────────────────────
+  // ─── Delete Lead (counsellor can delete their leads) ────────────────────
   async function handleDelete(lead) {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -189,14 +207,16 @@ export default function CounsellorLeads() {
         },
       });
       if (!res.ok) throw new Error();
-      toast.success("Lead deleted successfully" , { toastId: "lead-remove-success" });
+      toast.success("Lead deleted successfully", {
+        toastId: "lead-remove-success",
+      });
       fetchLeads(currentPage);
     } catch {
-      toast.error("Failed to delete lead" , { toastId: "failed-remove-lead" });
+      toast.error("Failed to delete lead", { toastId: "failed-remove-lead" });
     }
   }
 
-  // ─── Export CSV ─────────────────────────────────────────────────────────────
+  // ─── Export CSV ─────────────────────────────────────────────────────────
   function handleExport() {
     const headers = [
       "Name",
@@ -226,10 +246,10 @@ export default function CounsellorLeads() {
       download: "my-leads.csv",
     });
     a.click();
-    toast.info("Exporting leads..." , { toastId: "lead-export" });
+    toast.info("Exporting leads...", { toastId: "lead-export" });
   }
 
-  // ─── Filtered & grouped data ────────────────────────────────────────────────
+  // ─── Filtered & grouped data ────────────────────────────────────────────
   const filteredLeads = leads.filter((lead) => {
     const matchSearch =
       !search ||
@@ -322,33 +342,36 @@ export default function CounsellorLeads() {
     },
   ];
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
-      {/* ── Stats Bar ── */}
+      {/* ── Responsive Stats Bar ── */}
       {!loading && (
-        <div className="flex-shrink-0 grid grid-cols-4 gap-4 px-6 py-4">
+        <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4">
           {stats.map((s) => (
             <StatCard key={s.label} {...s} />
           ))}
         </div>
       )}
-      {/* ── Header ── */}
-      <div className="flex-shrink-0 backdrop-blur-sm border-b border-gray-100 px-6 py-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+
+      {/* ── Responsive Header ── */}
+      <div className="flex-shrink-0 backdrop-blur-sm border-b border-gray-100 px-4 md:px-6 py-3 md:py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-lg font-bold text-gray-800">My Leads</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <h1 className="text-base md:text-lg font-bold text-gray-800">
+              My Leads
+            </h1>
+            <p className="text-[11px] md:text-xs text-gray-400 mt-0.5">
               {leads.length} leads assigned to you
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Search */}
-            <div className="flex items-center gap-2 h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl min-w-[200px] transition-all focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100">
+          <div className="flex flex-wrap items-center gap-2 md:gap-2.5">
+            {/* Search - full width on mobile, fixed min-width on larger */}
+            <div className="flex items-center gap-2 h-8 md:h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl w-full sm:w-auto md:min-w-[200px] transition-all focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100">
               <svg
-                width="14"
-                height="14"
+                width="12"
+                height="12"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="#9ca3af"
@@ -361,7 +384,7 @@ export default function CounsellorLeads() {
                 placeholder="Search leads..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-full"
+                className="bg-transparent outline-none text-xs md:text-[13px] text-gray-700 placeholder-gray-400 w-full"
               />
             </div>
 
@@ -369,9 +392,9 @@ export default function CounsellorLeads() {
             <div className="relative" ref={countryFilterRef}>
               <button
                 onClick={openCountryFilter}
-                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[130px]"
+                className="h-8 md:h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-xs md:text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[110px] sm:min-w-[130px]"
               >
-                <span className="truncate max-w-[100px]">
+                <span className="truncate max-w-[80px] sm:max-w-[100px]">
                   {filterCountry === "All Countries"
                     ? "All Countries"
                     : filterCountry}
@@ -379,8 +402,8 @@ export default function CounsellorLeads() {
               </button>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
                 <svg
-                  width="12"
-                  height="12"
+                  width="10"
+                  height="10"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -393,13 +416,12 @@ export default function CounsellorLeads() {
               {countryFilterOpen &&
                 createPortal(
                   <div
-                    className="fixed z-[9999] w-56 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+                    className="fixed z-[9999] w-56 max-w-[90vw] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
                     style={{
                       top: countryFilterPosition.top,
                       left: countryFilterPosition.left,
                     }}
                   >
-                    {/* Search */}
                     <div className="p-2 border-b border-gray-100">
                       <input
                         autoFocus
@@ -407,11 +429,9 @@ export default function CounsellorLeads() {
                         value={countrySearch}
                         onChange={(e) => setCountrySearch(e.target.value)}
                         placeholder="Search country..."
-                        className="w-full px-3 py-1.5 text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+                        className="w-full px-3 py-1.5 text-xs md:text-[13px] border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
                       />
                     </div>
-
-                    {/* List */}
                     <div className="max-h-52 overflow-y-auto py-1">
                       <div
                         onClick={() => {
@@ -419,12 +439,11 @@ export default function CounsellorLeads() {
                           setCountryFilterOpen(false);
                           setCountrySearch("");
                         }}
-                        className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+                        className={`px-4 py-2 text-xs md:text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
                           ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
                       >
                         All Countries
                       </div>
-
                       {[
                         ...new Set(
                           leads.flatMap((l) =>
@@ -448,13 +467,12 @@ export default function CounsellorLeads() {
                               setCountryFilterOpen(false);
                               setCountrySearch("");
                             }}
-                            className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+                            className={`px-4 py-2 text-xs md:text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
                               ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
                           >
                             {c}
                           </div>
                         ))}
-
                       {[
                         ...new Set(
                           leads.flatMap((l) =>
@@ -470,7 +488,7 @@ export default function CounsellorLeads() {
                         c.toLowerCase().includes(countrySearch.toLowerCase()),
                       ).length === 0 &&
                         countrySearch && (
-                          <div className="px-4 py-3 text-[13px] text-gray-400">
+                          <div className="px-4 py-3 text-xs md:text-[13px] text-gray-400 text-center">
                             No countries found
                           </div>
                         )}
@@ -483,7 +501,7 @@ export default function CounsellorLeads() {
             {/* Status filter */}
             <div className="relative">
               <select
-                className="h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-[13px] text-gray-600 outline-none focus:border-purple-500 appearance-none cursor-pointer"
+                className="h-8 md:h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-xs md:text-[13px] text-gray-600 outline-none focus:border-purple-500 appearance-none cursor-pointer"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -496,8 +514,8 @@ export default function CounsellorLeads() {
               </select>
               <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
                 <svg
-                  width="12"
-                  height="12"
+                  width="10"
+                  height="10"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -509,12 +527,12 @@ export default function CounsellorLeads() {
             </div>
 
             {/* View Toggle */}
-            <div className="flex h-9 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex h-8 md:h-9 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
               {viewButtons.map((v) => (
                 <button
                   key={v.key}
                   onClick={() => setView(v.key)}
-                  className={`flex items-center gap-1.5 px-3.5 text-[12.5px] font-medium transition-all border-r last:border-0 border-gray-200
+                  className={`flex items-center gap-1.5 px-3 md:px-3.5 text-[11px] md:text-[12.5px] font-medium transition-all border-r last:border-0 border-gray-200
                     ${
                       view === v.key
                         ? "bg-purple-600 text-white"
@@ -522,7 +540,7 @@ export default function CounsellorLeads() {
                     }`}
                 >
                   {v.icon}
-                  {v.label}
+                  <span className="hidden sm:inline">{v.label}</span>
                 </button>
               ))}
             </div>
@@ -530,11 +548,11 @@ export default function CounsellorLeads() {
             {/* Export */}
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 h-9 px-4 border border-gray-200 rounded-xl text-[12.5px] text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
+              className="flex items-center gap-1.5 h-8 md:h-9 px-3 md:px-4 border border-gray-200 rounded-xl text-[11px] md:text-[12.5px] text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
             >
               <svg
-                width="13"
-                height="13"
+                width="12"
+                height="12"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -544,22 +562,22 @@ export default function CounsellorLeads() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              Export
+              <span>Export</span>
             </button>
 
-            {/* ── ADD LEAD BUTTON – navigates to new lead page ── */}
+            {/* Add Lead Button */}
             <button
               onClick={() => navigate("/counsellor/leads/new")}
-              className="flex items-center gap-1.5 h-9 px-4 bg-purple-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-purple-700 transition shadow-md shadow-purple-200 whitespace-nowrap"
+              className="flex items-center gap-1.5 h-8 md:h-9 px-3 md:px-4 bg-purple-600 text-white rounded-xl text-[11px] md:text-[12.5px] font-semibold hover:bg-purple-700 transition shadow-md shadow-purple-200 whitespace-nowrap"
             >
               <FiPlus size={14} />
-              Add Lead
+              <span>Add Lead</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Loading ── */}
+      {/* ── Loading State ── */}
       {loading && (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
           <div className="w-8 h-8 border-2 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
@@ -567,11 +585,11 @@ export default function CounsellorLeads() {
         </div>
       )}
 
-      {/* ── Kanban View ── */}
+      {/* ── Kanban View (responsive horizontal scroll) ── */}
       {!loading && view === "kanban" && (
         <div className="flex-1 min-h-0 overflow-x-auto pb-4">
           <div
-            className="flex gap-3 h-full px-6 pt-1"
+            className="flex gap-3 h-full px-4 md:px-6 pt-1"
             style={{ minWidth: "max-content" }}
           >
             {STAGES.map((stage) => (
@@ -601,28 +619,32 @@ export default function CounsellorLeads() {
         </div>
       )}
 
-      {/* ── Table View ── */}
+      {/* ── Table View (responsive wrapper with horizontal scroll) ── */}
       {!loading && view === "table" && (
-        <LeadsTable
-          filteredLeads={filteredLeads}
-          counsellors={[]}
-          onRowClick={setDrawerLead}
-          onEdit={(l) => navigate(`/counsellor/leads/${l.id}/edit`)}
-          onDelete={handleDelete}
-          onAssignCounsellor={null}
-          actionMenu={actionMenu}
-          setActionMenu={setActionMenu}
-          pagination={pagination}
-          currentPage={currentPage}
-          onPageChange={(page) => {
-            setCurrentPage(page);
-            fetchLeads(page);
-          }}
-          userRole="counsellor"
-        />
+        <div className="flex-1 overflow-x-auto px-4 md:px-6 pb-4">
+          <div className="min-w-[640px] md:min-w-0">
+            <LeadsTable
+              filteredLeads={filteredLeads}
+              counsellors={[]}
+              onRowClick={setDrawerLead}
+              onEdit={(l) => navigate(`/counsellor/leads/${l.id}/edit`)}
+              onDelete={handleDelete}
+              onAssignCounsellor={null}
+              actionMenu={actionMenu}
+              setActionMenu={setActionMenu}
+              pagination={pagination}
+              currentPage={currentPage}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                fetchLeads(page);
+              }}
+              userRole="counsellor"
+            />
+          </div>
+        </div>
       )}
 
-      {/* ── Lead Drawer ── */}
+      {/* ── Lead Drawer (assumes component is responsive) ── */}
       {drawerLead && (
         <LeadDrawer
           lead={drawerLead}

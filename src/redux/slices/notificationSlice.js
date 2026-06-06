@@ -71,6 +71,18 @@ const formatNotification = (notif) => {
     icon = "✅";
     bgColor = "bg-green-50";
     textColor = "text-green-700";
+  } else if (type === "consultancy_fee_added") {
+    icon = "💰";
+    bgColor = "bg-amber-50";
+    textColor = "text-amber-700";
+  } else if (type === "payment_credited") {
+    icon = "✅";
+    bgColor = "bg-green-50";
+    textColor = "text-green-700";
+  } else if (type === "payment_received") {
+    icon = "💸";
+    bgColor = "bg-blue-50";
+    textColor = "text-blue-700";
   }
 
   return {

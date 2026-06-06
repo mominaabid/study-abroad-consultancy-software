@@ -17,6 +17,23 @@ import { useSelector } from "react-redux";
 import { selectNotifications } from "../redux/slices/notificationSlice";
 import { selectUser } from "../redux/slices/authSlice";
 
+// Custom hook for responsive breakpoints
+const useMediaQuery = (query) => {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    if (media.matches !== matches) {
+      setMatches(media.matches);
+    }
+    const listener = () => setMatches(media.matches);
+    window.addEventListener("resize", listener);
+    return () => window.removeEventListener("resize", listener);
+  }, [matches, query]);
+
+  return matches;
+};
+
 export const MainContent = () => {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
@@ -44,6 +61,10 @@ export const MainContent = () => {
   const user = useSelector(selectUser);
 
   const [dateFilter, setDateFilter] = useState("daily");
+
+  // Responsive breakpoints
+  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isTablet = useMediaQuery("(min-width: 641px) and (max-width: 1024px)");
 
   const getDateRange = useCallback(() => {
     const now = new Date();
@@ -162,7 +183,7 @@ export const MainContent = () => {
     fetchAllFilteredData();
   }, [fetchAllFilteredData]);
 
-  // --- PERCENTAGE CHANGE CALCULATIONS ---
+  // --- PERCENTAGE CHANGE CALCULATIONS (unchanged) ---
   useEffect(() => {
     if (leads.length === 0) {
       setLeadsChange("0%");
@@ -282,8 +303,7 @@ export const MainContent = () => {
     setCounsellorsChange("N/A");
   }, [counsellorsCount]);
 
-  // -----------------------------------------------------------------
-  // Helper for chart labels – must be defined BEFORE getChartData
+  // Chart label formatter
   const formatChartLabel = (date, filter) => {
     if (filter === "daily" || filter === "weekly") {
       return date.toLocaleDateString("en-US", { weekday: "short" });
@@ -291,7 +311,6 @@ export const MainContent = () => {
       return date.getDate().toString();
     }
   };
-  // -----------------------------------------------------------------
 
   const periodTotalRevenue = useMemo(() => {
     return payments
@@ -361,7 +380,22 @@ export const MainContent = () => {
 
   const chartPaths = generateChartPaths();
 
-  // --- Derived stats for funnel and active students ---
+  // Responsive chart labels: show subset on mobile/tablet
+  const getVisibleChartIndices = useCallback(() => {
+    if (chartData.length <= 5) return chartData.map((_, idx) => idx);
+    let maxLabels = isMobile ? 4 : isTablet ? 6 : chartData.length;
+    if (maxLabels > chartData.length) maxLabels = chartData.length;
+    const step = (chartData.length - 1) / (maxLabels - 1);
+    const indices = [];
+    for (let i = 0; i < maxLabels; i++) {
+      indices.push(Math.round(i * step));
+    }
+    return indices;
+  }, [chartData.length, isMobile, isTablet]);
+
+  const visibleIndices = getVisibleChartIndices();
+
+  // Derived stats
   const now = new Date();
   const newCount = leads.filter(
     (l) => l.status?.toLowerCase() === "new",
@@ -460,7 +494,7 @@ export const MainContent = () => {
   };
 
   const handleNavigateToLeads = () => navigate("/admin/leads");
-  const handleNavigateToPayments = () => navigate("/admin/payments");
+  // const handleNavigateToPayments = () => navigate("/admin/payments");
   const handleNavigateToApplications = () => navigate("/admin/applications");
   const handleNavigateToActiveStudents = () => navigate("/admin/leads");
   const handleNavigateToCounsellorsList = () => navigate("/admin/counsellors");
@@ -469,12 +503,13 @@ export const MainContent = () => {
     navigate("/admin/applications?filter=offer_letter");
 
   return (
-    <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      <div className="flex justify-end items-center mb-4">
+    <main className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
+      {/* Filter Selector - Responsive alignment */}
+      <div className="flex justify-end items-center mb-4 sm:mb-6">
         <select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-medium"
+          className="px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-medium"
         >
           <option value="daily">Today</option>
           <option value="weekly">This Week (Mon–Sun)</option>
@@ -482,7 +517,8 @@ export const MainContent = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+      {/* Stat Cards Grid - 1 col on mobile, 2 on tablet, 4 on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <StatCard
           title="Total Leads"
           value={loading ? "..." : totalLeadsCount}
@@ -513,7 +549,7 @@ export const MainContent = () => {
           isNegative={false}
           icon={<DollarSign />}
           color="from-violet-500 to-indigo-600"
-          onClick={handleNavigateToPayments}
+          // onClick={handleNavigateToPayments}
         />
         <StatCard
           title="Applications"
@@ -539,16 +575,17 @@ export const MainContent = () => {
           isNegative={paymentsCountChange.startsWith("-")}
           icon={<DollarSign />}
           color="from-emerald-500 to-teal-500"
-          onClick={handleNavigateToPaymentsList}
+          // onClick={handleNavigateToPaymentsList}
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
-        <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
-          <h3 className="font-semibold text-xl text-gray-800 mb-6 flex items-center gap-3">
+      {/* Two Column Layout: Lead Funnel & Revenue Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div className="bg-white p-4 sm:p-5 md:p-7 rounded-xl shadow-lg border border-gray-100">
+          <h3 className="font-semibold text-lg sm:text-xl text-gray-800 mb-4 sm:mb-6 flex items-center gap-3">
             <div className="w-3 h-3 bg-[#009E99] rounded-full"></div>Lead Funnel
           </h3>
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <ProgressBar
               label="New"
               count={newCount}
@@ -581,9 +618,9 @@ export const MainContent = () => {
             />
           </div>
         </div>
-        <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-xl text-gray-800">
+        <div className="bg-white p-4 sm:p-5 md:p-7 rounded-xl shadow-lg border border-gray-100">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 sm:mb-6">
+            <h3 className="font-semibold text-lg sm:text-xl text-gray-800">
               Total Revenue Overview
             </h3>
             <div className="text-right">
@@ -600,9 +637,9 @@ export const MainContent = () => {
               </p>
             </div>
           </div>
-          <div className="h-64 bg-gradient-to-br from-slate-50 via-white to-teal-50 rounded-xl p-4">
+          <div className="h-48 sm:h-56 md:h-64 bg-gradient-to-br from-slate-50 via-white to-teal-50 rounded-xl p-2 sm:p-4">
             <svg
-              className="w-full h-48"
+              className="w-full h-full"
               viewBox="0 0 400 100"
               preserveAspectRatio="none"
             >
@@ -632,86 +669,102 @@ export const MainContent = () => {
               )}
             </svg>
           </div>
-          <div className="flex justify-around mt-3 px-2">
-            {chartData.map((data, idx) => (
-              <div key={idx} className="text-center">
-                <div className="text-xs font-medium text-gray-500">
-                  {data.label}
+          {/* Responsive Chart Labels - only show subset on small screens */}
+          <div className="flex justify-around mt-2 sm:mt-3 px-1 sm:px-2 overflow-x-auto">
+            {visibleIndices.map((idx) => {
+              const data = chartData[idx];
+              if (!data) return null;
+              return (
+                <div
+                  key={idx}
+                  className="text-center min-w-[30px] sm:min-w-[40px]"
+                >
+                  <div className="text-[10px] sm:text-xs font-medium text-gray-500 truncate">
+                    {data.label}
+                  </div>
+                  <div className="text-[8px] sm:text-[10px] text-gray-400 mt-1">
+                    PKR {(data.amount / 1000).toFixed(1)}K
+                  </div>
                 </div>
-                <div className="text-[10px] text-gray-400 mt-1">
-                  PKR {(data.amount / 1000).toFixed(1)}K
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+      {/* Recent Leads Table & Activity Feed */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         <div className="xl:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="px-8 py-6 border-b bg-gradient-to-r from-slate-50 to-white flex justify-between items-center">
-            <h3 className="font-semibold text-xl text-gray-800">
+          <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b bg-gradient-to-r from-slate-50 to-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <h3 className="font-semibold text-lg sm:text-xl text-gray-800">
               Recent Leads
             </h3>
             <button
               onClick={handleNavigateToLeads}
-              className="text-[#009E99] hover:text-teal-700 font-medium flex items-center gap-1 transition"
+              className="text-[#009E99] hover:text-teal-700 font-medium flex items-center gap-1 transition text-sm"
             >
               View All →
             </button>
           </div>
-          <table className="w-full">
-            <thead className="bg-zinc-50 text-xs uppercase tracking-widest text-gray-500">
-              <tr>
-                <th className="p-5 text-left">Name</th>
-                <th className="p-5 text-left">Country</th>
-                <th className="p-5 text-left">Program</th>
-                <th className="p-5 text-left">Status</th>
-                <th className="p-5 text-left">Assigned To</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
+          {/* Horizontal scroll for table on mobile */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[500px]">
+              <thead className="bg-zinc-50 text-xs uppercase tracking-widest text-gray-500">
                 <tr>
-                  <td colSpan="5" className="text-center py-12 text-gray-400">
-                    Loading recent leads...
-                  </td>
+                  <th className="p-3 sm:p-5 text-left">Name</th>
+                  <th className="p-3 sm:p-5 text-left">Country</th>
+                  <th className="p-3 sm:p-5 text-left hidden sm:table-cell">
+                    Program
+                  </th>
+                  <th className="p-3 sm:p-5 text-left">Status</th>
+                  <th className="p-3 sm:p-5 text-left hidden md:table-cell">
+                    Assigned To
+                  </th>
                 </tr>
-              ) : recentLeads.length > 0 ? (
-                recentLeads.map((lead) => (
-                  <TableRow
-                    key={lead.id}
-                    name={lead.name || "—"}
-                    email={lead.email || "—"}
-                    country={lead.preferred_country || "—"}
-                    program={lead.education?.[0]?.degree || "—"}
-                    status={lead.status || "New"}
-                    color="bg-cyan-100 text-cyan-700"
-                    assigned={lead.counsellor?.name || "Unassigned"}
-                  />
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center py-12 text-gray-400">
-                    No leads found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-gray-400">
+                      Loading recent leads...
+                    </td>
+                  </tr>
+                ) : recentLeads.length > 0 ? (
+                  recentLeads.map((lead) => (
+                    <TableRow
+                      key={lead.id}
+                      name={lead.name || "—"}
+                      email={lead.email || "—"}
+                      country={lead.preferred_country || "—"}
+                      program={lead.education?.[0]?.degree || "—"}
+                      status={lead.status || "New"}
+                      color="bg-cyan-100 text-cyan-700"
+                      assigned={lead.counsellor?.name || "Unassigned"}
+                    />
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-gray-400">
+                      No leads found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div className="space-y-6">
-          <div className="bg-white p-7 rounded-xl shadow-lg border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-semibold text-xl text-gray-800">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-white p-4 sm:p-5 md:p-7 rounded-xl shadow-lg border border-gray-100">
+            <div className="flex justify-between items-center mb-4 sm:mb-6">
+              <h3 className="font-semibold text-lg sm:text-xl text-gray-800">
                 Live Activity
               </h3>
-              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-4 py-1 rounded-full text-xs font-medium">
+              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-xs font-medium">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
                 LIVE
               </div>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6 max-h-[400px] overflow-y-auto pr-2">
               {notifications.length > 0 ? (
                 notifications
                   .slice(0, 5)
@@ -736,7 +789,7 @@ export const MainContent = () => {
   );
 };
 
-/* ====================== Reusable Components ====================== */
+/* ====================== Reusable Components (Responsive Enhancements) ====================== */
 
 const StatCard = ({
   title,
@@ -749,34 +802,38 @@ const StatCard = ({
 }) => (
   <div
     onClick={onClick}
-    className={`bg-white px-6 py-2 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer group relative overflow-hidden h-full flex flex-col justify-between`}
+    className={`bg-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50 hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 transition-all duration-500 cursor-pointer group relative overflow-hidden h-full flex flex-col justify-between`}
   >
     <div
-      className={`absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br ${color} opacity-[0.08] rounded-full group-hover:scale-150 transition-transform duration-700`}
+      className={`absolute -right-4 -top-4 w-20 sm:w-24 h-20 sm:h-24 bg-gradient-to-br ${color} opacity-[0.08] rounded-full group-hover:scale-150 transition-transform duration-700`}
     />
     <div className="relative z-10">
       <div className="flex justify-between items-start">
-        <div className="space-y-1">
-          <p className="text-gray-700 text-xs font-bold tracking-wider">
+        <div className="space-y-0.5 sm:space-y-1">
+          <p className="text-gray-700 text-[10px] sm:text-xs font-bold tracking-wider">
             {title}
           </p>
-          <h2 className="text-3xl font-semibold text-gray-800 tracking-tight">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-800 tracking-tight">
             {value}
           </h2>
         </div>
         <div
-          className={`p-3 rounded-xl bg-gradient-to-br ${color} text-white shadow-lg`}
+          className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${color} text-white shadow-lg`}
         >
-          {React.cloneElement(icon, { size: 22, strokeWidth: 2.5 })}
+          {React.cloneElement(icon, {
+            size: 18,
+            strokeWidth: 2.5,
+            className: "sm:w-[22px] sm:h-[22px]",
+          })}
         </div>
       </div>
-      <div className="mt-6 flex items-center gap-2">
+      <div className="mt-3 sm:mt-6 flex flex-wrap items-center gap-1 sm:gap-2">
         <div
-          className={`flex items-center px-2 py-0.5 rounded-lg text-xs font-bold ${isNegative ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"}`}
+          className={`flex items-center px-1.5 sm:px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold ${isNegative ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"}`}
         >
           {isNegative ? "↓" : "↑"} {change}
         </div>
-        <span className="text-gray-400 text-[11px] font-medium italic">
+        <span className="text-gray-400 text-[9px] sm:text-[11px] font-medium italic">
           vs last month
         </span>
       </div>
@@ -788,13 +845,13 @@ const ProgressBar = ({ label, count, total, color }) => {
   const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div>
-      <div className="flex justify-between text-sm mb-2">
+      <div className="flex flex-col xs:flex-row justify-between text-xs sm:text-sm mb-1 sm:mb-2 gap-1">
         <span className="font-medium text-gray-700">{label}</span>
         <span className="text-gray-400 font-medium">
           {count} ({percentage}%)
         </span>
       </div>
-      <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2 sm:h-3 bg-gray-100 rounded-full overflow-hidden">
         {percentage > 0 && (
           <div
             className="h-full rounded-full transition-all duration-700"
@@ -816,44 +873,46 @@ const TableRow = ({
   assigned,
 }) => (
   <tr className="hover:bg-teal-50/50 transition-all group">
-    <td className="p-5">
-      <p className="font-semibold text-gray-800 group-hover:text-[#009E99]">
+    <td className="p-3 sm:p-5">
+      <p className="font-semibold text-gray-800 group-hover:text-[#009E99] text-sm sm:text-base">
         {name}
       </p>
-      <p className="text-xs text-gray-400 mt-1">{email}</p>
+      <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate max-w-[120px] sm:max-w-none">
+        {email}
+      </p>
     </td>
-    <td className="p-5 text-gray-600">{country}</td>
-    <td className="p-5 text-gray-600 font-medium">{program}</td>
-    <td className="p-5">
-      <span className={`px-4 py-1 text-xs font-semibold rounded-xl ${color}`}>
+    <td className="p-3 sm:p-5 text-gray-600 text-sm sm:text-base">{country}</td>
+    <td className="p-3 sm:p-5 text-gray-600 font-medium text-sm sm:text-base hidden sm:table-cell">
+      {program}
+    </td>
+    <td className="p-3 sm:p-5">
+      <span
+        className={`px-2 sm:px-4 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-xl ${color}`}
+      >
         {status}
       </span>
     </td>
-    <td className="p-5 text-gray-600">{assigned}</td>
+    <td className="p-3 sm:p-5 text-gray-600 text-sm sm:text-base hidden md:table-cell">
+      {assigned}
+    </td>
   </tr>
 );
 
-const ActionButton = ({ icon, label, color, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`bg-gradient-to-br ${color} text-white p-6 rounded-xl flex flex-col items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all duration-200 shadow-md`}
-  >
-    {icon}
-    <span className="text-xs font-medium tracking-wider">{label}</span>
-  </button>
-);
-
 const ActivityItem = ({ title, desc, time }) => (
-  <div className="flex gap-3 group">
-    <div className="w-10 h-10 bg-gradient-to-br from-[#009E99] to-teal-400 rounded-xl flex items-center justify-center shadow-inner">
-      <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+  <div className="flex gap-2 sm:gap-3 group">
+    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#009E99] to-teal-400 rounded-xl flex items-center justify-center shadow-inner flex-shrink-0">
+      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full animate-pulse" />
     </div>
-    <div className="flex-1">
-      <p className="font-medium text-gray-800 group-hover:text-teal-700 transition">
+    <div className="flex-1 min-w-0">
+      <p className="font-medium text-gray-800 group-hover:text-teal-700 transition text-sm sm:text-base truncate">
         {title}
       </p>
-      <p className="text-sm text-gray-500 mt-1 leading-snug">{desc}</p>
-      <p className="text-xs text-gray-400 mt-2">{time}</p>
+      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 leading-snug break-words">
+        {desc}
+      </p>
+      <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2">
+        {time}
+      </p>
     </div>
   </div>
 );

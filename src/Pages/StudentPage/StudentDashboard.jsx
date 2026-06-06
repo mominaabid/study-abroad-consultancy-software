@@ -74,7 +74,7 @@ const DOC_STATUS = {
   },
 };
 
-// ── Sub-components (StatCard, QuickAction, DocCard unchanged) ────────────────
+// ── Sub-components (StatCard, QuickAction, DocCard) with responsive improvements ──
 const StatCard = ({
   title,
   value,
@@ -87,7 +87,7 @@ const StatCard = ({
 }) => (
   <div
     onClick={onClick}
-    className={`relative group bg-white px-5 py-2 rounded-xl shadow-sm border border-gray-100
+    className={`relative group bg-white px-4 sm:px-5 py-3 sm:py-2 rounded-xl shadow-sm border border-gray-100
       transition-all duration-300 overflow-hidden
       ${clickable ? "cursor-pointer hover:shadow-lg hover:-translate-y-0.5" : ""}`}
   >
@@ -100,13 +100,13 @@ const StatCard = ({
         <p className="text-xs font-medium text-gray-800 tracking-wider">
           {title}
         </p>
-        <h2 className="text-2xl font-bold text-gray-900 mt-1.5 tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 tracking-tight">
           {value}
         </h2>
-        {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+        {sub && <p className="text-xs text-gray-400 mt-1 break-words">{sub}</p>}
       </div>
       <div
-        className="p-3 rounded-xl text-white shadow-sm flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+        className="p-2.5 sm:p-3 rounded-xl text-white shadow-sm flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
         style={{ background: gradient }}
       >
         {icon}
@@ -130,22 +130,22 @@ const QuickAction = ({ icon, label, color, bgColor, onClick, badge }) => (
   <button
     onClick={onClick}
     className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:shadow-md
-      transition-all duration-200 border border-gray-100 hover:border-gray-200 group bg-white"
+      transition-all duration-200 border border-gray-100 hover:border-gray-200 group bg-white min-h-[48px]"
   >
     <div className={`p-2 rounded-xl ${bgColor}`} style={{ color }}>
       {icon}
     </div>
-    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex-1 text-left">
+    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex-1 text-left break-words">
       {label}
     </span>
     {badge > 0 && (
-      <span className="bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+      <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
         {badge > 9 ? "9+" : badge}
       </span>
     )}
     <ChevronRight
       size={15}
-      className="text-gray-300 group-hover:text-gray-500 transition-colors"
+      className="text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0"
     />
   </button>
 );
@@ -153,13 +153,13 @@ const QuickAction = ({ icon, label, color, bgColor, onClick, badge }) => (
 function DocCard({ doc }) {
   const s = DOC_STATUS[doc.status] || DOC_STATUS.pending;
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white group">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col xs:flex-row xs:items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white group gap-2">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
           <FileText size={15} className="text-blue-500" />
         </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-800 capitalize leading-tight">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-800 capitalize leading-tight break-words">
             {DOC_TYPE_LABELS[doc.doc_type] ||
               doc.doc_type?.replace(/_/g, " ") ||
               "Document"}
@@ -170,7 +170,7 @@ function DocCard({ doc }) {
         </div>
       </div>
       <span
-        className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${s.bg} ${s.text}`}
+        className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 self-start xs:self-center ${s.bg} ${s.text}`}
       >
         <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
         {s.label}
@@ -210,12 +210,11 @@ export const StudentDashboard = () => {
 
   // ── Helper: group documents per application and compute verified/total ──
   const applicationsWithDocStats = useMemo(() => {
-    // Build a map: appId -> { verified, total }
     const statsMap = new Map();
 
     documents.forEach((doc) => {
-      const appId = doc.application_id; // IMPORTANT: documents must have application_id
-      if (!appId) return; // skip if not linked to any application
+      const appId = doc.application_id;
+      if (!appId) return;
 
       if (!statsMap.has(appId)) {
         statsMap.set(appId, { verified: 0, total: 0 });
@@ -227,7 +226,6 @@ export const StudentDashboard = () => {
       }
     });
 
-    // Attach stats to each application
     return applications.map((app) => ({
       ...app,
       docStats: statsMap.get(app.id) || { verified: 0, total: 0 },
@@ -279,19 +277,6 @@ export const StudentDashboard = () => {
     }
   };
 
-  // const fetchMobileDocs = async () => {
-  //   try {
-  //     const res = await fetch(`${BASE_URL}/student/documents/mobile-docs`, {
-  //       headers: { Authorization: `Bearer ${getToken()}` },
-  //     });
-  //     const data = await res.json();
-  //     console.log("Mobile docs:", data);
-  //     return data;
-  //   } catch (err) {
-  //     console.error("Error fetching mobile docs:", err);
-  //   }
-  // };
-
   const fetchMobileDocs = async () => {
     try {
       const res = await fetch(`${BASE_URL}/student/documents/mobile-docs`, {
@@ -334,17 +319,16 @@ export const StudentDashboard = () => {
     fetchDocStats();
   }, []);
 
-  // ── Derived global calculations (optional) ─────────────────────────────────
+  // ── Derived global calculations ─────────────────────────────────
   const verifiedDocs = documents.filter((d) => d.status === "verified").length;
   const totalUploaded = documents.length;
-  // const totalRequired = applications.length * 9;
   const totalRequired = applications.length * (mobileDocs.length || 0);
   const progressPct =
     totalRequired === 0
       ? 0
       : Math.min(100, Math.round((verifiedDocs / totalRequired) * 100));
 
-  const counsellorName = "Not Assigned"; // placeholder
+  const counsellorName = "Not Assigned";
   const activeApplicationsCount = applications.filter(
     (app) => app.status !== "rejected" && app.status !== "completed",
   ).length;
@@ -357,7 +341,6 @@ export const StudentDashboard = () => {
     )
     .slice(0, 3);
 
-  // Group documents according to application
   const groupedDocuments = useMemo(() => {
     return applications.map((app) => {
       const appDocs = documents.filter(
@@ -372,20 +355,24 @@ export const StudentDashboard = () => {
   }, [applications, documents]);
 
   return (
-    <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      {/* SSE Connection Status Indicator */}
+    <main className="bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden p-4 sm:p-5 md:p-6 lg:p-8">
+      {/* SSE Connection Status Indicator - Responsive positioning */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-gray-200">
           <div
             className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
           />
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-gray-600 hidden xs:inline">
             {isConnected ? "Live Updates" : "Reconnecting..."}
+          </span>
+          <span className="text-xs text-gray-600 xs:hidden">
+            {isConnected ? "Live" : "Offline"}
           </span>
           {!isConnected && (
             <button
               onClick={reconnect}
               className="ml-1 p-1 hover:bg-gray-100 rounded-full transition"
+              aria-label="Reconnect"
             >
               <RefreshCw size={12} className="text-gray-500" />
             </button>
@@ -393,10 +380,10 @@ export const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* Real‑time Notification Toast */}
+      {/* Real‑time Notification Toast - Responsive sizing */}
       {showNotification && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
-          <div className="bg-white rounded-xl shadow-lg border-l-4 border-teal-500 p-4 max-w-sm">
+        <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="bg-white rounded-xl shadow-lg border-l-4 border-teal-500 p-4 max-w-[calc(100%-2rem)] sm:max-w-sm mx-auto sm:mx-0">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
                 {showNotification.type === "document_verified" && (
@@ -415,18 +402,19 @@ export const StudentDashboard = () => {
                   <AlertCircle size={20} className="text-teal-500" />
                 )}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-800">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 break-words">
                   {showNotification.type?.replace(/_/g, " ").toUpperCase() ||
                     "Update"}
                 </p>
-                <p className="text-xs text-gray-600 mt-0.5">
+                <p className="text-xs text-gray-600 mt-0.5 break-words">
                   {showNotification.message}
                 </p>
               </div>
               <button
                 onClick={() => setShowNotification(null)}
                 className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                aria-label="Close notification"
               >
                 <XCircle size={16} />
               </button>
@@ -435,10 +423,8 @@ export const StudentDashboard = () => {
         </div>
       )}
 
-      {/* Welcome Banner (unchanged) */}
-
-      {/* Stats Grid (global counts – optional but kept) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+      {/* Stats Grid - Responsive columns */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
         <StatCard
           title="Active Applications"
           value={appsLoading ? "..." : activeApplicationsCount}
@@ -449,7 +435,7 @@ export const StudentDashboard = () => {
           clickable
         />
         <StatCard
-          title="Verified Documents (Global)"
+          title="Verified Documents"
           value={docsLoading ? "..." : `${verifiedDocs}/${totalRequired}`}
           icon={<CheckCircle size={20} />}
           gradient="linear-gradient(135deg,#3b82f6,#2563eb)"
@@ -459,16 +445,16 @@ export const StudentDashboard = () => {
         />
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      {/* Main Grid - Responsive columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
         {/* Left column: Recent Applications + Documents */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Recent Applications Section – now with per‑application document verification */}
+        <div className="lg:col-span-2 space-y-5 sm:space-y-6">
+          {/* Recent Applications Section */}
           {!appsLoading && applicationsWithDocStats.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="font-bold text-gray-800 text-lg">
+                  <h3 className="font-bold text-gray-800 text-base sm:text-lg">
                     Recent Applications
                   </h3>
                   <p className="text-xs text-gray-400 mt-0.5">
@@ -477,12 +463,12 @@ export const StudentDashboard = () => {
                 </div>
                 <button
                   onClick={() => navigate("/student/application")}
-                  className="text-teal-600 text-xs font-semibold hover:underline"
+                  className="text-teal-600 text-xs font-semibold hover:underline py-2 px-3 -m-2 self-start sm:self-auto"
                 >
                   View All →
                 </button>
               </div>
-              <div className="p-5 space-y-4">
+              <div className="p-4 sm:p-5 space-y-4">
                 {recentApplications.map((app) => {
                   const { verified, total } = app.docStats;
                   const percent = total === 0 ? 0 : (verified / total) * 100;
@@ -492,26 +478,26 @@ export const StudentDashboard = () => {
                       className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white cursor-pointer"
                       onClick={() => navigate("/student/application")}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center">
+                      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center flex-shrink-0">
                             <GraduationCap
                               size={18}
                               className="text-teal-600"
                             />
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-800 break-words">
                               {app.target_university ||
                                 "University Application"}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 break-words">
                               {app.course || "Course not specified"}
                             </p>
                           </div>
                         </div>
                         <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full self-start xs:self-center ${
                             app.status === "In Progress" ||
                             app.status === "pending"
                               ? "bg-amber-100 text-amber-700"
@@ -526,7 +512,6 @@ export const StudentDashboard = () => {
                           {app.status || "In Progress"}
                         </span>
                       </div>
-                      {/* Per‑application document verification details */}
                       <div className="mt-3 pt-2 border-t border-gray-50">
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-gray-500">
@@ -556,11 +541,11 @@ export const StudentDashboard = () => {
             </div>
           )}
 
-          {/* Documents Section (unchanged, still global) */}
+          {/* Documents Section */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="font-bold text-gray-800 text-lg">
+                <h3 className="font-bold text-gray-800 text-base sm:text-lg">
                   My Documents
                 </h3>
                 <p className="text-xs text-gray-400 mt-0.5">
@@ -569,14 +554,14 @@ export const StudentDashboard = () => {
               </div>
               <button
                 onClick={() => navigate("/student/application")}
-                className="flex items-center gap-2 bg-teal-600 text-white text-xs font-semibold px-4 py-2 rounded-xl hover:bg-teal-700 transition shadow-sm shadow-teal-200"
+                className="flex items-center justify-center gap-2 bg-teal-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-teal-700 transition shadow-sm shadow-teal-200 min-h-[40px]"
               >
                 <Upload size={12} /> Upload
               </button>
             </div>
 
             {/* Progress bar */}
-            <div className="px-6 py-3 border-b border-gray-50 bg-gray-50/50">
+            <div className="px-4 sm:px-6 py-3 border-b border-gray-50 bg-gray-50/50">
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-gray-500 font-medium">
                   Document completion
@@ -595,7 +580,7 @@ export const StudentDashboard = () => {
             </div>
 
             {/* Doc list */}
-            <div className="p-5 space-y-2.5">
+            <div className="p-4 sm:p-5 space-y-2.5">
               {docsLoading ? (
                 <div className="text-center py-8">
                   <div className="w-5 h-5 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin mx-auto" />
@@ -613,53 +598,45 @@ export const StudentDashboard = () => {
                   </p>
                   <button
                     onClick={() => navigate("/student/application")}
-                    className="mt-3 bg-teal-600 text-white text-xs font-semibold px-5 py-2 rounded-xl hover:bg-teal-700 transition"
+                    className="mt-3 bg-teal-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-teal-700 transition min-h-[40px]"
                   >
                     Upload Now
                   </button>
                 </div>
               ) : (
                 <>
-                  {/* {documents.slice(0, 5).map((doc) => (
-                    <DocCard key={doc.id} doc={doc} />
-                  ))} */}
-
                   {groupedDocuments.length === 0 ? (
                     <div className="text-center py-10">
                       <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-3 border border-dashed border-gray-200">
                         <Upload size={22} className="text-gray-300" />
                       </div>
-
                       <p className="text-gray-500 text-sm font-semibold">
                         No documents uploaded yet
                       </p>
-
                       <p className="text-gray-400 text-xs mt-1">
                         Upload your required documents to proceed
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                       {groupedDocuments.map((app) => (
                         <div
                           key={app.id}
                           className="border border-gray-100 rounded-xl overflow-hidden"
                         >
-                          {/* Application Header */}
+                          {/* Application Header - Responsive stacking */}
                           <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="text-sm font-bold text-gray-800">
+                            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
+                              <div className="min-w-0">
+                                <h4 className="text-sm font-bold text-gray-800 break-words">
                                   {app.target_university ||
                                     "University Application"}
                                 </h4>
-
-                                <p className="text-xs text-gray-500 mt-0.5">
+                                <p className="text-xs text-gray-500 mt-0.5 break-words">
                                   {app.course || "Course not specified"}
                                 </p>
                               </div>
-
-                              <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full">
+                              <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full self-start xs:self-center">
                                 {app.documents.length} Document
                                 {app.documents.length !== 1 ? "s" : ""}
                               </span>
@@ -687,7 +664,7 @@ export const StudentDashboard = () => {
                   {documents.length > 5 && (
                     <button
                       onClick={() => navigate("/student/application")}
-                      className="w-full text-center text-xs text-teal-600 font-semibold py-2 hover:underline"
+                      className="w-full text-center text-xs text-teal-600 font-semibold py-3 hover:underline mt-2"
                     >
                       View all {documents.length} documents →
                     </button>
@@ -698,9 +675,9 @@ export const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Right column: Quick Actions + Document Summary (unchanged) */}
-        <div className="space-y-5">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        {/* Right column: Quick Actions + Document Summary */}
+        <div className="space-y-4 sm:space-y-5">
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
               <div className="w-2 h-2 bg-amber-400 rounded-full" />
               Quick Actions
@@ -719,7 +696,7 @@ export const StudentDashboard = () => {
                 label="Chat with Counsellor"
                 color="#3b82f6"
                 bgColor="bg-blue-50"
-                onClick={() => navigate("/student/chat")}
+                onClick={() => navigate("/student/chats")}
               />
               <QuickAction
                 icon={<FileText size={16} />}
@@ -732,10 +709,10 @@ export const StudentDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
               <div className="w-2 h-2 bg-purple-400 rounded-full" />
-              Document Status Summary (Global)
+              Document Status Summary
             </h3>
             <div className="space-y-3">
               {[
