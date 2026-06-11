@@ -1,10 +1,11 @@
-// Header.jsx - Fixed Notification Dropdown (Portal + Dynamic Positioning)
+// Header.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Menu,
+  X,
   LogOut,
   User as UserIcon,
   ChevronDown,
@@ -15,6 +16,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import { logout, selectUser } from "../redux/slices/authSlice";
 import {
   selectNotifications,
@@ -25,8 +27,11 @@ import {
 } from "../redux/slices/notificationSlice";
 import axios from "axios";
 import { BASE_URL } from "../Content/Url";
+import { Title } from "./Title";
+import { EditButton } from "../Components/CustomButtons/EditButton";
+import { CancelButton } from "../Components/CustomButtons/CancelButton";
 
-export const Header = () => {
+export const Header = ({ isOpen, setIsOpen }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -39,9 +44,7 @@ export const Header = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  // Refs for positioning the notification dropdown
   const bellButtonRef = useRef(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
 
@@ -62,7 +65,6 @@ export const Header = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
-      // For portal dropdown, check click outside bell button and dropdown content
       if (
         notifOpen &&
         bellButtonRef.current &&
@@ -78,8 +80,7 @@ export const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
 
-  // Calculate dropdown position when it opens or on resize/scroll
-  // Calculate dropdown position when it opens or on resize/scroll
+  // Calculate dropdown position
   useEffect(() => {
     if (!notifOpen) return;
 
@@ -88,24 +89,21 @@ export const Header = () => {
         const rect = bellButtonRef.current.getBoundingClientRect();
         const dropdownWidth = 320;
         const viewportWidth = window.innerWidth;
-        const isMobile = viewportWidth <= 768; // adjust breakpoint as needed
+        const isMobile = viewportWidth <= 768;
 
         let left;
         if (isMobile) {
-          // Center the dropdown horizontally
           left = (viewportWidth - dropdownWidth) / 2 + window.scrollX;
-          // Optional: ensure it doesn't go off-screen on very small devices
           if (left < 8) left = 8;
           if (left + dropdownWidth > viewportWidth + window.scrollX - 8) {
             left = viewportWidth + window.scrollX - dropdownWidth - 8;
           }
         } else {
-          // Original behavior: align right edge with bell button's right edge
           left = rect.right - dropdownWidth + window.scrollX;
         }
 
         setDropdownPosition({
-          top: rect.bottom + window.scrollY + 8, // 8px gap below button
+          top: rect.bottom + window.scrollY + 8,
           left: left,
         });
       }
@@ -147,80 +145,50 @@ export const Header = () => {
 
   const handleNotificationClick = (notification) => {
     const role = user?.role;
-
-    console.log("Notification clicked:", notification);
-
     switch (notification.type) {
       case "counsellor_added_lead":
-        if (role === "admin") {
-          navigate("/admin/leads");
-        }
+        if (role === "admin") navigate("/admin/leads");
         return;
-
       case "application_created":
       case "application_updated":
       case "application_deleted":
       case "status_change":
-        if (role === "student") {
-          navigate("/student/application");
-        }
+        if (role === "student") navigate("/student/application");
         return;
-
       case "counsellor_added_application":
-        if (role === "admin") {
-          navigate("/admin/applications");
-        } else if (role === "student") {
-          navigate("/student/application");
-        }
+        if (role === "admin") navigate("/admin/applications");
+        else if (role === "student") navigate("/student/application");
         return;
-
       case "document_shared":
       case "document_verified":
       case "document_rejected":
-        if (role === "student") {
-          navigate("/student/documents");
-        }
+        if (role === "student") navigate("/student/documents");
         return;
-
       case "payment_awaiting_verification":
-        if (role === "admin") {
-          navigate("/admin/payments");
-        }
+        if (role === "admin") navigate("/admin/payments");
         break;
-
       case "payment_verified":
       case "payment_rejected":
-        if (role === "student") {
-          navigate("/student/payments");
-        }
+        if (role === "student") navigate("/student/payments");
         break;
-
       case "payment_added_by_admin":
-        if (role === "student") {
-          navigate("/student/payments");
-        }
+        if (role === "student") navigate("/student/payments");
         break;
-
       case "chat_message": {
         let chatPath = "";
-
         if (role === "admin") chatPath = "/admin/chats";
         else if (role === "counsellor") chatPath = "/counsellor/chats";
         else if (role === "student") chatPath = "/student/chats";
 
         const conversationId = notification.metadata?.conversationId;
-
         if (conversationId) {
           navigate(chatPath, { state: { conversationId } });
         } else {
           navigate(chatPath);
         }
-
         return;
       }
-
       default:
-        console.log("Unhandled notification type:", notification.type);
         return;
     }
   };
@@ -241,12 +209,7 @@ export const Header = () => {
   };
 
   const resetPasswordForm = () => {
-    setPasswordData({
-      oldPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-    setError("");
+    setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
     setShowOldPassword(false);
     setShowNewPassword(false);
     setShowConfirmPassword(false);
@@ -255,28 +218,37 @@ export const Header = () => {
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswordData((prev) => ({ ...prev, [name]: value }));
-    if (error) setError("");
   };
 
   const validateForm = () => {
     if (!passwordData.oldPassword.trim()) {
-      setError("Old password is required");
+      toast.error("Old password is required", {
+        toastId: "err-old-pass-required",
+      });
       return false;
     }
     if (!passwordData.newPassword.trim()) {
-      setError("New password is required");
+      toast.error("New password is required", {
+        toastId: "err-new-pass-required",
+      });
       return false;
     }
     if (passwordData.newPassword.length < 6) {
-      setError("New password must be at least 6 characters");
+      toast.error("New password must be at least 6 characters", {
+        toastId: "err-pass-minlength",
+      });
       return false;
     }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError("New password and confirm password do not match");
+      toast.error("New password and confirm password do not match", {
+        toastId: "err-pass-mismatch",
+      });
       return false;
     }
     if (passwordData.oldPassword === passwordData.newPassword) {
-      setError("New password must be different from old password");
+      toast.error("New password must be different from old password", {
+        toastId: "err-same-password",
+      });
       return false;
     }
     return true;
@@ -284,9 +256,7 @@ export const Header = () => {
 
   const submitPasswordChange = async () => {
     if (!validateForm()) return;
-
     setLoading(true);
-    setError("");
 
     try {
       const response = await axios.post(
@@ -303,25 +273,29 @@ export const Header = () => {
       );
 
       if (response.data.success) {
-        alert("Password changed successfully! Please login again.");
+        toast.success("Password changed successfully! Please login again.", {
+          toastId: "success-pass-change",
+        });
         dispatch(logout());
         navigate("/login");
       } else {
-        setError(response.data.message || "Failed to change password");
+        toast.error(response.data.message || "Failed to change password", {
+          toastId: "err-pass-change-failed",
+        });
       }
     } catch (err) {
-      console.error("Change password error:", err);
-      setError(
-        err.response?.data?.message || "An error occurred. Please try again.",
-      );
+      toast.error(err.response?.data?.message || "An error occurred.", {
+        toastId: "err-pass-change-exception",
+      });
     } finally {
       setLoading(false);
+      setChangePasswordOpen(false);
+      resetPasswordForm();
     }
   };
 
   const getTitle = () => {
     const role = user?.role;
-
     const menuMap = {
       admin: [
         { path: "/admin/dashboard", name: "Dashboard" },
@@ -366,16 +340,22 @@ export const Header = () => {
     <>
       <nav className="bg-white shadow-sm w-full sticky top-0 z-[50]">
         <div className="px-4 h-16 flex items-center justify-between">
-          {/* Left Section */}
-          <div className="flex items-center gap-4">
-            <span className="text-sm sm:text-base md:text-xl font-bold text-gray-800 whitespace-nowrap ml-2">
+          {/* LEFT SECTION WITH INTEGRATED TOGGLE BUTTON */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors focus:outline-none"
+              aria-label="Toggle Menu"
+            >
+              {isOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+            <span className="text-base sm:text-lg md:text-xl font-bold text-gray-800 whitespace-nowrap ml-1">
               {getTitle()}
             </span>
           </div>
-
           {/* Right Section */}
           <div className="flex items-center space-x-3 sm:space-x-5">
-            {/* Notification Bell Button */}
+            {/* Notification Bell */}
             <div className="relative">
               <button
                 ref={bellButtonRef}
@@ -456,7 +436,7 @@ export const Header = () => {
         </div>
       </nav>
 
-      {/* NOTIFICATION DROPDOWN – RENDERED VIA PORTAL TO STAY ABOVE SIDEBAR */}
+      {/* Notifications Portal */}
       {notifOpen &&
         createPortal(
           <div
@@ -516,7 +496,7 @@ export const Header = () => {
           document.body,
         )}
 
-      {/* Change Password Modal (unchanged) */}
+      {/* Change Password Modal */}
       {changePasswordOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-200"
@@ -531,30 +511,18 @@ export const Header = () => {
             ref={modalRef}
             className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all"
           >
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Lock size={20} className="text-teal-600" />
-                Change Password
-              </h3>
-              <button
-                onClick={() => {
-                  setChangePasswordOpen(false);
-                  resetPasswordForm();
-                }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
+            <Title
+              setModal={() => {
+                setChangePasswordOpen(false);
+                resetPasswordForm();
+              }}
+            >
+              Change Password
+            </Title>
 
             <div className="p-6 space-y-4">
-              {error && (
-                <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
-                  {error}
-                </div>
-              )}
+              {/* No inline error div – all messages use toast with IDs */}
 
-              {/* Old Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Old Password
@@ -578,7 +546,6 @@ export const Header = () => {
                 </div>
               </div>
 
-              {/* New Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   New Password
@@ -605,7 +572,6 @@ export const Header = () => {
                 </p>
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Confirm New Password
@@ -633,30 +599,17 @@ export const Header = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => {
+              <div className="flex gap-3 pt-2 justify-end">
+                <CancelButton
+                  handleCancel={() => {
                     setChangePasswordOpen(false);
                     resetPasswordForm();
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={submitPasswordChange}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Changing...
-                    </>
-                  ) : (
-                    "Change Password"
-                  )}
-                </button>
+                />
+                <EditButton
+                  handleUpdate={submitPasswordChange}
+                  isLoading={loading}
+                />
               </div>
             </div>
           </div>

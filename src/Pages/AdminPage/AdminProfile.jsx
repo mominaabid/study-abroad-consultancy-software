@@ -382,9 +382,9 @@ export const AdminProfile = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6 overflow-x-hidden">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4 md:p-6 overflow-x-hidden">
       {/* Main container - responsive padding */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 md:p-8 max-w-10xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 xl:gap-12">
           {/* Left Section - Profile Summary */}
           <div className="lg:w-1/3 lg:border-r lg:border-gray-200 lg:pr-6 xl:pr-8">

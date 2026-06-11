@@ -10,6 +10,7 @@ import { AddCounsellorModal } from "../../Components/CounsellorModal/AddCounsell
 import { EditCounsellorModal } from "../../Components/CounsellorModal/EditCounsellorModal";
 import { ViewCounsellorModal } from "../../Components/CounsellorModal/ViewCounsellorModal";
 import { DeleteConfirmationModal } from "../../Components/DeleteConfirmationModal";
+import { AddBtnInHeader } from "../../Components/CustomButtons/AddBtnInHeader";
 
 const isLeadInCounsellingStage = (lead) => {
   const stageField =
@@ -189,8 +190,16 @@ export const Counsellor = () => {
 
   return (
     <div className="flex flex-col h-full w-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-x-hidden overflow-y-auto font-sans text-slate-700">
+      {/* ── Mobile top bar: only Add button on top right ── */}
+      <div className="flex justify-end items-center px-4 pt-3 sm:hidden">
+        <AddBtnInHeader
+          label="Add Counsellor"
+          handleToggle={() => setIsAddOpen(true)}
+        />
+      </div>
+
       {/* ── Stats Section ── */}
-      <div className="flex-shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4">
+      <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4">
         <CounsellorStatCard label="Total Counselors" value={stats.total} />
         <CounsellorStatCard label="Active" value={stats.active} />
         <CounsellorStatCard
@@ -203,39 +212,42 @@ export const Counsellor = () => {
         />
       </div>
 
-      {/* ── Top Header ── */}
-      <div className="flex-shrink-0 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Left: Count info */}
-          <div>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {filteredCounsellors.length} total counsellors
-            </p>
-          </div>
+      {/* ── Mobile search (only visible on mobile) ── */}
+      <div className="sm:hidden px-4 pb-2">
+        <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100 w-full">
+          <Search size={16} className="text-gray-400 flex-shrink-0" />
+          <input
+            placeholder="Search counsellors..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent outline-none text-[13px] text-gray-700 placeholder-gray-400 w-full"
+            aria-label="Search counsellors"
+          />
+        </div>
+      </div>
 
-          {/* Right: Search + Add button — optimized for mobile stacking */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            {/* Search input - full width on mobile, auto on larger screens */}
-            <div className="flex items-center gap-2 h-10 sm:h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100 w-full sm:min-w-[240px] md:min-w-[280px]">
-              <Search size={16} className="text-gray-400 flex-shrink-0" />
-              <input
-                placeholder="Search counsellors..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent outline-none text-[13px] sm:text-sm text-gray-700 placeholder-gray-400 w-full"
-                aria-label="Search counsellors"
-              />
-            </div>
-
-            {/* Add button - increased touch target on mobile */}
-            <button
-              onClick={() => setIsAddOpen(true)}
-              className="flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-[36px] h-auto sm:h-9 px-4 bg-teal-600 text-white rounded-xl text-[12.5px] font-semibold hover:bg-teal-700 transition shadow-md shadow-teal-200 whitespace-nowrap w-full sm:w-auto"
-            >
-              <span className="text-base sm:text-sm leading-5">+</span>
-              Add Counsellor
-            </button>
+      {/* ── Desktop header (search + add) – hidden on mobile ── */}
+      <div className="hidden sm:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4">
+        <div>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {filteredCounsellors.length} total counsellors
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="flex items-center gap-2 px-3 py-2 sm:py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100 w-full sm:min-w-[240px] md:min-w-[280px]">
+            <Search size={16} className="text-gray-400 flex-shrink-0" />
+            <input
+              placeholder="Search counsellors..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-transparent outline-none text-[13px] sm:text-sm text-gray-700 placeholder-gray-400 w-full"
+              aria-label="Search counsellors"
+            />
           </div>
+          <AddBtnInHeader
+            label="Add Counsellor"
+            handleToggle={() => setIsAddOpen(true)}
+          />
         </div>
       </div>
 
@@ -243,7 +255,6 @@ export const Counsellor = () => {
       <div className="px-4 sm:px-6 pb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {filteredCounsellors.map((c) => (
-            // Wrapper div ensures card doesn't cause horizontal overflow
             <div key={c.id || c._id} className="min-w-0 w-full">
               <CounselorCard
                 counselor={c}
@@ -256,7 +267,7 @@ export const Counsellor = () => {
         </div>
 
         {filteredCounsellors.length === 0 && (
-          <div className="text-center py-12 sm:py-20 bg-white rounded-xl border border-dashed border-slate-300 mt-6 mx-0">
+          <div className="text-center py-12 sm:py-20 bg-white rounded-lg border border-dashed border-slate-300 mt-6 mx-0">
             <p className="text-slate-500 italic px-4">
               No counsellors found matching your search
             </p>

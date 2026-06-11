@@ -1,21 +1,27 @@
+/* Update these key layout variables to prevent layout engine overlapping */
 .private-layout {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
-  background: #f4f6f9;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
 }
 
+/* Ensure right main section container consumes remaining space perfectly */
 .private-layout__right {
-  flex: 1;
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
-  transition: margin-left 0.3s ease; /* matches sidebar transition duration */
+  transition: margin-left 0.3s ease-in-out;
+  margin-left: 0; /* Handled directly via responsive view class hooks */
 }
 
 .private-layout__content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  flex-grow: 1;
+  padding: 1.5rem;
+}
+
+/* PrivateLayout.css or any global stylesheet */
+.mobile-sidebar-lock .sidebar-toggle-btn {
+  pointer-events: auto !important;
 }

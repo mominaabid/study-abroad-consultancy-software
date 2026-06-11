@@ -5,6 +5,8 @@ import axios from "axios";
 import { Title } from "../Title";
 import SearchableSelect from "../SearchableSelect";
 import { BASE_URL } from "../../Content/Url";
+import { AddButton } from "../../Components/CustomButtons/AddButton";
+import { CancelButton } from "../../Components/CustomButtons/CancelButton";
 
 import {
   User,
@@ -51,7 +53,7 @@ const STATUS_OPTIONS = [
 
 function FormField({ label, required, children, error }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-0">
       <label className="text-sm font-medium text-gray-700">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
@@ -468,14 +470,7 @@ export default function CreateApplicationModal({
                   name="user_id"
                   value={formData.user_id}
                   onChange={handleFieldChange}
-                  // options={students.map((s) => ({
-                  //   value: String(s.user_id || s.id),
-                  //   label: `${s.name} - ${s.email}`,
-                  //   icon: <User size={14} className="text-slate-400" />,
-                  // }))}
-
                   options={counselingStudents.map((s) => ({
-                    // ← use filtered list
                     value: String(s.user_id || s.id),
                     label: `${s.name} - ${s.email}`,
                     icon: <User size={14} className="text-slate-400" />,
@@ -544,7 +539,7 @@ export default function CreateApplicationModal({
                     name="deadline"
                     value={formData.deadline}
                     onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
               </div>
@@ -565,10 +560,10 @@ export default function CreateApplicationModal({
                       value={formData.consultancy_fee}
                       onChange={handleFieldChange}
                       placeholder="Enter consultancy fee"
-                      required // ← add HTML5 required attribute
+                      required
                       minLength={3}
                       maxLength={12}
-                      className="w-full border border-slate-300 rounded-xl pl-12 pr-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
+                      className="w-full border border-slate-300 rounded-lg pl-12 pr-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                     />
                   </div>
                 </FormField>
@@ -601,7 +596,7 @@ export default function CreateApplicationModal({
                     value={formData.full_name}
                     onChange={handleFieldChange}
                     readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
 
@@ -613,7 +608,7 @@ export default function CreateApplicationModal({
                     value={formData.email}
                     onChange={handleFieldChange}
                     readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
 
@@ -636,7 +631,7 @@ export default function CreateApplicationModal({
                     name="english_proficiency_test"
                     value={formData.english_proficiency_test}
                     onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
 
@@ -650,7 +645,7 @@ export default function CreateApplicationModal({
                     name="english_test_overall_score"
                     value={formData.english_test_overall_score}
                     onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
               </div>
@@ -663,7 +658,7 @@ export default function CreateApplicationModal({
                   <RefreshCw size={24} className="animate-spin text-teal-500" />
                 </div>
               ) : educationEntries.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
                   <GraduationCap
                     size={32}
                     className="mx-auto mb-2 opacity-50"
@@ -675,10 +670,10 @@ export default function CreateApplicationModal({
                   {educationEntries.map((edu) => (
                     <div
                       key={edu.id}
-                      className="group relative bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
+                      className="group relative bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg">
+                        <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg">
                           {edu.degree?.charAt(0)?.toUpperCase() || "D"}
                         </div>
                         <div className="flex-1">
@@ -706,11 +701,6 @@ export default function CreateApplicationModal({
                   ))}
                 </div>
               )}
-              <p className="text-xs text-slate-400 mt-2">
-                * Educational information is fetched directly from the student's
-                lead record. Click the <strong>eye icon</strong> on any card to
-                copy its details into the "Student Details" fields above.
-              </p>
             </InfoSection>
 
             {/* Additional Information */}
@@ -723,35 +713,21 @@ export default function CreateApplicationModal({
                   onChange={handleFieldChange}
                   minLength={3}
                   maxLength={255}
-                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none resize-none"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none resize-none"
                   placeholder="Internal notes about this application..."
                 />
               </FormField>
             </InfoSection>
           </div>
 
-          <div className="p-6 border-t border-slate-100 bg-white flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
+          {/* Buttons aligned to the right side */}
+          <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-3">
+            <CancelButton handleCancel={onClose} />
+            <AddButton
+              label="Create Application"
+              loading={loading}
               disabled={loading}
-              className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition disabled:opacity-70 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                "Create Application"
-              )}
-            </button>
+            />
           </div>
         </form>
       </div>

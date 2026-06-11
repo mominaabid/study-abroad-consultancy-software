@@ -76,7 +76,7 @@ export default function CountrySelect({
         <div
           onClick={() => setIsOpen(!isOpen)}
           className={`w-full border ${error ? "border-red-400" : "border-gray-200"} 
-                     rounded-xl px-4 py-2.5 cursor-pointer flex items-center justify-between hover:border-teal-400 transition-all`}
+                     rounded-lg px-4 py-2.5 cursor-pointer flex items-center justify-between hover:border-teal-400 transition-all`}
         >
           <div className="flex items-center gap-3">
             <Globe size={18} className="text-gray-400" />
@@ -88,7 +88,7 @@ export default function CountrySelect({
         </div>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
             <div className="p-3 border-b sticky top-0 bg-white">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

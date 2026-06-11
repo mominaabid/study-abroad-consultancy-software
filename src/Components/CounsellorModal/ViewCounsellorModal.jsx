@@ -12,6 +12,8 @@ import {
   XCircleIcon,
 } from "lucide-react";
 import { Title } from "../Title";
+import { CancelButton } from "../../Components/CustomButtons/CancelButton";
+
 
 export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
   if (!isOpen || !counselor) return null;
@@ -100,12 +102,7 @@ export const ViewCounsellorModal = ({ isOpen, onClose, counselor }) => {
         </div>
 
         <div className="px-8 py-5 bg-slate-50 border-t border-slate-100 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-8 py-2.5 bg-slate-700 text-white rounded-lg  transition-all text-sm font-semibold shadow-lg shadow-slate-200"
-          >
-            Close
-          </button>
+          <CancelButton handleCancel={onClose} />
         </div>
       </div>
     </div>

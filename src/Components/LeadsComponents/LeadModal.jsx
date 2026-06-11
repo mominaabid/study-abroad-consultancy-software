@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { SOURCES, STUDY_LEVELS, EMPTY_FORM } from "./LeadsConstants";
 import { InputField } from "../InputFields/InputField";
+import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
 import { COUNTRIES } from "../../constants/countries";
@@ -350,7 +351,7 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+      <label className="block text-xl font-semibold text-gray-900  mb-1.5">
         Assign Counsellor
       </label>
       <div
@@ -1214,7 +1215,7 @@ export default function LeadModal() {
               </button>
 
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                <h1 className="text-xl md:text-xl font-semibold text-slate-900">
                   Assign Counsellor
                 </h1>
                 <p className="text-sm text-slate-500 mt-1">
@@ -1493,7 +1494,7 @@ export default function LeadModal() {
           >
             <ArrowLeft size={20} className="text-gray-600" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-xl font-semibold text-gray-900">
             {mode === "add"
               ? "Add New Lead"
               : isCounsellor
@@ -1504,7 +1505,7 @@ export default function LeadModal() {
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow-sm overflow-hidden"
+          className="bg-white rounded-2xl shadow-sm"
         >
           <div className="p-6 space-y-8">
             {/* Personal Information */}
@@ -1564,21 +1565,23 @@ export default function LeadModal() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Home Address{" "}
-                  </label>
                   <div className="relative">
-                    <Home
-                      className="absolute left-3 top-3 text-slate-400"
-                      size={16}
-                    />
-                    <textarea
+                    {/* <textarea
                       name="home_address"
                       value={form.home_address}
                       onChange={handleCustomChange}
                       rows={2}
                       maxLength={255}
                       className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                    /> */}
+
+                    <TextareaField
+                      labelName="Home Address"
+                      name="home_address"
+                      value={form.home_address}
+                      handlerChange={handleCustomChange}
+                      maxLength={255}
+                      className="rounded-xl border-slate-300 focus:border-blue-500 resize-none w-full"
                     />
                   </div>
                 </div>
@@ -1651,10 +1654,10 @@ export default function LeadModal() {
                           ? "Max 5 countries selected"
                           : "Type to search countries..."
                       }
-                      className="w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none transition-colors border-slate-300 focus:border-blue-500 bg-white"
+                      className="w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:outline-none transition-colors border-slate-300 focus:border-blue-500 bg-white"
                     />
                     {countryDropdownOpen && countrySearchTerm && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-52 overflow-auto py-1">
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-52 overflow-auto py-1">
                         {filteredCountries.length === 0 ? (
                           <div className="px-4 py-3 text-sm text-slate-400">
                             No countries found
@@ -1703,7 +1706,7 @@ export default function LeadModal() {
                 Educational Information
               </h3>
 
-              <div className="bg-slate-50 p-2 rounded-xl mb-6">
+              <div className="bg-slate-50 p-2 rounded-lg mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SearchableDropdown
                     name="degree"
@@ -1755,7 +1758,7 @@ export default function LeadModal() {
                             year_awarded: value,
                           }));
                         }}
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
                       />
                     </div>
                   </div>
@@ -1873,7 +1876,7 @@ export default function LeadModal() {
                           type="button"
                           onClick={handleAddOrUpdateEducation}
                           disabled={!!gradeError}
-                          className={`w-full md:w-auto min-w-[120px] h-[46px] px-5 rounded-xl text-white transition-all duration-200 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm hover:shadow-md active:scale-[0.98] ${
+                          className={`w-full md:w-auto min-w-[120px] h-[46px] px-5 rounded-lg text-white transition-all duration-200 flex items-center justify-center gap-2 text-sm font-semibold shadow-sm hover:shadow-md active:scale-[0.98] ${
                             gradeError
                               ? "bg-gray-400 cursor-not-allowed"
                               : "bg-[#009E99] hover:bg-[#00807a]"
@@ -1886,7 +1889,7 @@ export default function LeadModal() {
                           <button
                             type="button"
                             onClick={handleCancelEdit}
-                            className="w-full md:w-auto min-w-[110px] h-[46px] px-5 rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-sm font-semibold shadow-sm"
+                            className="w-full md:w-auto min-w-[110px] h-[46px] px-5 rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 text-sm font-semibold shadow-sm"
                           >
                             Cancel
                           </button>
@@ -1898,7 +1901,7 @@ export default function LeadModal() {
               </div>
 
               {educationEntries.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
                   <GraduationCap
                     size={32}
                     className="mx-auto mb-2 opacity-50"
@@ -1913,7 +1916,7 @@ export default function LeadModal() {
                   {educationEntries.map((edu) => (
                     <div
                       key={edu.id}
-                      className="group relative bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200"
+                      className="group relative bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200"
                     >
                       <div className="absolute top-3 right-3 flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
                         <button
@@ -1935,7 +1938,7 @@ export default function LeadModal() {
                       </div>
 
                       <div className="flex items-start gap-4">
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg shadow-inner">
+                        <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg shadow-inner">
                           {edu.degree?.charAt(0)?.toUpperCase() || "D"}
                         </div>
 
@@ -2004,7 +2007,7 @@ export default function LeadModal() {
                         value={form.english_test_overall_score}
                         onChange={handleTotalScoreChange}
                         maxLength={4}
-                        className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
                         placeholder="Enter total score"
                       />
                       {fieldErrors.totalScore && (

@@ -26,6 +26,8 @@ import coursesList from "../../constants/courses.json";
 import CountrySelect from "../../Components/InputFields/CountrySelect";
 import { Title } from "../Title";
 import SearchableSelect from "../SearchableSelect";
+import { CancelButton } from "../../Components/CustomButtons/CancelButton"; // adjust path as needed
+import { EditButton } from "../../Components/CustomButtons/EditButton"; // adjust path as needed
 
 const getToken = () => localStorage.getItem("token") || "";
 
@@ -49,7 +51,7 @@ const STATUS_OPTIONS = [
 
 function FormField({ label, required, children, error }) {
   return (
-    <div className="space-y-1.5">
+    <div className="">
       <label className="text-sm font-medium text-gray-700">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
@@ -113,7 +115,7 @@ export default function EditApplicationModal({
     year_awarded: "",
     board_university: "",
     counselor_notes: "",
-    consultancy_fee: "", // <-- added
+    consultancy_fee: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -154,9 +156,6 @@ export default function EditApplicationModal({
 
   useEffect(() => {
     if (application) {
-      console.log("Application object received:", application);
-      console.log("consultancy_fee value:", application.consultancy_fee);
-
       setFormData({
         user_id: application.user_id || application.student_id || "",
         target_university: application.target_university || "",
@@ -177,7 +176,7 @@ export default function EditApplicationModal({
         year_awarded: "",
         board_university: "",
         counselor_notes: application.counselor_notes || "",
-        consultancy_fee: application.consultancy_fee || "", // <-- added
+        consultancy_fee: application.consultancy_fee || "",
       });
       fetchLeadEducation(application.user_id || application.student_id);
     } else {
@@ -250,7 +249,6 @@ export default function EditApplicationModal({
       }
     }
 
-    // *** Consultancy fee validation (added) ***
     if (!formData.consultancy_fee || formData.consultancy_fee.trim() === "") {
       newErrors.consultancy_fee = "Consultancy fee is required";
     } else {
@@ -298,7 +296,6 @@ export default function EditApplicationModal({
 
     if (name === "counselor_notes" && value.length > 255) return;
 
-    // *** Consultancy fee input mask & length limit (added) ***
     if (name === "consultancy_fee") {
       if (value.length > 12) return;
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
@@ -315,7 +312,7 @@ export default function EditApplicationModal({
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -327,12 +324,10 @@ export default function EditApplicationModal({
 
     setLoading(true);
     try {
-      // Convert empty strings to null for integer/numeric DB columns
       const yearAwardedValue =
         formData.year_awarded === "" ? null : formData.year_awarded;
       const gradesCgpaValue =
         formData.grades_cgpa === "" ? null : formData.grades_cgpa;
-      // *** Consultancy fee conversion (added) ***
       const consultancyFeeValue =
         formData.consultancy_fee === ""
           ? null
@@ -355,7 +350,7 @@ export default function EditApplicationModal({
         year_awarded: yearAwardedValue,
         board_university: formData.board_university,
         counselor_notes: formData.counselor_notes,
-        consultancy_fee: consultancyFeeValue, // <-- added
+        consultancy_fee: consultancyFeeValue,
       };
 
       const res = await authAxios.put(
@@ -372,7 +367,6 @@ export default function EditApplicationModal({
       }
     } catch (err) {
       console.error("Error:", err);
-
       toast.error(
         err.response?.data?.message || "Failed to update application",
         { toastId: "edit-app-error" },
@@ -402,7 +396,7 @@ export default function EditApplicationModal({
                   onChange={handleFieldChange}
                   name="user_id"
                   disabled
-                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
                 >
                   <option value="">Select Student</option>
                   {counselingStudents.map((s) => (
@@ -449,12 +443,11 @@ export default function EditApplicationModal({
                     name="deadline"
                     value={formData.deadline}
                     onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
               </div>
 
-              {/* *** Consultancy Fee + Status row (replaces old single Status field) *** */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   label="Consultancy Fee"
@@ -471,10 +464,10 @@ export default function EditApplicationModal({
                       value={formData.consultancy_fee}
                       onChange={handleFieldChange}
                       placeholder="Enter consultancy fee"
-                      required // ← add HTML5 required
+                      required
                       minLength={3}
                       maxLength={12}
-                      className="w-full border border-slate-300 rounded-xl pl-14 pr-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
+                      className="w-full border border-slate-300 rounded-lg pl-14 pr-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                     />
                   </div>
                 </FormField>
@@ -505,7 +498,7 @@ export default function EditApplicationModal({
                     value={formData.full_name}
                     onChange={handleFieldChange}
                     readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
 
@@ -517,7 +510,7 @@ export default function EditApplicationModal({
                     value={formData.email}
                     onChange={handleFieldChange}
                     readOnly
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
 
@@ -540,7 +533,7 @@ export default function EditApplicationModal({
                     name="english_proficiency_test"
                     value={formData.english_proficiency_test}
                     onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
 
@@ -554,7 +547,7 @@ export default function EditApplicationModal({
                     name="english_test_overall_score"
                     value={formData.english_test_overall_score}
                     onChange={handleFieldChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>
               </div>
@@ -569,7 +562,7 @@ export default function EditApplicationModal({
                   />
                 </div>
               ) : educationEntries.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+                <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
                   <GraduationCap
                     size={32}
                     className="mx-auto mb-2 opacity-50"
@@ -581,10 +574,10 @@ export default function EditApplicationModal({
                   {educationEntries.map((edu) => (
                     <div
                       key={edu.id}
-                      className="group relative bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
+                      className="group relative bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg">
+                        <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg">
                           {edu.degree?.charAt(0)?.toUpperCase() || "D"}
                         </div>
                         <div className="flex-1">
@@ -628,35 +621,17 @@ export default function EditApplicationModal({
                   onChange={handleFieldChange}
                   minLength={3}
                   maxLength={255}
-                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none resize-none"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none resize-none"
                   placeholder="Internal notes about this application..."
                 />
               </FormField>
             </InfoSection>
           </div>
 
-          <div className="p-6 border-t border-slate-100 bg-white flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2.5 border border-slate-200 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition disabled:opacity-70 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw size={16} className="animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Application"
-              )}
-            </button>
+          {/* Footer with custom buttons - aligned to bottom-right */}
+          <div className="p-6 border-t border-slate-100 bg-white flex justify-end items-center gap-3">
+            <CancelButton handleCancel={onClose} />
+            <EditButton handleUpdate={handleSubmit} />
           </div>
         </form>
       </div>

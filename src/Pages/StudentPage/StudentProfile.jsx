@@ -594,7 +594,7 @@ export const StudentProfile = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-3">
       {/* Main container */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 md:p-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">

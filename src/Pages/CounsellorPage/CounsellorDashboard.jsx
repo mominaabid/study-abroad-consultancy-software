@@ -102,14 +102,19 @@ export const CounsellorDashboard = () => {
   const totalNewLeads = leads.length;
 
   // 2) Active Leads: leads where status is NOT "new"
-  const activeLeads = leads.filter((l) => l.status === "contacted").length;
+  const activeLeads = leads.filter((l) => l.status === "new").length;
 
   // 3) Converted: leads where status is NOT "new" AND NOT "counselling"
-  const convertedLeads = leads.filter((l) => l.status == "counseling").length;
+  const convertedLeads = leads.filter(
+  (l) =>
+    !["new", "success", "rejected"].includes(
+      l.status?.toLowerCase()
+    )
+).length;
 
   const recentLeads = [...leads]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 5);
+    .slice(0, 3);
 
   const stageData = [
     {
@@ -146,9 +151,9 @@ export const CounsellorDashboard = () => {
   ];
 
   return (
-    <main className="p-3 sm:p-4 md:p-5 lg:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden">
-      {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+    <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden">
+      {/* ── Stats Grid: 2 columns on mobile/tablet, 4 columns on large screens ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 sm:mb-4">
         <StatCard
           title="My Total Leads"
           value={loading ? "..." : totalNewLeads}
@@ -159,7 +164,7 @@ export const CounsellorDashboard = () => {
           clickable
         />
         <StatCard
-          title="Contacted Leads"
+          title="In Progress"
           value={loading ? "..." : activeLeads}
           icon={<TrendingUp size={22} />}
           color="from-teal-500 to-cyan-500"
@@ -168,7 +173,7 @@ export const CounsellorDashboard = () => {
           clickable
         />
         <StatCard
-          title="Converted to Student"
+          title="Contacted"
           value={loading ? "..." : convertedLeads}
           icon={<CheckCircle size={22} />}
           color="from-emerald-500 to-green-500"
@@ -188,7 +193,7 @@ export const CounsellorDashboard = () => {
       </div>
 
       {/* ── Main content grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-4">
         {/* Recent Leads - Responsive Table with horizontal scroll on mobile */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b bg-gradient-to-r from-slate-50 to-white flex justify-between items-center flex-wrap gap-2">
@@ -197,9 +202,9 @@ export const CounsellorDashboard = () => {
             </h3>
             <button
               onClick={() => navigate("/counsellor/leads")}
-              className="text-[#009E99] hover:text-teal-700 font-medium text-sm flex items-center gap-1 transition min-h-[44px] px-2 touch-manipulation"
+              className="text-[#009E99] hover:text-teal-700 font-medium text-sm transition min-h-[44px] px-2 touch-manipulation"
             >
-              View All <ChevronRight size={16} />
+              View All
             </button>
           </div>
 
@@ -291,7 +296,7 @@ export const CounsellorDashboard = () => {
           )}
         </div>
 
-        {/* Right column - responsive spacing */}
+        {/* Right column - only pipeline stages (Quick Actions removed) */}
         <div className="space-y-4 sm:space-y-5 lg:space-y-6">
           {/* Pipeline stages */}
           <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-lg border border-gray-100">
@@ -327,33 +332,6 @@ export const CounsellorDashboard = () => {
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Quick actions - touch friendly */}
-          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-lg border border-gray-100">
-            <h3 className="font-semibold text-base sm:text-lg text-gray-800 mb-3">
-              Quick Actions
-            </h3>
-            <div className="space-y-2 sm:space-y-3">
-              <QuickAction
-                icon={<Users size={18} />}
-                label="View My Leads"
-                color="text-violet-600 bg-violet-50"
-                onClick={() => navigate("/counsellor/leads")}
-              />
-              <QuickAction
-                icon={<FileText size={18} />}
-                label="Applications"
-                color="text-teal-600 bg-teal-50"
-                onClick={() => navigate("/counsellor/applications")}
-              />
-              <QuickAction
-                icon={<MessageSquare size={18} />}
-                label="Open Chat"
-                color="text-blue-600 bg-blue-50"
-                onClick={() => navigate("/counsellor/chats")}
-              />
             </div>
           </div>
         </div>
@@ -403,24 +381,6 @@ const StatCard = ({ title, value, icon, color, sub, onClick, clickable }) => (
       )}
     </div>
   </div>
-);
-
-const QuickAction = ({ icon, label, color, onClick }) => (
-  <button
-    onClick={onClick}
-    className="w-full flex items-center gap-3 p-3 sm:p-3.5 rounded-xl hover:shadow-md transition-all duration-200 border border-gray-100 hover:border-gray-200 group touch-manipulation min-h-[52px] sm:min-h-[60px]"
-  >
-    <div className={`p-1.5 sm:p-2 rounded-xl ${color} flex-shrink-0`}>
-      {icon}
-    </div>
-    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 truncate">
-      {label}
-    </span>
-    <ChevronRight
-      size={16}
-      className="ml-auto text-gray-400 group-hover:text-gray-600 flex-shrink-0"
-    />
-  </button>
 );
 
 export default CounsellorDashboard;

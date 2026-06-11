@@ -17,6 +17,8 @@ import {
   Sparkles,
   XCircle,
   RefreshCw,
+  Eye,
+  Download,
 } from "lucide-react";
 import { GraduationCap } from "lucide-react";
 import useSSE from "../../redux/hooks/useSSE";
@@ -74,7 +76,7 @@ const DOC_STATUS = {
   },
 };
 
-// ── Sub-components (StatCard, QuickAction, DocCard) with responsive improvements ──
+// ── Sub-components (StatCard, DocCard) with consistent spacing ──
 const StatCard = ({
   title,
   value,
@@ -87,7 +89,7 @@ const StatCard = ({
 }) => (
   <div
     onClick={onClick}
-    className={`relative group bg-white px-4 sm:px-5 py-3 sm:py-2 rounded-xl shadow-sm border border-gray-100
+    className={`relative group bg-white px-3 py-2 rounded-xl shadow-sm border border-gray-100
       transition-all duration-300 overflow-hidden
       ${clickable ? "cursor-pointer hover:shadow-lg hover:-translate-y-0.5" : ""}`}
   >
@@ -106,7 +108,7 @@ const StatCard = ({
         {sub && <p className="text-xs text-gray-400 mt-1 break-words">{sub}</p>}
       </div>
       <div
-        className="p-2.5 sm:p-3 rounded-xl text-white shadow-sm flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+        className="p-3 rounded-xl text-white shadow-sm flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
         style={{ background: gradient }}
       >
         {icon}
@@ -126,58 +128,86 @@ const StatCard = ({
   </div>
 );
 
-const QuickAction = ({ icon, label, color, bgColor, onClick, badge }) => (
-  <button
-    onClick={onClick}
-    className="w-full flex items-center gap-3 p-3.5 rounded-xl hover:shadow-md
-      transition-all duration-200 border border-gray-100 hover:border-gray-200 group bg-white min-h-[48px]"
-  >
-    <div className={`p-2 rounded-xl ${bgColor}`} style={{ color }}>
-      {icon}
-    </div>
-    <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex-1 text-left break-words">
-      {label}
-    </span>
-    {badge > 0 && (
-      <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
-        {badge > 9 ? "9+" : badge}
-      </span>
-    )}
-    <ChevronRight
-      size={15}
-      className="text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0"
-    />
-  </button>
-);
-
-function DocCard({ doc }) {
+// FIXED: DocumentCard component with correct file URL handling
+const DocumentCard = ({ doc, application }) => {
   const s = DOC_STATUS[doc.status] || DOC_STATUS.pending;
+  const docTypeLabel =
+    DOC_TYPE_LABELS[doc.doc_type] ||
+    doc.doc_type?.replace(/_/g, " ") ||
+    "Document";
+
+  // Use file_url if available, otherwise fallback to file_path
+  const fileUrl = doc.file_url || doc.file_path;
+
   return (
-    <div className="flex flex-col xs:flex-row xs:items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white group gap-2">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-          <FileText size={15} className="text-blue-500" />
+    <div className="group bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full">
+      {/* Card header with icon and status */}
+      <div className="p-4 pb-2 flex items-start justify-between gap-2">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 flex items-center justify-center flex-shrink-0">
+          <FileText size={18} className="text-teal-600" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-800 capitalize leading-tight break-words">
-            {DOC_TYPE_LABELS[doc.doc_type] ||
-              doc.doc_type?.replace(/_/g, " ") ||
-              "Document"}
-          </p>
+        <span
+          className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${s.bg} ${s.text}`}
+        >
+          <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+          {s.label}
+        </span>
+      </div>
+
+      {/* Document details */}
+      <div className="px-4 pb-2 flex-1">
+        <h4 className="text-sm font-bold text-gray-800 capitalize leading-tight line-clamp-2">
+          {docTypeLabel}
+        </h4>
+
+        {/* Application context */}
+        {application && (
+          <div className="mt-2 flex items-start gap-1.5">
+            <GraduationCap
+              size={12}
+              className="text-gray-400 mt-0.5 flex-shrink-0"
+            />
+            <p className="text-xs text-gray-500 line-clamp-1">
+              {application.target_university || "University Application"}
+            </p>
+          </div>
+        )}
+
+        {/* Date */}
+        <div className="mt-2 flex items-center gap-1.5">
+          <Calendar size={11} className="text-gray-400" />
           <p className="text-xs text-gray-400">
-            {formatDate(doc.submitted_at || doc.created_at)}
+            Uploaded: {formatDate(doc.submitted_at || doc.created_at)}
           </p>
         </div>
       </div>
-      <span
-        className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 self-start xs:self-center ${s.bg} ${s.text}`}
-      >
-        <div className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-        {s.label}
-      </span>
+
+      {/* Card footer with action buttons - FIXED: buttons placed correctly */}
+      <div className="px-4 py-3 border-t border-gray-50 flex items-center justify-between gap-2 mt-auto">
+        <button
+          onClick={() => fileUrl && window.open(fileUrl, "_blank")}
+          disabled={!fileUrl}
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg py-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Eye size={12} /> View
+        </button>
+        <button
+          onClick={() => {
+            if (!fileUrl) return;
+            const link = document.createElement("a");
+            link.href = fileUrl;
+            link.download = doc.file_name || docTypeLabel;
+            link.click();
+          }}
+          disabled={!fileUrl}
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg py-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Download size={12} /> Download
+        </button>
+      </div>
     </div>
   );
-}
+};
 
 const DOC_TYPE_LABELS = {
   passport: "Passport Copy",
@@ -231,6 +261,21 @@ export const StudentDashboard = () => {
       docStats: statsMap.get(app.id) || { verified: 0, total: 0 },
     }));
   }, [applications, documents]);
+
+  // NEW: Flatten documents with application details for card layout
+  const documentsWithAppDetails = useMemo(() => {
+    const appMap = new Map(applications.map((app) => [app.id, app]));
+    return documents
+      .map((doc) => ({
+        ...doc,
+        application: appMap.get(doc.application_id) || null,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.submitted_at || b.created_at) -
+          new Date(a.submitted_at || a.created_at),
+      );
+  }, [documents, applications]);
 
   // ── SSE event handling ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -297,8 +342,6 @@ export const StudentDashboard = () => {
       });
       const data = await res.json();
       setApplications(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Applications fetch error:", err);
     } finally {
       setAppsLoading(false);
     }
@@ -341,21 +384,8 @@ export const StudentDashboard = () => {
     )
     .slice(0, 3);
 
-  const groupedDocuments = useMemo(() => {
-    return applications.map((app) => {
-      const appDocs = documents.filter(
-        (doc) => Number(doc.application_id) === Number(app.id),
-      );
-
-      return {
-        ...app,
-        documents: appDocs,
-      };
-    });
-  }, [applications, documents]);
-
   return (
-    <main className="bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden p-4 sm:p-5 md:p-6 lg:p-8">
+    <main className="bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden p-3">
       {/* SSE Connection Status Indicator - Responsive positioning */}
       <div className="fixed bottom-4 right-4 z-50">
         <div className="flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-lg border border-gray-200">
@@ -383,7 +413,7 @@ export const StudentDashboard = () => {
       {/* Real‑time Notification Toast - Responsive sizing */}
       {showNotification && (
         <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
-          <div className="bg-white rounded-xl shadow-lg border-l-4 border-teal-500 p-4 max-w-[calc(100%-2rem)] sm:max-w-sm mx-auto sm:mx-0">
+          <div className="bg-white rounded-xl shadow-lg border-l-4 border-teal-500 p-3 max-w-[calc(100%-2rem)] sm:max-w-sm mx-auto sm:mx-0">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
                 {showNotification.type === "document_verified" && (
@@ -423,8 +453,8 @@ export const StudentDashboard = () => {
         </div>
       )}
 
-      {/* Stats Grid - Responsive columns */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5 md:mb-6">
+      {/* Stats Grid - Responsive 2 columns on mobile, 4 columns on desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         <StatCard
           title="Active Applications"
           value={appsLoading ? "..." : activeApplicationsCount}
@@ -439,20 +469,38 @@ export const StudentDashboard = () => {
           value={docsLoading ? "..." : `${verifiedDocs}/${totalRequired}`}
           icon={<CheckCircle size={20} />}
           gradient="linear-gradient(135deg,#3b82f6,#2563eb)"
-          sub="Approved by counsellor"
+          sub="Approved"
+          onClick={() => navigate("/student/application")}
+          clickable
+        />
+        <StatCard
+          title="Total Applications"
+          value={appsLoading ? "..." : applications.length}
+          icon={<FileText size={20} />}
+          gradient="linear-gradient(135deg,#8b5cf6,#6d28d9)"
+          sub="All time applications"
+          onClick={() => navigate("/student/application")}
+          clickable
+        />
+        <StatCard
+          title="Document Progress"
+          value={docsLoading ? "..." : `${progressPct}%`}
+          icon={<Award size={20} />}
+          gradient="linear-gradient(135deg,#f59e0b,#d97706)"
+          sub={`${verifiedDocs} of ${totalRequired} verified`}
           onClick={() => navigate("/student/application")}
           clickable
         />
       </div>
 
-      {/* Main Grid - Responsive columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-        {/* Left column: Recent Applications + Documents */}
-        <div className="lg:col-span-2 space-y-5 sm:space-y-6">
+      {/* MAIN GRID – now single column on desktop so My Documents takes full width */}
+      <div className="grid grid-cols-1 gap-3">
+        {/* Left column – spans full width on all screens */}
+        <div className="space-y-3">
           {/* Recent Applications Section */}
           {!appsLoading && applicationsWithDocStats.length > 0 && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="px-3 py-3 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="font-bold text-gray-800 text-base sm:text-lg">
                     Recent Applications
@@ -465,17 +513,17 @@ export const StudentDashboard = () => {
                   onClick={() => navigate("/student/application")}
                   className="text-teal-600 text-xs font-semibold hover:underline py-2 px-3 -m-2 self-start sm:self-auto"
                 >
-                  View All →
+                  View All
                 </button>
               </div>
-              <div className="p-4 sm:p-5 space-y-4">
+              <div className="p-3 space-y-3">
                 {recentApplications.map((app) => {
                   const { verified, total } = app.docStats;
                   const percent = total === 0 ? 0 : (verified / total) * 100;
                   return (
                     <div
                       key={app.id}
-                      className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white cursor-pointer"
+                      className="p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-all bg-white cursor-pointer"
                       onClick={() => navigate("/student/application")}
                     >
                       <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 mb-2">
@@ -541,27 +589,27 @@ export const StudentDashboard = () => {
             </div>
           )}
 
-          {/* Documents Section */}
+          {/* ========== MY DOCUMENTS SECTION – Card-based layout ========== */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="px-3 py-3 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="font-bold text-gray-800 text-base sm:text-lg">
                   My Documents
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-400">
                   {verifiedDocs} of {totalRequired} required documents verified
                 </p>
               </div>
               <button
                 onClick={() => navigate("/student/application")}
-                className="flex items-center justify-center gap-2 bg-teal-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-teal-700 transition shadow-sm shadow-teal-200 min-h-[40px]"
+                className="flex items-center justify-center gap-2 bg-teal-600 text-white text-xs font-semibold px-3 py-2 rounded-xl hover:bg-teal-700 transition shadow-sm shadow-teal-200 min-h-[40px]"
               >
                 <Upload size={12} /> Upload
               </button>
             </div>
 
             {/* Progress bar */}
-            <div className="px-4 sm:px-6 py-3 border-b border-gray-50 bg-gray-50/50">
+            <div className="px-3 py-2 border-b border-gray-50 bg-gray-50/50">
               <div className="flex justify-between text-xs mb-1.5">
                 <span className="text-gray-500 font-medium">
                   Document completion
@@ -579,13 +627,13 @@ export const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Doc list */}
-            <div className="p-4 sm:p-5 space-y-2.5">
+            {/* Card Grid for Documents */}
+            <div className="p-3">
               {docsLoading ? (
                 <div className="text-center py-8">
                   <div className="w-5 h-5 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin mx-auto" />
                 </div>
-              ) : documents.length === 0 ? (
+              ) : documentsWithAppDetails.length === 0 ? (
                 <div className="text-center py-10">
                   <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-3 border border-dashed border-gray-200">
                     <Upload size={22} className="text-gray-300" />
@@ -605,111 +653,32 @@ export const StudentDashboard = () => {
                 </div>
               ) : (
                 <>
-                  {groupedDocuments.length === 0 ? (
-                    <div className="text-center py-10">
-                      <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-3 border border-dashed border-gray-200">
-                        <Upload size={22} className="text-gray-300" />
-                      </div>
-                      <p className="text-gray-500 text-sm font-semibold">
-                        No documents uploaded yet
-                      </p>
-                      <p className="text-gray-400 text-xs mt-1">
-                        Upload your required documents to proceed
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {groupedDocuments.map((app) => (
-                        <div
-                          key={app.id}
-                          className="border border-gray-100 rounded-xl overflow-hidden"
-                        >
-                          {/* Application Header - Responsive stacking */}
-                          <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-                            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
-                              <div className="min-w-0">
-                                <h4 className="text-sm font-bold text-gray-800 break-words">
-                                  {app.target_university ||
-                                    "University Application"}
-                                </h4>
-                                <p className="text-xs text-gray-500 mt-0.5 break-words">
-                                  {app.course || "Course not specified"}
-                                </p>
-                              </div>
-                              <span className="text-xs font-semibold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full self-start xs:self-center">
-                                {app.documents.length} Document
-                                {app.documents.length !== 1 ? "s" : ""}
-                              </span>
-                            </div>
-                          </div>
+                  {/* Responsive grid: 1 column on mobile, 2 on sm, 3 on md, 4 on lg */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {documentsWithAppDetails.map((doc) => (
+                      <DocumentCard
+                        key={doc.id}
+                        doc={doc}
+                        application={doc.application}
+                      />
+                    ))}
+                  </div>
 
-                          {/* Documents */}
-                          <div className="p-3 space-y-2 bg-white">
-                            {app.documents.length > 0 ? (
-                              app.documents.map((doc) => (
-                                <DocCard key={doc.id} doc={doc} />
-                              ))
-                            ) : (
-                              <div className="text-center py-5">
-                                <p className="text-xs text-amber-600">
-                                  No documents uploaded for this application
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {documents.length > 5 && (
+                  {documentsWithAppDetails.length > 8 && (
                     <button
                       onClick={() => navigate("/student/application")}
-                      className="w-full text-center text-xs text-teal-600 font-semibold py-3 hover:underline mt-2"
+                      className="w-full text-center text-xs text-teal-600 font-semibold py-3 hover:underline mt-4"
                     >
-                      View all {documents.length} documents →
+                      View all {documentsWithAppDetails.length} documents →
                     </button>
                   )}
                 </>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Right column: Quick Actions + Document Summary */}
-        <div className="space-y-4 sm:space-y-5">
-          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
-              <div className="w-2 h-2 bg-amber-400 rounded-full" />
-              Quick Actions
-            </h3>
-            <div className="space-y-2.5">
-              <QuickAction
-                icon={<Upload size={16} />}
-                label="Upload Documents"
-                color="#0d9488"
-                bgColor="bg-teal-50"
-                onClick={() => navigate("/student/application")}
-                badge={documents.filter((d) => d.status === "rejected").length}
-              />
-              <QuickAction
-                icon={<MessageSquare size={16} />}
-                label="Chat with Counsellor"
-                color="#3b82f6"
-                bgColor="bg-blue-50"
-                onClick={() => navigate("/student/chats")}
-              />
-              <QuickAction
-                icon={<FileText size={16} />}
-                label="View Applications"
-                color="#8b5cf6"
-                bgColor="bg-violet-50"
-                onClick={() => navigate("/student/application")}
-                badge={applications.length}
-              />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-sm border border-gray-100">
+          {/* ========== DOCUMENT STATUS SUMMARY – moved below My Documents ========== */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-gray-800 text-base mb-3 flex items-center gap-2">
               <div className="w-2 h-2 bg-purple-400 rounded-full" />
               Document Status Summary
@@ -766,7 +735,7 @@ export const StudentDashboard = () => {
                 </div>
               ))}
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-100">
+            <div className="mt-3 pt-2 border-t border-gray-100">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Total Documents:</span>
                 <span className="font-bold text-gray-700">{totalUploaded}</span>

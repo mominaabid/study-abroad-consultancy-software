@@ -1,4 +1,4 @@
-// Accounts.jsx (updated with custom dropdowns)
+// Accounts.jsx
 import React, {
   useState,
   useEffect,
@@ -24,6 +24,13 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
+// Import custom UI components
+import { AddBtnInHeader } from "../../Components/CustomButtons/AddBtnInHeader";
+import { CancelButton } from "../../Components/CustomButtons/CancelButton";
+import { Title } from "../../Components/Title";
+import { AddButton } from "../../Components/CustomButtons/AddButton";
+import { InputField } from "../InputFields/InputField";
+import { TextareaField } from "../InputFields/TextareaField";
 
 const getToken = () => localStorage.getItem("token") || "";
 const authAxios = {
@@ -43,7 +50,19 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-// ---------- Payment Modal (fully responsive) with custom dropdown ----------
+// ---------- Custom Hook: Scroll Lock ----------
+const useScrollLock = (lock) => {
+  useEffect(() => {
+    if (!lock) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [lock]);
+};
+
+// ---------- Payment Modal (with scroll lock) ----------
 const PaymentModal = ({
   isOpen,
   onClose,
@@ -65,6 +84,9 @@ const PaymentModal = ({
   const [paymentAppOpen, setPaymentAppOpen] = useState(false);
   const [paymentAppSearch, setPaymentAppSearch] = useState("");
   const dropdownRef = useRef(null);
+
+  // Lock body scroll when modal is open
+  useScrollLock(isOpen);
 
   const getAppDisplayText = (app) =>
     `${app.studentName} - ${app.university} (${app.course})`;
@@ -164,19 +186,9 @@ const PaymentModal = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm transition-all">
-      <div className="bg-white rounded-2xl w-full max-w-[95%] sm:max-w-md mx-auto shadow-xl">
-        <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-base sm:text-lg font-bold text-gray-800">
-            Record Payment
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-        </div>
+      <div className="bg-white rounded-2xl w-full max-w-[95%] sm:max-w-md mx-auto shadow-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+        <Title setModal={onClose}>Record Payment</Title>
+
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
           {!selectedAppId && (
             <div className="relative" ref={dropdownRef}>
@@ -186,7 +198,7 @@ const PaymentModal = ({
               <button
                 type="button"
                 onClick={() => setPaymentAppOpen(!paymentAppOpen)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-left text-sm sm:text-base flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-left text-sm sm:text-base flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
               >
                 <span
                   className={selectedApp ? "text-gray-800" : "text-gray-400"}
@@ -209,7 +221,7 @@ const PaymentModal = ({
               </button>
 
               {paymentAppOpen && (
-                <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
                   <div className="p-2 border-b border-gray-100">
                     <input
                       autoFocus
@@ -260,7 +272,7 @@ const PaymentModal = ({
                   type="text"
                   readOnly
                   value={formatCurrency(selectedApp.payableAmount)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-gray-50 text-sm sm:text-base"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 text-sm sm:text-base"
                 />
               </div>
               <div>
@@ -271,69 +283,53 @@ const PaymentModal = ({
                   type="text"
                   readOnly
                   value={formatCurrency(selectedApp.balance)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold text-sm sm:text-base"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold text-sm sm:text-base"
                 />
               </div>
             </>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Paid Amount (PKR) *
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={paidAmount}
-              onChange={(e) => setPaidAmount(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none text-sm sm:text-base"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date *
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none text-sm sm:text-base"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description (Optional)
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 outline-none resize-none text-sm sm:text-base"
-              placeholder="e.g., First installment"
-            />
-          </div>
+
+          <InputField
+            type="number"
+            labelName="Paid Amount (PKR) *"
+            placeHolder="Enter amount"
+            handlerChange={(e) => setPaidAmount(e.target.value)}
+            name="paidAmount"
+            value={paidAmount}
+            step="0.01"
+            min="0.01"
+          />
+
+          <InputField
+            type="date"
+            labelName="Date *"
+            handlerChange={(e) => setDate(e.target.value)}
+            name="date"
+            value={date}
+          />
+
+          <TextareaField
+            labelName="Description (Optional)"
+            placeHolder="e.g., First installment"
+            handlerChange={(e) => setDescription(e.target.value)}
+            name="description"
+            value={description}
+            rows={2}
+          />
+
           {error && (
             <div className="text-red-500 text-sm flex items-center gap-1">
               <AlertCircle size={14} /> {error}
             </div>
           )}
-          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full sm:flex-1 px-4 py-2.5 border rounded-xl text-gray-600 hover:bg-gray-50 transition-colors touch-manipulation"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
+
+          <div className="flex justify-end gap-3 pt-2">
+            <CancelButton handleCancel={onClose} />
+            <AddButton
+              label="Record Payment"
+              loading={loading}
               disabled={loading}
-              className="w-full sm:flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 transition-colors touch-manipulation"
-            >
-              {loading ? "Processing..." : "Record Payment"}
-            </button>
+            />
           </div>
         </form>
       </div>
@@ -341,7 +337,7 @@ const PaymentModal = ({
   );
 };
 
-// ---------- Transaction Detail Modal (unchanged) ----------
+// ---------- Transaction Detail Modal (with scroll lock) ----------
 const TransactionDetailModal = ({
   isOpen,
   onClose,
@@ -349,6 +345,8 @@ const TransactionDetailModal = ({
   studentName,
   program,
 }) => {
+  useScrollLock(isOpen);
+
   if (!isOpen || !transaction) return null;
 
   const formatDate = (dateString) => {
@@ -370,21 +368,7 @@ const TransactionDetailModal = ({
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm transition-all">
       <div className="bg-white rounded-2xl w-full max-w-[95%] sm:max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
-        <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-start sticky top-0 bg-white rounded-t-2xl z-10">
-          <div className="flex items-center gap-2">
-            <FileText size={20} className="text-teal-600 sm:size-[22px]" />
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
-              Transaction Details
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <Title setModal={onClose}>Transaction Details</Title>
 
         <div className="flex-1 overflow-auto p-4 sm:p-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm">
@@ -450,12 +434,7 @@ const TransactionDetailModal = ({
         </div>
 
         <div className="p-4 sm:p-5 border-t border-gray-100 flex justify-end bg-gray-50 rounded-b-2xl">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors shadow-sm touch-manipulation"
-          >
-            Close
-          </button>
+          <CancelButton handleCancel={onClose} />
         </div>
       </div>
     </div>
@@ -636,9 +615,17 @@ export const Accounts = () => {
   }, [uniqueStudentNames, studentFilterSearch]);
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
+    <div className="p-3 sm:p-3 md:p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Header Section with Filters - Mobile First Responsive */}
-      <div className="flex flex-col gap-4 mb-6">
+      <div className="flex flex-col gap-2 mb-3">
+        {/* Mobile: Add Payment button at top right */}
+        <div className="flex justify-end sm:hidden">
+          <AddBtnInHeader
+            label="Add Payment"
+            handleToggle={openGlobalPaymentModal}
+          />
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
           <div className="flex flex-wrap items-end gap-3">
             {/* From Date */}
@@ -650,7 +637,7 @@ export const Accounts = () => {
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500"
+                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-3 text-sm focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
             {/* To Date */}
@@ -662,7 +649,7 @@ export const Accounts = () => {
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500"
+                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-3 text-sm focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
 
@@ -677,7 +664,7 @@ export const Accounts = () => {
                     <button
                       type="button"
                       onClick={() => setStudentFilterOpen(!studentFilterOpen)}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-left flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm text-left flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
                     >
                       <span
                         className={
@@ -699,7 +686,7 @@ export const Accounts = () => {
                       </svg>
                     </button>
                     {studentFilterOpen && (
-                      <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                      <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
                         <div className="p-2 border-b border-gray-100">
                           <input
                             autoFocus
@@ -755,14 +742,15 @@ export const Accounts = () => {
             )}
           </div>
 
-          {/* Action buttons group */}
+          {/* Desktop: Actions group (Add Payment + Search) */}
           <div className="flex flex-col items-stretch sm:items-end gap-2">
-            <button
-              onClick={openGlobalPaymentModal}
-              className="flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2.5 rounded-xl shadow-sm transition touch-manipulation"
-            >
-              <Plus size={18} /> Add Payment
-            </button>
+            {/* Add Payment button for desktop and tablet */}
+            <div className="hidden sm:block">
+              <AddBtnInHeader
+                label="Add Payment"
+                handleToggle={openGlobalPaymentModal}
+              />
+            </div>
             <div className="relative w-full sm:w-64">
               <Search
                 size={16}
@@ -773,7 +761,7 @@ export const Accounts = () => {
                 placeholder="Search by Student, Invoice, Description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-teal-500 focus:border-teal-500"
+                className="w-full pl-9 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
           </div>
@@ -782,7 +770,7 @@ export const Accounts = () => {
 
       {/* Student Summary Card (only for students) */}
       {isStudent && (
-        <div className="mb-6 bg-white rounded-xl shadow p-4 sm:p-5">
+        <div className="mb-6 bg-white rounded-lg shadow p-4 sm:p-5">
           <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
             Your Account Summary
           </h3>
@@ -834,7 +822,7 @@ export const Accounts = () => {
       ) : (
         <>
           {/* Transactions Table */}
-          <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-[800px] md:min-w-full w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50 sticky top-0 z-10">

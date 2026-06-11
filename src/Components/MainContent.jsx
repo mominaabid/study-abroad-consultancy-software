@@ -6,16 +6,11 @@ import {
   DollarSign,
   FileText,
   Plus,
-  Mail,
-  Calendar,
   Briefcase,
-  MessageCircle,
 } from "lucide-react";
 
 import { BASE_URL } from "../Content/Url";
 import { useSelector } from "react-redux";
-import { selectNotifications } from "../redux/slices/notificationSlice";
-import { selectUser } from "../redux/slices/authSlice";
 
 // Custom hook for responsive breakpoints
 const useMediaQuery = (query) => {
@@ -56,9 +51,6 @@ export const MainContent = () => {
 
   const [leadsChange, setLeadsChange] = useState("+0%");
   const [applicationsChange, setApplicationsChange] = useState("+0%");
-
-  const notifications = useSelector(selectNotifications);
-  const user = useSelector(selectUser);
 
   const [dateFilter, setDateFilter] = useState("daily");
 
@@ -183,7 +175,7 @@ export const MainContent = () => {
     fetchAllFilteredData();
   }, [fetchAllFilteredData]);
 
-  // --- PERCENTAGE CHANGE CALCULATIONS (unchanged) ---
+  // --- PERCENTAGE CHANGE CALCULATIONS ---
   useEffect(() => {
     if (leads.length === 0) {
       setLeadsChange("0%");
@@ -303,13 +295,12 @@ export const MainContent = () => {
     setCounsellorsChange("N/A");
   }, [counsellorsCount]);
 
-  // Chart label formatter
-  const formatChartLabel = (date, filter) => {
-    if (filter === "daily" || filter === "weekly") {
-      return date.toLocaleDateString("en-US", { weekday: "short" });
-    } else {
-      return date.getDate().toString();
-    }
+  // Chart label formatter - now shows actual dates (MM/DD)
+  const formatChartLabel = (date) => {
+    return date.toLocaleDateString(undefined, {
+      month: "numeric",
+      day: "numeric",
+    });
   };
 
   const periodTotalRevenue = useMemo(() => {
@@ -329,7 +320,7 @@ export const MainContent = () => {
     while (current < endDate) {
       days.push({
         date: new Date(current),
-        label: formatChartLabel(current, dateFilter),
+        label: formatChartLabel(current),
         amount: 0,
       });
       current.setDate(current.getDate() + 1);
@@ -352,35 +343,107 @@ export const MainContent = () => {
     });
 
     return days;
-  }, [getDateRange, payments, dateFilter]);
+  }, [getDateRange, payments]);
 
   const chartData = useMemo(() => getChartData(), [getChartData]);
 
   const maxRevenue = useMemo(() => {
     if (chartData.length === 0) return 1000;
-    return Math.max(...chartData.map((d) => d.amount), 1000);
+    const max = Math.max(...chartData.map((d) => d.amount));
+    return max === 0 ? 1000 : max;
   }, [chartData]);
 
+  const hasNoData = periodTotalRevenue === 0;
+
+  // Generate chart paths with y-axis and x-axis offset
   const generateChartPaths = useCallback(() => {
-    if (chartData.length === 0) return { linePath: "", areaPath: "" };
-    const width = 400;
-    const height = 90;
-    const step = width / (chartData.length - 1);
-    let linePath = `M 0 ${height - (chartData[0].amount / maxRevenue) * height}`;
-    let areaPath = `M 0 ${height} L 0 ${height - (chartData[0].amount / maxRevenue) * height}`;
+    // Chart dimensions inside viewBox (0 0 400 100)
+    const chartXStart = 40; // space for y-axis labels
+    const chartWidth = 340;
+    const chartYStart = 5; // top padding
+    const chartHeight = 90;
+
+    if (chartData.length === 0) {
+      return {
+        linePath: "",
+        areaPath: "",
+        chartXStart,
+        chartWidth,
+        chartYStart,
+        chartHeight,
+        isSinglePoint: false,
+      };
+    }
+
+    // Single data point: draw a circle instead of a line
+    if (chartData.length === 1) {
+      const x = chartXStart + chartWidth / 2;
+      let y = chartYStart + chartHeight;
+      if (maxRevenue > 0) {
+        y =
+          chartYStart +
+          chartHeight -
+          (chartData[0].amount / maxRevenue) * chartHeight;
+      }
+      return {
+        linePath: "",
+        areaPath: "",
+        chartXStart,
+        chartWidth,
+        chartYStart,
+        chartHeight,
+        isSinglePoint: true,
+        singleX: x,
+        singleY: y,
+      };
+    }
+
+    const step = chartWidth / (chartData.length - 1);
+    let linePath = `M ${chartXStart} ${chartYStart + chartHeight - (chartData[0].amount / maxRevenue) * chartHeight}`;
+    let areaPath = `M ${chartXStart} ${chartYStart + chartHeight} L ${chartXStart} ${chartYStart + chartHeight - (chartData[0].amount / maxRevenue) * chartHeight}`;
+
     for (let i = 1; i < chartData.length; i++) {
-      const x = i * step;
-      const y = height - (chartData[i].amount / maxRevenue) * height;
+      const x = chartXStart + i * step;
+      const y =
+        chartYStart +
+        chartHeight -
+        (chartData[i].amount / maxRevenue) * chartHeight;
       linePath += ` L ${x} ${y}`;
       areaPath += ` L ${x} ${y}`;
     }
-    areaPath += ` L ${width} ${height} Z`;
-    return { linePath, areaPath };
+    areaPath += ` L ${chartXStart + chartWidth} ${chartYStart + chartHeight} Z`;
+
+    return {
+      linePath,
+      areaPath,
+      chartXStart,
+      chartWidth,
+      chartYStart,
+      chartHeight,
+      isSinglePoint: false,
+    };
   }, [chartData, maxRevenue]);
 
   const chartPaths = generateChartPaths();
 
-  // Responsive chart labels: show subset on mobile/tablet
+  // Generate y-axis ticks
+  const yAxisTicks = useMemo(() => {
+    const ticks = [];
+    const numTicks = 4;
+    for (let i = 0; i <= numTicks; i++) {
+      const value = (maxRevenue / numTicks) * i;
+      ticks.push(value);
+    }
+    return ticks;
+  }, [maxRevenue]);
+
+  // Map y value to pixel coordinate for axis
+  const getYCoord = (value) => {
+    const { chartYStart, chartHeight } = chartPaths;
+    return chartYStart + chartHeight - (value / maxRevenue) * chartHeight;
+  };
+
+  // X-axis labels: show subset on mobile/tablet
   const getVisibleChartIndices = useCallback(() => {
     if (chartData.length <= 5) return chartData.map((_, idx) => idx);
     let maxLabels = isMobile ? 4 : isTablet ? 6 : chartData.length;
@@ -457,55 +520,16 @@ export const MainContent = () => {
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 4);
 
-  const getNotificationDescription = (notification) => {
-    const { type, metadata } = notification;
-    switch (type) {
-      case "lead_assigned":
-        return `Lead "${metadata.leadName}" was assigned to you.`;
-      case "status_change":
-        return `Application status changed from ${metadata.oldStatusLabel} to ${metadata.newStatusLabel}.`;
-      case "chat_message":
-        return `New message from ${metadata.senderName} (${metadata.senderRole}): "${metadata.preview}"`;
-      case "lead_created":
-        return `Lead "${metadata.leadName}" was created by ${metadata.counsellorName}.`;
-      case "counsellor_added_lead":
-        return `Counsellor ${metadata.counsellorName} added lead "${metadata.leadName}".`;
-      case "payment_awaiting_verification":
-        return `Payment of $${metadata.amount} requires verification.`;
-      case "payment_verified":
-        return `Payment of $${metadata.amount} was verified.`;
-      case "payment_rejected":
-        return `Payment of $${metadata.amount} was rejected.`;
-      case "payment_added_by_admin":
-        return `Payment of $${metadata.amount} was added by admin.`;
-      case "application_created":
-        return `New application submitted.`;
-      case "application_updated":
-        return `Application #${metadata.applicationId} was updated.`;
-      case "document_shared":
-        return `Document shared for application #${metadata.applicationId}.`;
-      case "document_verified":
-        return `Document verified.`;
-      case "document_rejected":
-        return `Document rejected.`;
-      default:
-        return "System update";
-    }
-  };
-
   const handleNavigateToLeads = () => navigate("/admin/leads");
-  // const handleNavigateToPayments = () => navigate("/admin/payments");
   const handleNavigateToApplications = () => navigate("/admin/applications");
   const handleNavigateToActiveStudents = () => navigate("/admin/leads");
   const handleNavigateToCounsellorsList = () => navigate("/admin/counsellors");
   const handleNavigateToPaymentsList = () => navigate("/admin/payments");
-  const handleNavigateToOfferLetterApps = () =>
-    navigate("/admin/applications?filter=offer_letter");
 
   return (
-    <main className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
+    <main className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       {/* Filter Selector - Responsive alignment */}
-      <div className="flex justify-end items-center mb-4 sm:mb-6">
+      <div className="flex justify-end items-center mb-3">
         <select
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
@@ -518,7 +542,7 @@ export const MainContent = () => {
       </div>
 
       {/* Stat Cards Grid - 1 col on mobile, 2 on tablet, 4 on desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3 ">
         <StatCard
           title="Total Leads"
           value={loading ? "..." : totalLeadsCount}
@@ -549,7 +573,6 @@ export const MainContent = () => {
           isNegative={false}
           icon={<DollarSign />}
           color="from-violet-500 to-indigo-600"
-          // onClick={handleNavigateToPayments}
         />
         <StatCard
           title="Applications"
@@ -575,14 +598,14 @@ export const MainContent = () => {
           isNegative={paymentsCountChange.startsWith("-")}
           icon={<DollarSign />}
           color="from-emerald-500 to-teal-500"
-          // onClick={handleNavigateToPaymentsList}
+          onClick={handleNavigateToPaymentsList}
         />
       </div>
 
       {/* Two Column Layout: Lead Funnel & Revenue Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
         <div className="bg-white p-4 sm:p-5 md:p-7 rounded-xl shadow-lg border border-gray-100">
-          <h3 className="font-semibold text-lg sm:text-xl text-gray-800 mb-4 sm:mb-6 flex items-center gap-3">
+          <h3 className="font-semibold text-lg sm:text-xl text-gray-800 mb-4 sm:mb-6 flex items-center gap-2">
             <div className="w-3 h-3 bg-[#009E99] rounded-full"></div>Lead Funnel
           </h3>
           <div className="space-y-4 sm:space-y-6">
@@ -655,21 +678,86 @@ export const MainContent = () => {
                   <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.65" />
                 </linearGradient>
               </defs>
-              {chartPaths.areaPath && (
-                <path d={chartPaths.areaPath} fill="url(#revenueGrad)" />
-              )}
-              {chartPaths.linePath && (
-                <path
-                  d={chartPaths.linePath}
-                  stroke="#009E99"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  fill="none"
-                />
+
+              {/* Y-axis line */}
+              <line
+                x1={chartPaths.chartXStart - 5}
+                y1={chartPaths.chartYStart}
+                x2={chartPaths.chartXStart - 5}
+                y2={chartPaths.chartYStart + chartPaths.chartHeight}
+                stroke="#cbd5e1"
+                strokeWidth="1"
+              />
+              {/* Y-axis ticks & labels */}
+              {yAxisTicks.map((tick, idx) => {
+                const y = getYCoord(tick);
+                const formattedValue =
+                  tick >= 1000
+                    ? `${(tick / 1000).toFixed(0)}K`
+                    : tick.toFixed(0);
+                return (
+                  <g key={idx}>
+                    <line
+                      x1={chartPaths.chartXStart - 8}
+                      y1={y}
+                      x2={chartPaths.chartXStart - 5}
+                      y2={y}
+                      stroke="#cbd5e1"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={chartPaths.chartXStart - 12}
+                      y={y + 3}
+                      textAnchor="end"
+                      className="text-[8px] sm:text-[9px] fill-gray-500"
+                    >
+                      {formattedValue}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Chart area (line + gradient) */}
+              {!hasNoData ? (
+                <>
+                  {chartPaths.areaPath && (
+                    <path d={chartPaths.areaPath} fill="url(#revenueGrad)" />
+                  )}
+                  {chartPaths.isSinglePoint ? (
+                    <circle
+                      cx={chartPaths.singleX}
+                      cy={chartPaths.singleY}
+                      r="4"
+                      fill="#009E99"
+                    />
+                  ) : (
+                    chartPaths.linePath && (
+                      <path
+                        d={chartPaths.linePath}
+                        stroke="#009E99"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                    )
+                  )}
+                </>
+              ) : (
+                // Baseline state when no data
+                <>
+                  <line
+                    x1={chartPaths.chartXStart}
+                    y1={chartPaths.chartYStart + chartPaths.chartHeight / 2}
+                    x2={chartPaths.chartXStart + chartPaths.chartWidth}
+                    y2={chartPaths.chartYStart + chartPaths.chartHeight / 2}
+                    stroke="#009E99"
+                    strokeWidth="2"
+                  />
+                </>
               )}
             </svg>
           </div>
-          {/* Responsive Chart Labels - only show subset on small screens */}
+          {/* X-axis labels (dates) */}
           <div className="flex justify-around mt-2 sm:mt-3 px-1 sm:px-2 overflow-x-auto">
             {visibleIndices.map((idx) => {
               const data = chartData[idx];
@@ -692,104 +780,70 @@ export const MainContent = () => {
         </div>
       </div>
 
-      {/* Recent Leads Table & Activity Feed */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-        <div className="xl:col-span-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b bg-gradient-to-r from-slate-50 to-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <h3 className="font-semibold text-lg sm:text-xl text-gray-800">
-              Recent Leads
-            </h3>
-            <button
-              onClick={handleNavigateToLeads}
-              className="text-[#009E99] hover:text-teal-700 font-medium flex items-center gap-1 transition text-sm"
-            >
-              View All →
-            </button>
-          </div>
-          {/* Horizontal scroll for table on mobile */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px]">
-              <thead className="bg-zinc-50 text-xs uppercase tracking-widest text-gray-500">
-                <tr>
-                  <th className="p-3 sm:p-5 text-left">Name</th>
-                  <th className="p-3 sm:p-5 text-left">Country</th>
-                  <th className="p-3 sm:p-5 text-left hidden sm:table-cell">
-                    Program
-                  </th>
-                  <th className="p-3 sm:p-5 text-left">Status</th>
-                  <th className="p-3 sm:p-5 text-left hidden md:table-cell">
-                    Assigned To
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="text-center py-12 text-gray-400">
-                      Loading recent leads...
-                    </td>
-                  </tr>
-                ) : recentLeads.length > 0 ? (
-                  recentLeads.map((lead) => (
-                    <TableRow
-                      key={lead.id}
-                      name={lead.name || "—"}
-                      email={lead.email || "—"}
-                      country={lead.preferred_country || "—"}
-                      program={lead.education?.[0]?.degree || "—"}
-                      status={lead.status || "New"}
-                      color="bg-cyan-100 text-cyan-700"
-                      assigned={lead.counsellor?.name || "Unassigned"}
-                    />
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center py-12 text-gray-400">
-                      No leads found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+      {/* Recent Leads Table - Full Width (Live Activity removed) */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b bg-gradient-to-r from-slate-50 to-white flex flex-row justify-between items-center gap-2">
+          <h3 className="font-semibold text-lg sm:text-xl text-gray-800">
+            Recent Leads
+          </h3>
+          <button
+            onClick={handleNavigateToLeads}
+            className="text-[#009E99] hover:text-teal-700 font-medium flex items-center gap-1 transition text-sm whitespace-nowrap"
+          >
+            View All
+          </button>
         </div>
-        <div className="space-y-4 sm:space-y-6">
-          <div className="bg-white p-4 sm:p-5 md:p-7 rounded-xl shadow-lg border border-gray-100">
-            <div className="flex justify-between items-center mb-4 sm:mb-6">
-              <h3 className="font-semibold text-lg sm:text-xl text-gray-800">
-                Live Activity
-              </h3>
-              <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-xs font-medium">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-                LIVE
-              </div>
-            </div>
-            <div className="space-y-4 sm:space-y-6 max-h-[400px] overflow-y-auto pr-2">
-              {notifications.length > 0 ? (
-                notifications
-                  .slice(0, 5)
-                  .map((n) => (
-                    <ActivityItem
-                      key={n.id}
-                      title={n.message}
-                      desc={getNotificationDescription(n)}
-                      time={n.time}
-                    />
-                  ))
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[500px]">
+            <thead className="bg-zinc-50 text-xs uppercase tracking-widest text-gray-500">
+              <tr>
+                <th className="p-3 sm:p-5 text-left">Name</th>
+                <th className="p-3 sm:p-5 text-left">Country</th>
+                <th className="p-3 sm:p-5 text-left hidden sm:table-cell">
+                  Program
+                </th>
+                <th className="p-3 sm:p-5 text-left">Status</th>
+                <th className="p-3 sm:p-5 text-left hidden md:table-cell">
+                  Assigned To
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-12 text-gray-400">
+                    Loading recent leads...
+                  </td>
+                </tr>
+              ) : recentLeads.length > 0 ? (
+                recentLeads.map((lead) => (
+                  <TableRow
+                    key={lead.id}
+                    name={lead.name || "—"}
+                    email={lead.email || "—"}
+                    country={lead.preferred_country || "—"}
+                    program={lead.education?.[0]?.degree || "—"}
+                    status={lead.status || "New"}
+                    color="bg-cyan-100 text-cyan-700"
+                    assigned={lead.counsellor?.name || "Unassigned"}
+                  />
+                ))
               ) : (
-                <p className="text-sm text-gray-400 text-center py-4">
-                  No recent activity
-                </p>
+                <tr>
+                  <td colSpan="5" className="text-center py-12 text-gray-400">
+                    No leads found
+                  </td>
+                </tr>
               )}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
     </main>
   );
 };
 
-/* ====================== Reusable Components (Responsive Enhancements) ====================== */
+/* ====================== Reusable Components ====================== */
 
 const StatCard = ({
   title,
@@ -896,23 +950,4 @@ const TableRow = ({
       {assigned}
     </td>
   </tr>
-);
-
-const ActivityItem = ({ title, desc, time }) => (
-  <div className="flex gap-2 sm:gap-3 group">
-    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-[#009E99] to-teal-400 rounded-xl flex items-center justify-center shadow-inner flex-shrink-0">
-      <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full animate-pulse" />
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="font-medium text-gray-800 group-hover:text-teal-700 transition text-sm sm:text-base truncate">
-        {title}
-      </p>
-      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1 leading-snug break-words">
-        {desc}
-      </p>
-      <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2">
-        {time}
-      </p>
-    </div>
-  </div>
 );

@@ -28,7 +28,7 @@ export default function LeadsTable({
 
   // Compact padding classes
   const thCls =
-    "px-4 py-2.5 text-left text-[10px] font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap bg-gray-50/80";
+    "px-4 py-2.5 text-left text-[10px] font-bold text-white uppercase tracking-wider whitespace-nowrap bg-[#009E99]";
   const tdCls = "px-4 py-2.5 align-middle";
 
   // Pagination settings
@@ -45,16 +45,16 @@ export default function LeadsTable({
   const displayEnd = Math.min(endIndex, total);
 
   return (
-    <div className="flex-1 overflow-auto p-4 bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div className="flex-1 overflow-auto">
       {/* Main Container with Black Border */}
-      <div className="bg-white border border-black rounded-lg overflow-hidden shadow-md">
+      <div className="bg-white border border-gray rounded-lg overflow-hidden shadow-md">
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200">
+              <tr className="bg-[#009E99] border-b border-[#009E99]">
                 <th className={`${thCls} w-12`}>
-                  <span>#</span>
+                  <span>Sr#</span>
                 </th>
                 <th className={thCls}>Lead</th>
                 <th className={thCls}>Contact</th>
@@ -182,29 +182,6 @@ export default function LeadsTable({
                       </div>
                     </td>
 
-                    {/* Program */}
-                    {/* <td className={tdCls}>
-                      <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md">
-                        <svg
-                          className="w-3 h-3 text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                          />
-                        </svg>
-                        <span className="text-[11px] font-medium text-blue-700">
-                          {lead.study_level || "—"}
-                        </span>
-                      </div>
-                    </td> */}
-
-                    {/* Program Column */}
                     <td className={tdCls}>
                       <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md">
                         <svg
@@ -302,7 +279,8 @@ export default function LeadsTable({
         </div>
 
         {/* Pagination Section */}
-        {pagination.totalPages >= 1 && (
+        {/* Pagination Section */}
+        {total > 10 && (
           <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-white">
             <ShowDataNumber
               start={displayStart}
@@ -319,9 +297,6 @@ export default function LeadsTable({
         )}
       </div>
 
-      {/* Floating Action Menu */}
-      {/* Floating Action Menu */}
-      {/* Floating Action Menu */}
       {actionMenu && (
         <>
           {/* Backdrop */}

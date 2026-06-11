@@ -20,6 +20,9 @@ import {
   ChevronUp,
   RefreshCw,
 } from "lucide-react";
+import { CancelButton } from "../../Components/CustomButtons/CancelButton";
+import { Title } from "../../Components/Title";
+import { AddButton } from "../../Components/CustomButtons/AddButton";
 
 const getToken = () => localStorage.getItem("token") || "";
 
@@ -88,8 +91,9 @@ function DocumentUploadModal({
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // handleSubmit now receives the event from AddButton
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // prevent any default behaviour
     if (!file) {
       toast.error("Please select a file", { toastId: "choose file" });
       return;
@@ -126,52 +130,48 @@ function DocumentUploadModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-md w-full my-auto">
-        <div className="p-4 sm:p-5 border-b border-gray-100">
-          <h2 className="text-base sm:text-lg font-bold text-gray-800">
-            Upload Document
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-500 break-words">
+      <div className="bg-white rounded-2xl max-w-md w-full my-auto overflow-hidden shadow-xl">
+        {/* Custom Title component with close button */}
+        <Title setModal={onClose} className="rounded-t-2xl">
+          Upload Document
+        </Title>
+
+        {/* Modal body */}
+        <div className="p-4 sm:p-5">
+          <p className="text-xs sm:text-sm text-gray-500 break-words mb-4">
             {docType?.label} for {application?.target_university}
           </p>
+
+          <form>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select File *
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={(e) => setFile(e.target.files[0])}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:border-teal-400"
+                  required
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  PDF, DOC, DOCX, JPG, PNG (Max 5MB)
+                </p>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
+                <CancelButton handleCancel={onClose} />
+                <AddButton
+                  label={loading ? "Uploading..." : "Upload"}
+                  handleClick={handleSubmit}
+                  loading={loading}
+                  disabled={!file || loading}
+                />
+              </div>
+            </div>
+          </form>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select File *
-            </label>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:border-teal-400"
-              required
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              PDF, DOC, DOCX, JPG, PNG (Max 5MB)
-            </p>
-          </div>
-          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full sm:flex-1 px-4 py-2.5 border rounded-xl text-gray-600 hover:bg-gray-50 text-sm font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full sm:flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 text-sm font-medium disabled:opacity-70"
-            >
-              {loading ? (
-                <RefreshCw size={16} className="animate-spin mx-auto" />
-              ) : (
-                "Upload"
-              )}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
@@ -601,7 +601,7 @@ export const StudentApplication = () => {
   }
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden">
+    <div className="p-2 sm:p-3 md:p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden">
       {/* (Optional header space – no extra UI added to preserve existing design) */}
 
       {/* Applications List */}

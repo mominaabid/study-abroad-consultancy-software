@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
@@ -33,8 +39,15 @@ import {
   ChevronDown,
   ChevronUp,
   History,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { X } from "lucide-react";
 import CountrySelect from "../../Components/InputFields/CountrySelect";
+import { AddBtnInHeader } from "../../Components/CustomButtons/AddBtnInHeader";
+import { CancelButton } from "../../Components/CustomButtons/CancelButton";
+import { Title } from "../../Components/Title";
+import { AddButton } from "../../Components/CustomButtons/AddButton";
 
 const getToken = () => localStorage.getItem("token") || "";
 
@@ -96,6 +109,160 @@ const DOC_TYPES = [
   { key: "fee_invoice", label: "Fee Invoice" },
 ];
 
+// ===================== SCROLL LOCK HOOK =====================
+function useModalScrollLock(openStates) {
+  const originalOverflowRef = useRef("");
+  const originalPaddingRightRef = useRef("");
+  const isLockedRef = useRef(false);
+
+  const isAnyOpen = openStates.some((open) => open);
+
+  useEffect(() => {
+    if (isAnyOpen && !isLockedRef.current) {
+      // Lock the body
+      const body = document.body;
+      originalOverflowRef.current = body.style.overflow;
+      originalPaddingRightRef.current = body.style.paddingRight;
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
+      body.style.paddingRight = `${scrollbarWidth}px`;
+      body.style.overflow = "hidden";
+      isLockedRef.current = true;
+    } else if (!isAnyOpen && isLockedRef.current) {
+      // Restore original styles
+      const body = document.body;
+      body.style.overflow = originalOverflowRef.current;
+      body.style.paddingRight = originalPaddingRightRef.current;
+      isLockedRef.current = false;
+    }
+  }, [isAnyOpen]);
+}
+
+// ===================== CUSTOM PAGINATION COMPONENT =====================
+const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+  if (totalPages <= 1) return null;
+
+  const getPageNumbers = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - delta && i <= currentPage + delta)
+      ) {
+        range.push(i);
+      }
+    }
+
+    range.forEach((i) => {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push("...");
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    });
+    return rangeWithDots;
+  };
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-100 sm:px-6">
+      <div className="flex flex-1 justify-between sm:hidden">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+            currentPage === 1
+              ? "text-gray-300 cursor-not-allowed"
+              : "text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+            currentPage === totalPages
+              ? "text-gray-300 cursor-not-allowed"
+              : "text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          Next
+        </button>
+      </div>
+      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing page <span className="font-medium">{currentPage}</span> of{" "}
+            <span className="font-medium">{totalPages}</span>
+          </p>
+        </div>
+        <div>
+          <nav
+            className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+            aria-label="Pagination"
+          >
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${
+                currentPage === 1
+                  ? "cursor-not-allowed bg-gray-50"
+                  : "hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+              }`}
+            >
+              <span className="sr-only">Previous</span>
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
+            {getPageNumbers().map((page, idx) =>
+              page === "..." ? (
+                <span
+                  key={`ellipsis-${idx}`}
+                  className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0"
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                    currentPage === page
+                      ? "z-10 bg-teal-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600"
+                      : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                  }`}
+                >
+                  {page}
+                </button>
+              ),
+            )}
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 ${
+                currentPage === totalPages
+                  ? "cursor-not-allowed bg-gray-50"
+                  : "hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+              }`}
+            >
+              <span className="sr-only">Next</span>
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ===================== DOCUMENT PREVIEW MODAL =====================
 function DocumentPreviewModal({
   isOpen,
@@ -120,7 +287,6 @@ function DocumentPreviewModal({
       toast.error("Please provide a rejection reason", {
         toastId: "reject-no-reason",
       });
-
       return;
     }
     await onReject(selectedDoc.id, rejectReason);
@@ -176,23 +342,16 @@ function DocumentPreviewModal({
     <>
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-            <div>
-              <h2 className="text-lg font-bold text-gray-800">Documents</h2>
-              <p className="text-sm text-gray-500">
-                {pendingDocs.length} pending, {verifiedDocs.length} verified,{" "}
-                {rejectedDocs.length} rejected
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-lg"
-            >
-              <XCircle size={20} className="text-gray-400" />
-            </button>
+          <Title setModal={onClose} className="rounded-t-2xl">
+            Documents
+          </Title>
+
+          <div className="px-4 sm:px-5 pt-2 pb-3 text-xs sm:text-sm text-gray-500 border-b border-gray-100">
+            {pendingDocs.length} pending, {verifiedDocs.length} verified,{" "}
+            {rejectedDocs.length} rejected
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5">
             {documents.length === 0 ? (
               <div className="text-center py-12">
                 <FileText size={48} className="mx-auto text-gray-300 mb-3" />
@@ -213,10 +372,13 @@ function DocumentPreviewModal({
                       key={doc.id}
                       className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition"
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <FileText size={18} className="text-teal-600" />
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <FileText
+                              size={18}
+                              className="text-teal-600 shrink-0"
+                            />
                             <span className="font-medium text-gray-800 capitalize">
                               {doc.doc_type?.replace(/_/g, " ")}
                             </span>
@@ -231,7 +393,7 @@ function DocumentPreviewModal({
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-gray-600 break-all">
                             File: {fileName}
                           </p>
                           <p className="text-xs text-gray-400">
@@ -246,7 +408,6 @@ function DocumentPreviewModal({
                               const parsed = new Date(dateValue);
                               if (isNaN(parsed.getTime()))
                                 return "Invalid date";
-
                               const day = String(parsed.getDate()).padStart(
                                 2,
                                 "0",
@@ -269,7 +430,7 @@ function DocumentPreviewModal({
                             </p>
                           )}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 self-end sm:self-start">
                           {fileUrl && (
                             <a
                               href={fileUrl}
@@ -314,13 +475,16 @@ function DocumentPreviewModal({
               </div>
             )}
           </div>
+
+          <div className="border-t border-gray-100 p-4 flex justify-end">
+            <CancelButton handleCancel={onClose} />
+          </div>
         </div>
       </div>
 
-      {/* Reject Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+          <div className="bg-white rounded-2xl max-w-md w-full mx-4">
             <div className="p-5 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-800">
                 Reject Document
@@ -335,18 +499,18 @@ function DocumentPreviewModal({
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Please provide a reason for rejection..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none resize-none"
+                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none resize-none"
               />
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => setShowRejectModal(false)}
-                  className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReject}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600"
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                 >
                   Reject
                 </button>
@@ -474,14 +638,18 @@ function CounsellorDocumentModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full">
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">Share Document</h2>
-          <p className="text-sm text-gray-500">Student: {student?.name}</p>
-          <p className="text-xs text-gray-400">
+      <div className="bg-white rounded-2xl max-w-md w-full mx-4 overflow-hidden">
+        <Title setModal={onClose} className="rounded-t-2xl">
+          Share Document
+        </Title>
+
+        <div className="px-5 py-2 text-sm text-gray-600 bg-gray-50 border-b border-gray-100">
+          <p className="font-medium break-words">Student: {student?.name}</p>
+          <p className="text-xs text-gray-500 break-words">
             {application?.target_university}
           </p>
         </div>
+
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -501,7 +669,9 @@ function CounsellorDocumentModal({
                 onChange={(e) =>
                   setFormData({ ...formData, doc_type: e.target.value })
                 }
-                className={`w-full border ${errors.doc_type ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+                className={`w-full border ${
+                  errors.doc_type ? "border-red-400" : "border-gray-200"
+                } rounded-lg px-4 py-2.5 focus:border-teal-400`}
               >
                 {availableDocTypes.map((type) => (
                   <option key={type.key} value={type.key}>
@@ -523,7 +693,9 @@ function CounsellorDocumentModal({
               type="file"
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
               onChange={handleFileChange}
-              className={`w-full border ${errors.file ? "border-red-400" : "border-gray-200"} rounded-xl px-4 py-2.5 focus:border-teal-400`}
+              className={`w-full border ${
+                errors.file ? "border-red-400" : "border-gray-200"
+              } rounded-lg px-4 py-2.5 focus:border-teal-400 text-sm`}
               required
             />
             {errors.file && (
@@ -535,7 +707,6 @@ function CounsellorDocumentModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Notes (Optional)
             </label>
-
             <textarea
               rows="2"
               value={formData.notes}
@@ -544,40 +715,24 @@ function CounsellorDocumentModal({
               }
               className={`w-full border ${
                 errors.notes ? "border-red-400" : "border-gray-200"
-              } rounded-xl px-4 py-2.5 focus:border-teal-400 resize-none`}
+              } rounded-lg px-4 py-2.5 focus:border-teal-400 resize-none`}
               placeholder="Add notes for the student..."
               maxLength={255}
             />
-
             <div className="flex justify-between mt-1">
               {errors.notes && (
                 <p className="text-red-500 text-xs">{errors.notes}</p>
               )}
-              <p className="text-xs text-gray-400 ml-auto">
-                {formData.notes.length}/255
-              </p>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
+          <div className="flex justify-end gap-3 pt-2">
+            <CancelButton handleCancel={onClose} />
+            <AddButton
+              label="Share Document"
+              loading={loading}
               disabled={loading || noTypesAvailable}
-              className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <RefreshCw size={16} className="animate-spin mx-auto" />
-              ) : (
-                "Share Document"
-              )}
-            </button>
+            />
           </div>
         </form>
       </div>
@@ -585,41 +740,88 @@ function CounsellorDocumentModal({
   );
 }
 
-// ===================== DELETE CONFIRM MODAL =====================
-function DeleteConfirmModal({ isOpen, onClose, onConfirm, application }) {
-  if (!isOpen) return null;
+// ===================== SEARCHABLE DROPDOWN COMPONENT =====================
+function SearchableStudentDropdown({ students, onSelect, selectedStudent }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredStudents = students.filter(
+    (student) =>
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const handleSelect = (student) => {
+    onSelect(student);
+    setSearchTerm(student.name);
+    setIsOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value);
+    setIsOpen(true);
+    if (e.target.value === "" && selectedStudent) {
+      onSelect(null);
+    }
+  };
+
+  const displayValue = selectedStudent ? selectedStudent.name : searchTerm;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6">
-        <div className="text-center">
-          <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Trash2 size={24} className="text-red-500" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-800 mb-2">
-            Delete Application
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Are you sure you want to delete the application for{" "}
-            <strong>{application?.target_university}</strong>? This action
-            cannot be undone.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
+    <div className="relative w-full sm:w-80" ref={dropdownRef}>
+      <div className="relative">
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+        />
+        <input
+          type="text"
+          value={displayValue}
+          onChange={handleInputChange}
+          onFocus={() => setIsOpen(true)}
+          placeholder="Search student by name or email..."
+          className="w-full pl-9 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none"
+        />
+        <ChevronDown
+          size={16}
+          className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
       </div>
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {filteredStudents.length === 0 ? (
+            <div className="px-4 py-2 text-sm text-gray-500">
+              No students found
+            </div>
+          ) : (
+            filteredStudents.map((student) => (
+              <div
+                key={student.id}
+                onClick={() => handleSelect(student)}
+                className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <div className="font-medium text-gray-800">{student.name}</div>
+                <div className="text-xs text-gray-500 break-all">
+                  {student.email}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -631,17 +833,27 @@ export const CounsellorApplication = () => {
   const [documents, setDocuments] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDocModal, setShowDocModal] = useState(false);
   const [showDocumentPreview, setShowDocumentPreview] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [selectedAppForDoc, setSelectedAppForDoc] = useState(null);
   const [currentAppDocuments, setCurrentAppDocuments] = useState([]);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Scroll lock for all modals
+  useModalScrollLock([
+    showStatusModal,
+    showCreateModal,
+    showEditModal,
+    showDocModal,
+    showDocumentPreview,
+  ]);
 
   useEffect(() => {
     if (showDocumentPreview && selectedApplication) {
@@ -654,11 +866,9 @@ export const CounsellorApplication = () => {
     }
   }, [applications, showDocumentPreview, selectedApplication]);
 
-  // Get logged-in user from Redux
   const user = useSelector((state) => state.auth.user);
   const isAdmin = user?.role === "admin";
 
-  // Fetch students + applications
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -723,7 +933,6 @@ export const CounsellorApplication = () => {
       toast.error("Failed to load data", { toastId: "load-data-failed" });
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -731,10 +940,10 @@ export const CounsellorApplication = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchData();
-  };
+  // Reset to page 1 when selected student changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStudent]);
 
   const handleVerifyDocument = async (docId) => {
     try {
@@ -745,7 +954,6 @@ export const CounsellorApplication = () => {
         toast.success("Document verified successfully", {
           toastId: "doc-verify-success",
         });
-
         await fetchData();
       }
     } catch (err) {
@@ -768,24 +976,6 @@ export const CounsellorApplication = () => {
     } catch (err) {
       toast.error(err.response?.data?.message || "Rejection failed", {
         toastId: "doc-reject-success",
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedApplication) return;
-    try {
-      await authAxios.delete(
-        `${BASE_URL}/counsellor/applications/${selectedApplication.id}`,
-      );
-      toast.success("Application deleted successfully", {
-        toastId: "delete-success",
-      });
-      setShowDeleteModal(false);
-      fetchData();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Delete failed", {
-        toastId: "delete-failed",
       });
     }
   };
@@ -826,7 +1016,6 @@ export const CounsellorApplication = () => {
     return labelMap[status] || status;
   };
 
-  // All leads assigned to this counsellor (from API) – for sidebar display
   const allAssignedStudents = useMemo(() => {
     return students.map((s) => ({
       id: s.id,
@@ -842,7 +1031,10 @@ export const CounsellorApplication = () => {
     }));
   }, [students]);
 
-  // Leads eligible for creating a new application (counsellor only)
+  const studentsWithApps = useMemo(() => {
+    return students.filter((s) => s.applications && s.applications.length > 0);
+  }, [students]);
+
   const eligibleForNewApp = useMemo(() => {
     if (isAdmin) return allAssignedStudents;
     const allowedStatuses = ["new", "contacted", "counseling"];
@@ -851,14 +1043,24 @@ export const CounsellorApplication = () => {
     );
   }, [allAssignedStudents, isAdmin]);
 
-  // Inside CounsellorApplication component, after other useMemo definitions
+  const studentApplications = useMemo(() => {
+    if (!selectedStudent) return [];
+    return applications.filter((app) => app.student_id === selectedStudent.id);
+  }, [applications, selectedStudent]);
+
+  // Pagination logic
+  const totalItems = studentApplications.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedApplications = studentApplications.slice(startIndex, endIndex);
+
   const existingDocTypesForSelectedApp = useMemo(() => {
     if (!selectedAppForDoc) return new Set();
     const app = applications.find((a) => a.id === selectedAppForDoc.id);
     if (!app || !app.documents) return new Set();
     const blocked = new Set();
     app.documents.forEach((doc) => {
-      // Block doc_type if it exists and is NOT rejected
       if (doc.status !== "rejected") {
         blocked.add(doc.doc_type);
       }
@@ -866,398 +1068,228 @@ export const CounsellorApplication = () => {
     return blocked;
   }, [selectedAppForDoc, applications]);
 
-  const counselingStudents = useMemo(() => {
-    return allAssignedStudents.filter(
-      (s) => s.status?.toLowerCase() === "counseling",
-    );
-  }, [allAssignedStudents]);
-
-  const filteredStudents = counselingStudents.filter(
-    (s) =>
-      s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
   return (
-    <div className="p-4 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex justify-end flex-wrap gap-4">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition shadow-md"
-          >
-            <Plus size={18} /> New Application
-          </button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="mb-4">
-        <div className="relative">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Search students by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none"
+    <div className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
+      <div className="mb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="w-full md:w-auto order-2 md:order-1">
+          <SearchableStudentDropdown
+            students={studentsWithApps}
+            onSelect={(student) => setSelectedStudent(student)}
+            selectedStudent={selectedStudent}
           />
         </div>
+        <AddBtnInHeader
+          label="Add Application"
+          handleToggle={() => setShowCreateModal(true)}
+          className="order-1 md:order-2 self-end md:self-auto"
+        />
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Student Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-              <h3 className="font-semibold text-gray-700 text-sm flex items-center gap-2">
-                <Users size={16} className="text-teal-500" />
-                {isAdmin ? "All Students" : "My Students"} (
-                {filteredStudents.length})
-              </h3>
-            </div>
-            <div className="max-h-[500px] overflow-y-auto">
-              {filteredStudents.map((student) => {
-                const studentApps = applications.filter(
-                  (a) => a.student_id === student.id,
-                );
-                const allStudentDocs = studentApps.flatMap(
-                  (app) => app.documents || [],
-                );
-                const pendingDocsCount = allStudentDocs.filter(
-                  (d) => d.status === "pending" || d.status === "review",
-                ).length;
-
-                return (
-                  <div
-                    key={student.id}
-                    onClick={() =>
-                      setSelectedStudent(
-                        selectedStudent?.id === student.id ? null : student,
-                      )
-                    }
-                    className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                      selectedStudent?.id === student.id
-                        ? "bg-teal-50 border-l-4 border-l-teal-500"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
-                        <User size={16} className="text-teal-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-800">
-                          {student.name}
-                        </p>
-                        <p className="text-xs text-gray-500">{student.email}</p>
-                      </div>
-                      <div className="flex gap-1">
-                        {pendingDocsCount > 0 && (
-                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                            {pendingDocsCount} pending
-                          </span>
-                        )}
-                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
-                          {studentApps.length} apps
-                        </span>
-                      </div>
-                    </div>
-                    {selectedStudent?.id === student.id && (
-                      <div className="mt-3 pl-12 space-y-2">
-                        {studentApps.map((app) => {
-                          const appDocs = app.documents || [];
-                          const pendingDocs = appDocs.filter(
-                            (d) =>
-                              d.status === "pending" || d.status === "review",
-                          ).length;
-                          const verifiedDocs = appDocs.filter(
-                            (d) => d.status === "verified",
-                          ).length;
-
-                          return (
-                            <div
-                              key={app.id}
-                              className="p-2 bg-white rounded-lg border border-gray-100 text-sm"
-                            >
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="font-medium text-gray-800">
-                                    {app.target_university}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    {app.course}
-                                  </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span
-                                      className={`text-xs px-2 py-0.5 rounded-full ${getStatusBadge(app.status)}`}
-                                    >
-                                      {getStatusLabel(app.status)}
-                                    </span>
-                                    {pendingDocs > 0 && (
-                                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                                        {pendingDocs} doc pending
-                                      </span>
-                                    )}
-                                    {verifiedDocs > 0 && (
-                                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                        {verifiedDocs} verified
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleViewDocuments(app);
-                                    }}
-                                    className="p-1 rounded hover:bg-blue-50"
-                                    title="View Documents"
-                                  >
-                                    <FileText
-                                      size={12}
-                                      className="text-blue-600"
-                                    />
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedApplication(app);
-                                      setShowEditModal(true);
-                                    }}
-                                    className="p-1 rounded hover:bg-amber-50"
-                                    title="Edit"
-                                  >
-                                    <Edit
-                                      size={12}
-                                      className="text-amber-600"
-                                    />
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedAppForDoc(app);
-                                      setSelectedStudent(student);
-                                      setShowDocModal(true);
-                                    }}
-                                    className="p-1 rounded hover:bg-teal-50"
-                                    title="Share Document"
-                                  >
-                                    <Upload
-                                      size={12}
-                                      className="text-teal-600"
-                                    />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {filteredStudents.length === 0 && (
-                <div className="text-center py-8 text-gray-400">
-                  <p>No eligible students found</p>
-                  {!isAdmin && (
-                    <p className="text-xs mt-1">
-                      Only leads with status: New, Contacted, Counselling,
-                      Inquiry can create applications
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+      {/* Applications Table - Responsive with horizontal scroll on mobile */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <h2 className="font-bold text-gray-800">
+              {selectedStudent
+                ? `Applications - ${selectedStudent.name}`
+                : "Applications"}
+            </h2>
+            <p className="text-xs text-gray-400">
+              {selectedStudent
+                ? `${studentApplications.length} application(s) found`
+                : "Select a student to view applications"}
+            </p>
           </div>
         </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] md:min-w-0">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                  Sr#
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                  Student
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                  University
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                  Course
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                  Documents
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-8">
+                    <RefreshCw size={20} className="animate-spin mx-auto" />
+                  </td>
+                </tr>
+              ) : !selectedStudent ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-12">
+                    <div className="text-center">
+                      <Users size={40} className="mx-auto text-gray-300 mb-2" />
+                      <p className="text-gray-500">
+                        Please select a student from the dropdown
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Only students with existing applications are shown
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : studentApplications.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-8">
+                    <div className="text-center">
+                      <FileText
+                        size={40}
+                        className="mx-auto text-gray-300 mb-2"
+                      />
+                      <p className="text-gray-500">
+                        No applications found for {selectedStudent.name}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Click "New Application" to create one
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedApplications.map((app, idx) => {
+                  const globalIndex = startIndex + idx + 1;
+                  const appDocs = app.documents || [];
+                  const pendingDocs = appDocs.filter(
+                    (d) => d.status === "pending" || d.status === "review",
+                  ).length;
+                  const verifiedDocs = appDocs.filter(
+                    (d) => d.status === "verified",
+                  ).length;
 
-        {/* Applications Table */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-              <div>
-                <h2 className="font-bold text-gray-800">All Applications</h2>
-                <p className="text-xs text-gray-400">
-                  {applications.length} total applications
-                </p>
-              </div>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="p-1.5 rounded-lg hover:bg-gray-200 transition"
-              >
-                <RefreshCw
-                  size={16}
-                  className={refreshing ? "animate-spin" : ""}
-                />
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
-                      Student
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
-                      University
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
-                      Course
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
-                      Documents
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {loading ? (
-                    <tr>
-                      <td colSpan="6" className="text-center py-8">
-                        <RefreshCw size={20} className="animate-spin mx-auto" />
+                  return (
+                    <tr
+                      key={app.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {globalIndex}
                       </td>
-                    </tr>
-                  ) : applications.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="text-center py-8">
-                        <div className="text-center">
-                          <FileText
-                            size={40}
-                            className="mx-auto text-gray-300 mb-2"
-                          />
-                          <p className="text-gray-500">No applications found</p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Click "New Application" to create one
-                          </p>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-800">
+                          {app.student_name || "Unknown"}
+                        </p>
+                        <p className="text-xs text-gray-500 break-all">
+                          {app.student_email || "No email"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-sm break-words">
+                        {app.target_university || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm break-words">
+                        {app.course || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${getStatusBadge(
+                            app.status,
+                          )}`}
+                        >
+                          {getStatusLabel(app.status)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {pendingDocs > 0 && (
+                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              {pendingDocs} pending
+                            </span>
+                          )}
+                          {verifiedDocs > 0 && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              {verifiedDocs} verified
+                            </span>
+                          )}
+                          {appDocs.length === 0 && (
+                            <span className="text-xs text-gray-400">
+                              No docs
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleViewDocuments(app)}
+                            className="p-1.5 rounded-lg hover:bg-blue-50 transition"
+                            title="View Documents"
+                          >
+                            <FileText size={14} className="text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedApplication(app);
+                              setShowEditModal(true);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-amber-50 transition"
+                            title="Edit"
+                          >
+                            <Edit size={14} className="text-amber-600" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedAppForDoc(app);
+                              setSelectedStudent({
+                                id: app.student_id,
+                                name: app.student_name,
+                                email: app.student_email,
+                                user_id: app.user_id,
+                              });
+                              setShowDocModal(true);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-teal-50 transition"
+                            title="Share Document"
+                          >
+                            <Upload size={14} className="text-teal-600" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedApplication(app);
+                              setShowStatusModal(true);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-purple-50 transition"
+                            title="Change Status"
+                          >
+                            <Clock size={14} className="text-purple-600" />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  ) : (
-                    applications.map((app) => {
-                      const appDocs = app.documents || [];
-                      const pendingDocs = appDocs.filter(
-                        (d) => d.status === "pending" || d.status === "review",
-                      ).length;
-                      const verifiedDocs = appDocs.filter(
-                        (d) => d.status === "verified",
-                      ).length;
-
-                      return (
-                        <tr
-                          key={app.id}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-4 py-3">
-                            <p className="font-medium text-gray-800">
-                              {app.student_name || "Unknown"}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {app.student_email || "No email"}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {app.target_university || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            {app.course || "—"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(app.status)}`}
-                            >
-                              {getStatusLabel(app.status)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1">
-                              {pendingDocs > 0 && (
-                                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
-                                  {pendingDocs} pending
-                                </span>
-                              )}
-                              {verifiedDocs > 0 && (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                  {verifiedDocs} verified
-                                </span>
-                              )}
-                              {appDocs.length === 0 && (
-                                <span className="text-xs text-gray-400">
-                                  No docs
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleViewDocuments(app)}
-                                className="p-1.5 rounded-lg hover:bg-blue-50 transition"
-                                title="View Documents"
-                              >
-                                <FileText size={14} className="text-blue-600" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedApplication(app);
-                                  setShowEditModal(true);
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-amber-50 transition"
-                                title="Edit"
-                              >
-                                <Edit size={14} className="text-amber-600" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedAppForDoc(app);
-                                  setSelectedStudent({
-                                    id: app.student_id,
-                                    name: app.student_name,
-                                    email: app.student_email,
-                                    user_id: app.user_id,
-                                  });
-                                  setShowDocModal(true);
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-teal-50 transition"
-                                title="Share Document"
-                              >
-                                <Upload size={14} className="text-teal-600" />
-                              </button>
-                              {/* Change Status Button */}
-                              <button
-                                onClick={() => {
-                                  setSelectedApplication(app);
-                                  setShowStatusModal(true);
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-purple-50 transition"
-                                title="Change Status"
-                              >
-                                <Clock size={14} className="text-purple-600" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
+
+        {/* Pagination - Only shown when total entries > 10 */}
+        {!loading && selectedStudent && studentApplications.length > 10 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
       {/* Document Preview Modal */}
@@ -1317,17 +1349,6 @@ export const CounsellorApplication = () => {
         student={selectedStudent}
         application={selectedAppForDoc}
         blockedDocTypes={existingDocTypesForSelectedApp}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={showDeleteModal}
-        onClose={() => {
-          setShowDeleteModal(false);
-          setSelectedApplication(null);
-        }}
-        onConfirm={handleDelete}
-        application={selectedApplication}
       />
     </div>
   );

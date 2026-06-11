@@ -75,7 +75,7 @@ export default function CourseSelect({
             onKeyDown={preventLeadingSpace}
             onPaste={handlePaste}
             placeholder={placeholder}
-            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none pr-10"
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-teal-400 focus:ring-1 focus:ring-teal-200 outline-none pr-10"
           />
           <button
             type="button"
@@ -90,7 +90,7 @@ export default function CourseSelect({
         </div>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden max-h-[320px] flex flex-col">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden max-h-[320px] flex flex-col">
             <div className="p-3 border-b sticky top-0 bg-white">
               <div className="relative">
                 <Search
@@ -105,7 +105,7 @@ export default function CourseSelect({
                   onKeyDown={preventLeadingSpace}
                   onPaste={handlePaste}
                   placeholder="Search courses..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:border-teal-400"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:border-teal-400"
                 />
               </div>
             </div>

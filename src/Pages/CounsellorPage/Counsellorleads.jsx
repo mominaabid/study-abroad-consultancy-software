@@ -1,4 +1,4 @@
-// CounsellorLeads.jsx (fully responsive)
+// CounsellorLeads.jsx – responsive toolbar with uniform sizing matching Add Lead button
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -6,10 +6,10 @@ import { BASE_URL } from "../../Content/Url";
 import "../AdminPage/Leads.css";
 import {
   FiUsers,
-  FiTrendingUp,
-  FiCheckCircle,
   FiClock,
-  FiPlus,
+  FiPhoneCall,
+  FiCheckCircle,
+  FiXCircle,
 } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
@@ -23,12 +23,13 @@ import {
 import LeadDrawer from "../../Components/LeadsComponents/LeadDrawer";
 import { KanbanColumn } from "../../Components/LeadsComponents/KanbanBoard";
 import LeadsTable from "../../Components/LeadsComponents/LeadsTable";
+import { AddBtnInHeader } from "../../Components/CustomButtons/AddBtnInHeader";
 
 // ─── Stat Card (responsive) ─────────────────────────────────────────────────
 function StatCard({ label, value, icon, color }) {
   return (
     <div
-      className="bg-white rounded-xl md:rounded-2xl border border-gray-200 shadow-sm px-3 md:px-5 py-3 md:py-4
+      className="bg-white rounded-lg md:rounded-2xl border border-gray-200 shadow-sm px-3 md:px-5 py-3 md:py-4
                     flex items-center justify-between transition-all duration-200
                     hover:shadow-md hover:-translate-y-0.5"
     >
@@ -39,7 +40,7 @@ function StatCard({ label, value, icon, color }) {
         </p>
       </div>
       <div
-        className="w-9 h-9 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-base md:text-xl border"
+        className="w-9 h-9 md:w-12 md:h-12 rounded-lg flex items-center justify-center text-base md:text-xl border"
         style={{ color, borderColor: color, backgroundColor: `${color}10` }}
       >
         {icon}
@@ -281,23 +282,29 @@ export default function CounsellorLeads() {
     },
     {
       label: "In Progress",
-      value: leads.filter(
-        (l) => !["new", "success", "rejected"].includes(l.status),
-      ).length,
-      icon: <FiTrendingUp />,
+      value: leads.filter((l) => ["new"].includes(l.status)).length,
+      icon: <FiClock />,
       color: "#f59e0b",
     },
     {
-      label: "Conversions",
-      value: leads.filter((l) => l.status === "success").length,
-      icon: <FiCheckCircle />,
+      label: "Contacted",
+      value: leads.filter(
+        (l) => !["new", "success", "rejected"].includes(l.status),
+      ).length,
+      icon: <FiPhoneCall />,
       color: "#10b981",
     },
     {
-      label: "New Inquiries",
-      value: leads.filter((l) => l.status === "new").length,
-      icon: <FiClock />,
-      color: "#3b82f6",
+      label: "Success Case",
+      value: leads.filter((l) => ["success"].includes(l.status)).length,
+      icon: <FiCheckCircle />,
+      color: "#22c55e",
+    },
+    {
+      label: "Rejected",
+      value: leads.filter((l) => ["rejected"].includes(l.status)).length,
+      icon: <FiXCircle />,
+      color: "#ef4444",
     },
   ];
 
@@ -345,16 +352,25 @@ export default function CounsellorLeads() {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-hidden">
+      {/* ── Mobile/Tablet Add Lead Button (above stat cards, aligned right) ── */}
+      <div className="block lg:hidden px-4 md:px-6 pt-3 pb-2 flex justify-end">
+        <AddBtnInHeader
+          label="Add Lead"
+          handleToggle={() => navigate("/counsellor/leads/new")}
+          className="shadow-md shadow-[#009E99]"
+        />
+      </div>
+
       {/* ── Responsive Stats Bar ── */}
       {!loading && (
-        <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4">
+        <div className="flex-shrink-0 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 px-4 md:px-6 py-3 md:py-4">
           {stats.map((s) => (
             <StatCard key={s.label} {...s} />
           ))}
         </div>
       )}
 
-      {/* ── Responsive Header ── */}
+      {/* ── Responsive Header – uniform toolbar ── */}
       <div className="flex-shrink-0 backdrop-blur-sm border-b border-gray-100 px-4 md:px-6 py-3 md:py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
@@ -367,11 +383,11 @@ export default function CounsellorLeads() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:gap-2.5">
-            {/* Search - full width on mobile, fixed min-width on larger */}
-            <div className="flex items-center gap-2 h-8 md:h-9 px-3 bg-gray-50 border border-gray-200 rounded-xl w-full sm:w-auto md:min-w-[200px] transition-all focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100">
+            {/* Search Bar – matches Add Lead dimensions */}
+            <div className="flex items-center gap-2 py-3 px-2 sm:px-4 bg-gray-50 border border-gray-200 rounded-lg w-full sm:w-auto md:min-w-[200px] transition-all focus-within:border-[#009E99] focus-within:ring-2 focus-within:ring-[#009E99]">
               <svg
-                width="12"
-                height="12"
+                width="14"
+                height="14"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="#9ca3af"
@@ -384,15 +400,15 @@ export default function CounsellorLeads() {
                 placeholder="Search leads..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent outline-none text-xs md:text-[13px] text-gray-700 placeholder-gray-400 w-full"
+                className="bg-transparent outline-none text-[15px] sm:text-sm text-gray-700 placeholder-gray-400 w-full"
               />
             </div>
 
-            {/* Country filter */}
+            {/* Country filter – matches Add Lead dimensions */}
             <div className="relative" ref={countryFilterRef}>
               <button
                 onClick={openCountryFilter}
-                className="h-8 md:h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-xs md:text-[13px] text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[110px] sm:min-w-[130px]"
+                className="py-3 pl-2 sm:pl-4 pr-8 border border-gray-200 rounded-lg bg-white text-[15px] sm:text-sm text-gray-600 outline-none hover:border-teal-500 appearance-none cursor-pointer flex items-center gap-1 min-w-[110px] sm:min-w-[130px]"
               >
                 <span className="truncate max-w-[80px] sm:max-w-[100px]">
                   {filterCountry === "All Countries"
@@ -416,7 +432,7 @@ export default function CounsellorLeads() {
               {countryFilterOpen &&
                 createPortal(
                   <div
-                    className="fixed z-[9999] w-56 max-w-[90vw] bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+                    className="fixed z-[9999] w-56 max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
                     style={{
                       top: countryFilterPosition.top,
                       left: countryFilterPosition.left,
@@ -498,10 +514,10 @@ export default function CounsellorLeads() {
                 )}
             </div>
 
-            {/* Status filter */}
+            {/* Status filter – matches Add Lead dimensions */}
             <div className="relative">
               <select
-                className="h-8 md:h-9 pl-3 pr-8 border border-gray-200 rounded-xl bg-white text-xs md:text-[13px] text-gray-600 outline-none focus:border-purple-500 appearance-none cursor-pointer"
+                className="py-3 pl-2 sm:pl-4 pr-8 border border-gray-200 rounded-lg bg-white text-[15px] sm:text-sm text-gray-600 outline-none focus:border-[#009E99] appearance-none cursor-pointer"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -526,16 +542,16 @@ export default function CounsellorLeads() {
               </div>
             </div>
 
-            {/* View Toggle */}
-            <div className="flex h-8 md:h-9 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            {/* View Toggle (Kanban/Table) – matches Add Lead dimensions */}
+            <div className="flex border border-gray-200 rounded-lg overflow-hidden shadow-sm">
               {viewButtons.map((v) => (
                 <button
                   key={v.key}
                   onClick={() => setView(v.key)}
-                  className={`flex items-center gap-1.5 px-3 md:px-3.5 text-[11px] md:text-[12.5px] font-medium transition-all border-r last:border-0 border-gray-200
+                  className={`flex items-center gap-2 py-3 px-2 sm:px-4 text-[15px] sm:text-sm font-medium transition-all border-r last:border-0 border-gray-200
                     ${
                       view === v.key
-                        ? "bg-purple-600 text-white"
+                        ? "bg-[#009E99] text-white"
                         : "bg-white text-gray-500 hover:bg-gray-50"
                     }`}
                 >
@@ -545,14 +561,14 @@ export default function CounsellorLeads() {
               ))}
             </div>
 
-            {/* Export */}
+            {/* Export Button – matches Add Lead dimensions */}
             <button
               onClick={handleExport}
-              className="flex items-center gap-1.5 h-8 md:h-9 px-3 md:px-4 border border-gray-200 rounded-xl text-[11px] md:text-[12.5px] text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
+              className="flex items-center gap-2 py-3 px-2 sm:px-4 border border-gray-200 rounded-lg text-[15px] sm:text-sm text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
             >
               <svg
-                width="12"
-                height="12"
+                width="14"
+                height="14"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -565,14 +581,12 @@ export default function CounsellorLeads() {
               <span>Export</span>
             </button>
 
-            {/* Add Lead Button */}
-            <button
-              onClick={() => navigate("/counsellor/leads/new")}
-              className="flex items-center gap-1.5 h-8 md:h-9 px-3 md:px-4 bg-purple-600 text-white rounded-xl text-[11px] md:text-[12.5px] font-semibold hover:bg-purple-700 transition shadow-md shadow-purple-200 whitespace-nowrap"
-            >
-              <FiPlus size={14} />
-              <span>Add Lead</span>
-            </button>
+            {/* Add Lead Button – visible only on desktop (lg and up) */}
+            <AddBtnInHeader
+              label="Add Lead"
+              handleToggle={() => navigate("/counsellor/leads/new")}
+              className="hidden lg:flex"
+            />
           </div>
         </div>
       </div>
@@ -580,7 +594,7 @@ export default function CounsellorLeads() {
       {/* ── Loading State ── */}
       {loading && (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
-          <div className="w-8 h-8 border-2 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-[#009E99] rounded-full animate-spin" />
           <span className="text-sm">Loading your leads...</span>
         </div>
       )}
