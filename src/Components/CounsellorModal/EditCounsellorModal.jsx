@@ -2,14 +2,76 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
-import { User, Mail, IdCard, MapPin, Users, XCircleIcon } from "lucide-react";
+import { User, Mail, IdCard, MapPin, Users, CreditCard } from "lucide-react";
 
 import { InputField } from "../InputFields/InputField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
-import { CancelButton } from "../CustomButtons/CancelButton";
 import { Title } from "../Title";
 import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
+
+// Validation rules (identical to AddCounsellorModal)
+const validateForm = (formData) => {
+  const errors = {};
+
+  // Name (required)
+  if (!formData.name?.trim()) {
+    errors.name = "Full Name is required";
+  } else if (formData.name.trim().length < 3) {
+    errors.name = "Full Name must be at least 3 characters";
+  } else if (formData.name.length > 50) {
+    errors.name = "Full Name cannot exceed 50 characters";
+  } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+    errors.name = "Only letters and spaces allowed";
+  }
+
+  // Father Name (optional but validated if provided)
+  if (formData.father_name?.trim()) {
+    if (formData.father_name.trim().length < 3) {
+      errors.father_name =
+        "Father's Name must be at least 3 characters if provided";
+    } else if (formData.father_name.length > 50) {
+      errors.father_name = "Father's Name cannot exceed 50 characters";
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.father_name)) {
+      errors.father_name = "Only letters and spaces allowed";
+    }
+  }
+
+  // Email (required)
+  const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z.-]+\.[a-zA-Z]{2,}$/;
+  if (!formData.email?.trim()) {
+    errors.email = "Email is required";
+  } else if (!emailRegex.test(formData.email)) {
+    errors.email = "Enter a valid email address (e.g., name@example.com)";
+  }
+
+  // Phone (required)
+  const phoneDigits = formData.phone?.replace(/\D/g, "") || "";
+  if (!formData.phone?.trim()) {
+    errors.phone = "Phone number is required";
+  } else if (phoneDigits.length < 9) {
+    errors.phone = "Phone number must have at least 9 digits";
+  }
+
+  // CNIC (optional but must be valid if provided)
+  if (formData.cnic?.trim()) {
+    const cnicPattern = /^\d{5}-\d{7}-\d{1}$/;
+    if (!cnicPattern.test(formData.cnic)) {
+      errors.cnic = "CNIC must be in format 00000-0000000-0";
+    }
+  }
+
+  // Address (optional but validated if provided)
+  if (formData.address?.trim()) {
+    if (formData.address.trim().length < 3) {
+      errors.address = "Address must be at least 3 characters if provided";
+    } else if (formData.address.length > 250) {
+      errors.address = "Address cannot exceed 250 characters";
+    }
+  }
+
+  return errors;
+};
 
 export const EditCounsellorModal = ({
   isOpen,
@@ -18,94 +80,80 @@ export const EditCounsellorModal = ({
   counselor,
 }) => {
   const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
+  // Initialize form data when counselor changes
   useEffect(() => {
     if (counselor) {
       setFormData(counselor);
     }
   }, [counselor]);
 
+  // Reset errors when modal opens or counselor changes
+  useEffect(() => {
+    if (isOpen) {
+      setErrors({});
+    }
+  }, [isOpen, counselor?.id]);
+
   if (!isOpen || !counselor) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Prevent leading spaces
+    if (value.startsWith(" ")) return;
+
+    // Handle phone separately (no formatting, just store)
+    if (name === "phone") {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+      return;
+    }
+
     let formattedValue = value;
 
-    if (formattedValue.startsWith(" ")) {
-      formattedValue = formattedValue.trimStart();
-    }
+    // Max length restrictions
+    if ((name === "name" || name === "father_name") && value.length > 50)
+      return;
+    if (name === "address" && value.length > 250) return;
 
+    // Only letters and spaces for name/father_name
     if (name === "name" || name === "father_name") {
-      formattedValue = formattedValue.replace(/[0-9]/g, "");
-      if (formattedValue.length > 50) {
-        formattedValue = formattedValue.slice(0, 50);
-      }
+      const alphaRegex = /^[a-zA-Z\s]*$/;
+      if (!alphaRegex.test(formattedValue)) return;
     }
 
-    if (name === "address") {
-      if (formattedValue.length > 250) {
-        formattedValue = formattedValue.slice(0, 250);
-      }
-    }
-
-    if (name === "phone") {
-      formattedValue = formattedValue.trimStart();
-
-      if (formattedValue.length > 20) {
-        formattedValue = formattedValue.slice(0, 20);
-      }
-    }
-
+    // CNIC formatting
     if (name === "cnic") {
-      const digits = formattedValue.replace(/\D/g, "");
-      const limitedDigits = digits.slice(0, 13);
-
-      let cnicPattern = "";
-      if (limitedDigits.length <= 5) {
-        cnicPattern = limitedDigits;
-      } else if (limitedDigits.length <= 12) {
-        cnicPattern = `${limitedDigits.slice(0, 5)}-${limitedDigits.slice(5)}`;
-      } else {
-        cnicPattern = `${limitedDigits.slice(0, 5)}-${limitedDigits.slice(5, 12)}-${limitedDigits.slice(12, 13)}`;
+      const nums = value.replace(/\D/g, "");
+      if (nums.length > 13) return;
+      let masked = nums;
+      if (nums.length > 5 && nums.length <= 12) {
+        masked = `${nums.slice(0, 5)}-${nums.slice(5)}`;
+      } else if (nums.length > 12) {
+        masked = `${nums.slice(0, 5)}-${nums.slice(5, 12)}-${nums.slice(12)}`;
       }
-      formattedValue = cnicPattern;
+      formattedValue = masked;
     }
 
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
+    // Clear error for this field when user starts typing
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
-
-  const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z.-]+\.[a-zA-Z]{2,}$/;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.name && formData.name.length < 3) {
-      return toast.error("Name must be at least 3 characters" , { toastId: "nam-teen-char" });
-    }
-
-    if (formData.father_name && formData.father_name.length < 3) {
-      return toast.error("Father Name must be at least 3 characters" , { toastId: "walid-nam-3-char" });
-    }
-
-    if (formData.address && formData.address.length < 3) {
-      return toast.error("Address must be at least 3 characters" , { toastId: "pata-3-char" });
-    }
-
-    if (!formData.email?.trim()) {
-      return toast.error("Email is required" , { toastId: "email-must" });
-    }
-
-    if (!formData.phone || formData.phone.replace(/\D/g, "").length < 9) {
-      return toast.error("Valid phone number is required" , { toastId: "sahi-phone#-do" });
-    }
-
-    if (!emailRegex.test(formData.email)) {
-      return toast.error("Please enter a valid email address" , { toastId: "darg-kro-rit-mail" });
-    }
-
-    if (formData.cnic && formData.cnic.length < 15) {
-      return toast.error("Please enter a valid 13-digit CNIC" , { toastId: "shanakhti-card-no-13-digit" });
+    // Validate all fields
+    const validationErrors = validateForm(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      toast.error("Please fix validation errors before submitting", {
+        toastId: "edit-validate-error",
+      });
+      return;
     }
 
     try {
@@ -127,13 +175,16 @@ export const EditCounsellorModal = ({
           },
         },
       );
-      toast.success(res.data?.message || "Counselor updated successfully" , { toastId: "doc-reject-success" });
+      toast.success(res.data?.message || "Counselor updated successfully", {
+        toastId: "counsellor-updated",
+      });
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
       toast.error(
-        error?.response?.data?.message || "Failed to update counselor", { toastId: "fail-updat-conslar" }
+        error?.response?.data?.message || "Failed to update counselor",
+        { toastId: "fail-update-counsellor" },
       );
     } finally {
       setLoading(false);
@@ -147,41 +198,64 @@ export const EditCounsellorModal = ({
 
         <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              labelName="Full Name *"
-              name="name"
-              type="text"
-              icon={<User size={18} />}
-              value={formData.name || ""}
-              handlerChange={handleChange}
-              placeholder="Enter name (3-50 chars)"
-            />
-            <InputField
-              labelName="Father Name"
-              name="father_name"
-              type="text"
-              icon={<Users size={18} />}
-              value={formData.father_name || ""}
-              handlerChange={handleChange}
-              placeholder="Enter father name"
-            />
+            <div>
+              <InputField
+                labelName="Full Name *"
+                name="name"
+                type="text"
+                icon={<User size={18} />}
+                value={formData.name || ""}
+                handlerChange={handleChange}
+                placeholder="Enter name (3-50 chars, letters only)"
+              />
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.name}</p>
+              )}
+            </div>
+            <div>
+              <InputField
+                labelName="Father Name"
+                name="father_name"
+                type="text"
+                icon={<Users size={18} />}
+                value={formData.father_name || ""}
+                handlerChange={handleChange}
+                placeholder="Father's name (optional, 3-50 chars, letters only)"
+              />
+              {errors.father_name && (
+                <p className="text-red-500 text-xs mt-1 ml-1">
+                  {errors.father_name}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              labelName="Email Address *"
-              name="email"
-              type="email"
-              icon={<Mail size={18} />}
-              value={formData.email || ""}
-              handlerChange={handleChange}
-            />
-            <PhoneInputWithCountry
-              name="phone"
-              value={formData.phone || ""}
-              onChange={handleChange}
-              labelName="Phone Number *"
-            />
+            <div>
+              <InputField
+                labelName="Email Address *"
+                name="email"
+                type="email"
+                icon={<Mail size={18} />}
+                value={formData.email || ""}
+                handlerChange={handleChange}
+                placeholder="email@example.com"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>
+              )}
+            </div>
+            <div>
+              <PhoneInputWithCountry
+                name="phone"
+                value={formData.phone || ""}
+                onChange={handleChange}
+                labelName="Phone Number *"
+              />
+              {errors.phone && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.phone}</p>
+              )}
+            </div>
           </div>
 
           <div className="md:col-span-2">
@@ -189,21 +263,30 @@ export const EditCounsellorModal = ({
               labelName="CNIC"
               name="cnic"
               type="text"
-              icon={<IdCard size={18} />}
+              icon={<CreditCard size={18} />}
               value={formData.cnic || ""}
               handlerChange={handleChange}
+              placeholder="34104-0000000-0"
             />
+            {errors.cnic && (
+              <p className="text-red-500 text-xs mt-1 ml-1">{errors.cnic}</p>
+            )}
           </div>
 
-          <TextareaField
-            labelName="Address"
-            name="address"
-            type="text"
-            icon={<MapPin size={18} />}
-            value={formData.address || ""}
-            handlerChange={handleChange}
-            placeholder="Min 3, Max 250 characters"
-          />
+          <div>
+            <TextareaField
+              labelName="Address"
+              name="address"
+              type="text"
+              icon={<MapPin size={18} />}
+              value={formData.address || ""}
+              handlerChange={handleChange}
+              placeholder="Full address (min 3, max 250 characters)"
+            />
+            {errors.address && (
+              <p className="text-red-500 text-xs mt-1 ml-1">{errors.address}</p>
+            )}
+          </div>
 
           <div className="flex items-center justify-end gap-3 pt-6">
             <button

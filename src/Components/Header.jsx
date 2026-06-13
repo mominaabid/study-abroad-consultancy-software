@@ -22,8 +22,9 @@ import {
   selectNotifications,
   selectUnreadCount,
   markAllAsRead,
-  clearNotifications,
   markAllNotificationsRead,
+  fetchAllNotifications,
+  deleteAllNotifications,
 } from "../redux/slices/notificationSlice";
 import axios from "axios";
 import { BASE_URL } from "../Content/Url";
@@ -130,6 +131,13 @@ export const Header = ({ isOpen, setIsOpen }) => {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [changePasswordOpen]);
 
+  // Fetch notifications when user is logged in
+  useEffect(() => {
+    if (user && localStorage.getItem("token")) {
+      dispatch(fetchAllNotifications());
+    }
+  }, [dispatch, user]);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
@@ -162,7 +170,7 @@ export const Header = ({ isOpen, setIsOpen }) => {
       case "document_shared":
       case "document_verified":
       case "document_rejected":
-        if (role === "student") navigate("/student/documents");
+        if (role === "student") navigate("/student/application");
         return;
       case "payment_awaiting_verification":
         if (role === "admin") navigate("/admin/payments");
@@ -452,7 +460,7 @@ export const Header = ({ isOpen, setIsOpen }) => {
               <h3 className="font-bold text-gray-800 text-sm">Notifications</h3>
               {notifications.length > 0 && (
                 <button
-                  onClick={() => dispatch(clearNotifications())}
+                  onClick={() => dispatch(deleteAllNotifications())}
                   className="text-gray-400 hover:text-red-500 transition-colors p-1"
                   title="Clear all"
                 >
@@ -484,8 +492,8 @@ export const Header = ({ isOpen, setIsOpen }) => {
                     </p>
                     <div className="flex items-center gap-1 mt-1.5 text-gray-400">
                       <Clock size={10} />
-                      <p className="text-[10px] uppercase tracking-wider font-semibold">
-                        {n.time}
+                      <p className="text-xs text-gray-500 font-medium">
+                        {n.displayTimestamp}
                       </p>
                     </div>
                   </div>
@@ -521,8 +529,6 @@ export const Header = ({ isOpen, setIsOpen }) => {
             </Title>
 
             <div className="p-6 space-y-4">
-              {/* No inline error div – all messages use toast with IDs */}
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Old Password

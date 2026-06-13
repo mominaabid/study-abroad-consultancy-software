@@ -65,49 +65,42 @@ const DEGREE_GRADE_RULES = {
     grades: ["A", "A+", "B", "B+", "C", "D", "E"],
     maxLength: 4,
   },
-
   Inter: {
     type: "numeric_or_grades",
     numeric: { min: 600, max: 1200 },
     grades: ["A", "A+", "B", "B+", "C", "D", "E"],
     maxLength: 4,
   },
-
   "Bachelors (14 years)": {
     type: "cgpa",
     min: 2.5,
     max: 4.0,
     maxLength: 4,
   },
-
   "Bachelors (16 years)": {
     type: "cgpa",
     min: 2.5,
     max: 4.0,
     maxLength: 4,
   },
-
   DAE: {
     type: "numeric",
     min: 1700,
     max: 3550,
     maxLength: 4,
   },
-
   ADP: {
     type: "numeric",
     min: 400,
     max: 800,
     maxLength: 3,
   },
-
   Masters: {
     type: "cgpa",
     min: 2.5,
     max: 4.0,
     maxLength: 4,
   },
-
   "Short Courses": {
     type: "grades_list",
     grades: ["A", "A+", "B", "B+", "C", "D", "E"],
@@ -121,21 +114,19 @@ const getGradeMaxLength = (degree) => {
 };
 
 const validateGrade = (degree, gradeValue) => {
-  if (!degree || !gradeValue || gradeValue.trim() === "") return null; // optional field
+  if (!degree || !gradeValue || gradeValue.trim() === "") return null;
 
   const rule = DEGREE_GRADE_RULES[degree];
-  if (!rule) return null; // no validation for unknown degree
+  if (!rule) return null;
 
   const value = gradeValue.trim();
 
   switch (rule.type) {
     case "numeric_or_grades": {
-      // try numeric range
       const num = parseFloat(value);
       if (!isNaN(num) && num >= rule.numeric.min && num <= rule.numeric.max) {
         return null;
       }
-      // try letter grade
       if (rule.grades.includes(value.toUpperCase())) {
         return null;
       }
@@ -153,7 +144,6 @@ const validateGrade = (degree, gradeValue) => {
       if (isNaN(cgpa) || cgpa < rule.min || cgpa > rule.max) {
         return `Must be a CGPA between ${rule.min} and ${rule.max}`;
       }
-      // allow formats like "3.5/4.0" or just "3.5"
       const parts = value.split("/");
       if (parts.length === 2) {
         const scale = parseFloat(parts[1]);
@@ -207,7 +197,20 @@ const calculateAge = (dob) => {
   return age;
 };
 
-// ─── Searchable Dropdown Component (with leading space trim on search input) ─────────────────
+const formatEnglishScore = (testType, rawScore) => {
+  if (!rawScore || rawScore === "") return rawScore;
+  const num = parseFloat(rawScore);
+  if (isNaN(num)) return rawScore;
+
+  if (testType === "ielts") {
+    return num.toFixed(2);
+  } else if (["toefl", "pte", "duolingo"].includes(testType)) {
+    return Math.round(num).toString();
+  }
+  return rawScore;
+};
+
+// Searchable Dropdown Component (unchanged except inline handlers)
 function SearchableDropdown({
   options = [],
   value,
@@ -257,7 +260,6 @@ function SearchableDropdown({
             {icon}
           </div>
         )}
-
         <Search size={15} className="text-slate-400 shrink-0 mr-2" />
         <input
           type="text"
@@ -265,17 +267,13 @@ function SearchableDropdown({
           placeholder={selectedOption ? selectedOption.label : placeholder}
           value={open ? query : selectedOption ? selectedOption.label : ""}
           onChange={(e) => {
-            // 🔹 Trim leading spaces from search query
-            const trimmed = e.target.value.replace(/^\s+/, "");
+            let trimmed = e.target.value.replace(/^\s+/, "");
+            trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, ""); // Restrict to alphanumeric + spaces
             setQuery(trimmed);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
         />
-        {/* <ChevronDown
-          size={15}
-          className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-        /> */}
       </div>
       {open && (
         <div className="absolute z-50 w-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
@@ -311,7 +309,6 @@ function SearchableDropdown({
   );
 }
 
-// ─── Searchable Counsellor Select (with leading space trim on search input) ──────────────────
 function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -351,7 +348,7 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xl font-semibold text-gray-900  mb-1.5">
+      <label className="block text-xl font-semibold text-gray-900 mb-1.5">
         Assign Counsellor
       </label>
       <div
@@ -365,8 +362,8 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
           placeholder="Select counsellor or 'Unassigned'..."
           value={open ? query : selected ? selected.name : ""}
           onChange={(e) => {
-            // 🔹 Trim leading spaces from search query
-            const trimmed = e.target.value.replace(/^\s+/, "");
+            let trimmed = e.target.value.replace(/^\s+/, "");
+            trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, ""); // Restrict input
             setQuery(trimmed);
             setOpen(true);
           }}
@@ -432,7 +429,6 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
   );
 }
 
-// ─── Info Row ───────────────────────────────────────────────────────────────
 function InfoRow({ icon, label, value }) {
   if (!value) return null;
   return (
@@ -452,7 +448,6 @@ function InfoRow({ icon, label, value }) {
   );
 }
 
-// ─── Main Component ─────────────────────────────────────────────────────────
 export default function LeadModal() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -464,7 +459,6 @@ export default function LeadModal() {
   else if (location.pathname.includes("/assign")) mode = "assign";
   const isAssignMode = mode === "assign";
 
-  // ─── State hooks ──────────────────────────────────────────────────────────
   const [form, setForm] = useState({
     ...EMPTY_FORM,
     source: "walkin",
@@ -493,9 +487,14 @@ export default function LeadModal() {
     board_university: "",
     editingId: null,
   });
-  const [gradeError, setGradeError] = useState(""); // real-time validation error
+  const [gradeError, setGradeError] = useState("");
 
-  // New state for field-level errors
+  const isDegreeDuplicate = (degree, editingId = null) => {
+    return educationEntries.some(
+      (entry) => entry.degree === degree && entry.id !== editingId,
+    );
+  };
+
   const [fieldErrors, setFieldErrors] = useState({
     name: "",
     fatherName: "",
@@ -516,7 +515,6 @@ export default function LeadModal() {
 
   const studyLevelOptions = STUDY_LEVELS.map((l) => ({ value: l, label: l }));
 
-  // ─── Real-time grade validation when degree or grades_cgpa changes ────────
   useEffect(() => {
     if (!tempDegree.degree) {
       setGradeError("");
@@ -526,99 +524,137 @@ export default function LeadModal() {
     setGradeError(error || "");
   }, [tempDegree.degree, tempDegree.grades_cgpa]);
 
-  // ─── Input validation handlers (with leading space trimming) ────────────────────────────
+  // ========== RESTRICTED FIELD HANDLERS ==========
   const handleNameChange = (e) => {
     let rawValue = e.target.value;
+    let cleaned = rawValue.replace(/^\s+/, "");
+    // Allow only letters A-Z, a-z, and spaces
+    cleaned = cleaned.replace(/[^A-Za-z\s]/g, "");
     let error = "";
-
-    // Remove leading spaces
-    let cleanedValue = rawValue.replace(/^\s+/, "");
-
-    // Remove any digits (numbers)
-    const hasNumbers = /\d/.test(cleanedValue);
-    if (hasNumbers) {
-      cleanedValue = cleanedValue.replace(/\d/g, "");
-      error = "Numbers are not allowed in applicant name";
-    } else if (cleanedValue !== rawValue) {
-      error = "Leading spaces are not allowed";
+    if (cleaned !== rawValue) {
+      error = "Only letters and spaces are allowed";
     }
-
-    setForm((prev) => ({ ...prev, name: cleanedValue }));
+    setForm((prev) => ({ ...prev, name: cleaned }));
     setFieldErrors((prev) => ({ ...prev, name: error }));
   };
 
   const handleFatherNameChange = (e) => {
     let rawValue = e.target.value;
+    let cleaned = rawValue.replace(/^\s+/, "");
+    cleaned = cleaned.replace(/[^A-Za-z\s]/g, "");
     let error = "";
-
-    // Remove leading spaces
-    let cleanedValue = rawValue.replace(/^\s+/, "");
-
-    // Remove any digits
-    const hasNumbers = /\d/.test(cleanedValue);
-    if (hasNumbers) {
-      cleanedValue = cleanedValue.replace(/\d/g, "");
-      error = "Numbers are not allowed in father name";
-    } else if (cleanedValue !== rawValue) {
-      error = "Leading spaces are not allowed";
+    if (cleaned !== rawValue) {
+      error = "Only letters and spaces are allowed";
     }
-
-    // Check length if value is not empty
-    if (cleanedValue.length > 0) {
-      if (cleanedValue.length < 3) {
+    if (cleaned.length > 0) {
+      if (cleaned.length < 3) {
         error = error || "Father name must be at least 3 characters";
-      } else if (cleanedValue.length > 50) {
+      } else if (cleaned.length > 50) {
         error = error || "Father name cannot exceed 50 characters";
-        cleanedValue = cleanedValue.slice(0, 50);
+        cleaned = cleaned.slice(0, 50);
       }
     }
-
-    setForm((prev) => ({ ...prev, father_name: cleanedValue }));
+    setForm((prev) => ({ ...prev, father_name: cleaned }));
     setFieldErrors((prev) => ({ ...prev, fatherName: error }));
   };
 
   const handleEmailChange = (e) => {
     let rawValue = e.target.value;
-    let cleanedValue = rawValue.replace(/^\s+/, "");
+    let cleaned = rawValue.replace(/^\s+/, "");
+    // Allowed email characters: letters, digits, dot, hyphen, underscore, plus, at
+    cleaned = cleaned.replace(/[^a-zA-Z0-9.@_+-]/g, "");
+    setForm((prev) => ({ ...prev, email: cleaned }));
+  };
 
-    setForm((prev) => ({ ...prev, email: cleanedValue }));
+  // For Board/University field (inside education)
+  const handleBoardUniversityChange = (e) => {
+    let rawValue = e.target.value;
+    let cleaned = rawValue.replace(/^\s+/, "");
+    // Allow only alphanumeric and spaces
+    cleaned = cleaned.replace(/[^a-zA-Z0-9\s]/g, "");
+    setTempDegree((prev) => ({
+      ...prev,
+      board_university: cleaned,
+    }));
+  };
+
+  // Grades change handler (enhanced to block special chars based on degree type)
+  const handleGradesChange = (e) => {
+    let rawValue = e.target.value;
+    let value = rawValue.replace(/^\s+/, "");
+    const rule = DEGREE_GRADE_RULES[tempDegree.degree];
+
+    // max length
+    if (value.length > getGradeMaxLength(tempDegree.degree)) {
+      return;
+    }
+
+    if (rule?.type === "numeric" || rule?.type === "numeric_or_grades") {
+      // For numeric/grades: allow digits, letters A-Z, plus, dot, space
+      if (/^[0-9A-Za-z+.\s]*$/.test(value)) {
+        setTempDegree((prev) => ({ ...prev, grades_cgpa: value }));
+      }
+      return;
+    }
+
+    if (rule?.type === "cgpa") {
+      // CGPA: allow digits, dot, slash (for fractions like 3.5/4.0)
+      if (/^[0-9./]*$/.test(value)) {
+        setTempDegree((prev) => ({ ...prev, grades_cgpa: value }));
+      }
+      return;
+    }
+
+    if (rule?.type === "grades_list") {
+      // Only letters and plus sign
+      if (/^[A-Za-z+]*$/.test(value)) {
+        setTempDegree((prev) => ({
+          ...prev,
+          grades_cgpa: value.toUpperCase(),
+        }));
+      }
+      return;
+    }
+
+    // Default fallback
+    setTempDegree((prev) => ({ ...prev, grades_cgpa: value }));
   };
 
   const handleTotalScoreChange = (e) => {
     let rawValue = e.target.value;
-    // 🔹 Trim leading spaces
-    let cleanedValue = rawValue.replace(/^\s+/, "");
-    let error = "";
+    let cleaned = rawValue.replace(/^\s+/, "");
+    cleaned = cleaned.replace(/[^\d.]/g, "");
 
-    // Allow only numbers, decimal point, and backspace
-    cleanedValue = cleanedValue.replace(/[^\d.]/g, "");
-
-    // Prevent multiple decimal points
-    const decimalCount = (cleanedValue.match(/\./g) || []).length;
+    const decimalCount = (cleaned.match(/\./g) || []).length;
     if (decimalCount > 1) {
-      cleanedValue = cleanedValue.slice(0, cleanedValue.lastIndexOf("."));
+      cleaned = cleaned.slice(0, cleaned.lastIndexOf("."));
     }
 
-    // Check character length (1-4)
-    if (cleanedValue.length > 0) {
-      if (cleanedValue.length < 1) {
+    const testType = form.english_proficiency_test;
+    if (testType !== "ielts" && cleaned.includes(".")) {
+      cleaned = cleaned.split(".")[0];
+    }
+
+    let error = "";
+    if (cleaned.length > 0) {
+      if (cleaned.length < 1) {
         error = "Score must be at least 1 character";
-      } else if (cleanedValue.length > 4) {
+      } else if (cleaned.length > 4) {
         error = "Score cannot exceed 4 characters";
-        cleanedValue = cleanedValue.slice(0, 4);
+        cleaned = cleaned.slice(0, 4);
       } else {
-        // Additional check: valid number format
-        const numValue = parseFloat(cleanedValue);
+        const numValue = parseFloat(cleaned);
         if (isNaN(numValue)) {
           error = "Please enter a valid number";
         } else {
-          // Check against test-specific range (delegated to final validation)
-          // Just basic format validation here
-          if (cleanedValue.endsWith(".")) {
+          if (cleaned.endsWith(".")) {
             error = "Score cannot end with decimal point";
-          } else if (cleanedValue.split(".")[1]?.length > 2) {
+          } else if (
+            testType === "ielts" &&
+            cleaned.split(".")[1]?.length > 2
+          ) {
             error = "Maximum 2 decimal places allowed";
-            cleanedValue = parseFloat(cleanedValue).toFixed(2);
+            cleaned = parseFloat(cleaned).toFixed(2);
           }
         }
       }
@@ -629,12 +665,21 @@ export default function LeadModal() {
       error = "Total score is required for selected English test";
     }
 
-    setForm((prev) => ({ ...prev, english_test_overall_score: cleanedValue }));
+    setForm((prev) => ({ ...prev, english_test_overall_score: cleaned }));
     setFieldErrors((prev) => ({ ...prev, totalScore: error }));
   };
 
+  const handleScoreBlur = () => {
+    const testType = form.english_proficiency_test;
+    const currentScore = form.english_test_overall_score;
+    if (!testType || testType === "none" || !currentScore) return;
+    const formatted = formatEnglishScore(testType, currentScore);
+    if (formatted !== currentScore) {
+      setForm((prev) => ({ ...prev, english_test_overall_score: formatted }));
+    }
+  };
+
   const handleFatherNameBlur = () => {
-    // Additional validation on blur for empty vs length
     if (
       form.father_name &&
       form.father_name.length > 0 &&
@@ -648,19 +693,17 @@ export default function LeadModal() {
   };
 
   const handleNameBlur = () => {
-    // Ensure no trailing spaces (trim)
     const trimmed = form.name.trim();
     if (trimmed !== form.name) {
       setForm((prev) => ({ ...prev, name: trimmed }));
     }
   };
 
-  // 🔹 Generic change handler with leading space trimming for all text fields
   const handleCustomChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
     if (typeof processedValue === "string") {
-      processedValue = processedValue.replace(/^\s+/, ""); // trim leading spaces
+      processedValue = processedValue.replace(/^\s+/, "");
     }
     setForm((prev) => ({ ...prev, [name]: processedValue }));
   };
@@ -708,6 +751,14 @@ export default function LeadModal() {
           : [];
         setSelectedCountries(countries);
 
+        let formattedScore = lead.english_test_overall_score || "";
+        if (lead.english_proficiency_test && lead.english_test_overall_score) {
+          formattedScore = formatEnglishScore(
+            lead.english_proficiency_test,
+            lead.english_test_overall_score,
+          );
+        }
+
         setForm({
           name: lead.name || "",
           email: lead.email || "",
@@ -721,7 +772,7 @@ export default function LeadModal() {
           father_contact: lead.father_contact || "",
           home_address: lead.home_address || "",
           english_proficiency_test: lead.english_proficiency_test || "",
-          english_test_overall_score: lead.english_test_overall_score || "",
+          english_test_overall_score: formattedScore,
         });
 
         if (lead.education && Array.isArray(lead.education)) {
@@ -733,7 +784,6 @@ export default function LeadModal() {
         }
       } catch {
         toast.error("Failed to load lead data", { toastId: "lead-load-fail" });
-
         navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads");
       } finally {
         setLoading(false);
@@ -785,23 +835,25 @@ export default function LeadModal() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ─── Education handlers (with trimming) ───────────────────────────────────
   const handleAddOrUpdateEducation = () => {
     if (!tempDegree.degree) {
       toast.error("Degree is required", { toastId: "degree-required" });
-
       return;
     }
     if (!tempDegree.year_awarded) {
       toast.error("Year awarded is required", { toastId: "year-required" });
-
       return;
     }
 
-    // Additional client-side guard (already prevented by disabled button, but kept for safety)
+    if (isDegreeDuplicate(tempDegree.degree, tempDegree.editingId)) {
+      toast.error("This degree has already been added for this student.", {
+        toastId: "duplicate-degree",
+      });
+      return;
+    }
+
     if (gradeError) {
       toast.error(gradeError, { toastId: "grade-error" });
-
       return;
     }
 
@@ -811,11 +863,9 @@ export default function LeadModal() {
       toast.error(`Year must be between 1950 and ${currentYear}`, {
         toastId: "year-range",
       });
-
       return;
     }
 
-    // 🔹 Trim leading spaces for board_university and grades_cgpa before saving
     const trimmedBoard = tempDegree.board_university?.replace(/^\s+/, "") || "";
     const trimmedGrades = tempDegree.grades_cgpa?.replace(/^\s+/, "") || "";
 
@@ -882,11 +932,9 @@ export default function LeadModal() {
     setGradeError("");
   };
 
-  // ─── Validation (on submit only) ─────────────────────────────────────────
   const validate = () => {
     const errors = [];
 
-    // Name
     if (!form.name?.trim()) {
       errors.push("Name is required.");
     } else {
@@ -898,7 +946,6 @@ export default function LeadModal() {
       }
     }
 
-    // Email
     if (!form.email?.trim()) {
       errors.push("Email is required.");
     } else {
@@ -914,7 +961,6 @@ export default function LeadModal() {
       }
     }
 
-    // Phone
     if (!form.phone?.trim()) {
       errors.push("Phone number is required.");
     } else {
@@ -924,7 +970,6 @@ export default function LeadModal() {
       }
     }
 
-    // Father name (optional)
     if (form.father_name?.trim()) {
       const fatherNameRegex = /^[A-Za-z\s]+$/;
       if (!fatherNameRegex.test(form.father_name.trim())) {
@@ -938,7 +983,6 @@ export default function LeadModal() {
       }
     }
 
-    // Father contact (optional)
     if (form.father_contact?.trim()) {
       const digits = form.father_contact.replace(/\D/g, "");
       if (digits.length < 11) {
@@ -948,7 +992,6 @@ export default function LeadModal() {
       }
     }
 
-    // DOB (optional) – age > 16
     if (form.dob) {
       const age = calculateAge(form.dob);
       if (age === null || age <= 16) {
@@ -958,17 +1001,14 @@ export default function LeadModal() {
       }
     }
 
-    // Source
     if (!form.source?.trim()) {
       errors.push("Source must be selected.");
     }
 
-    // Preferred country
     if (selectedCountries.length === 0) {
       errors.push("At least one preferred country must be selected.");
     }
 
-    // Home address (optional)
     if (form.home_address?.trim()) {
       const addr = form.home_address.trim();
       const addressRegex = /^[a-zA-Z0-9\s.,!?;:\-()'"&@#/]+$/;
@@ -983,7 +1023,6 @@ export default function LeadModal() {
       }
     }
 
-    // Education entries
     if (educationEntries.length === 0) {
       errors.push("At least one degree entry is required.");
     } else {
@@ -1005,13 +1044,11 @@ export default function LeadModal() {
 
         if (edu.board_university?.trim()) {
           const boardValue = edu.board_university;
-          // No leading space
           if (boardValue[0] === " ") {
             errors.push(
               `Degree #${idx + 1}: Board/University cannot start with a space.`,
             );
           }
-          // No numbers
           if (/\d/.test(boardValue)) {
             errors.push(
               `Degree #${idx + 1}: Board/University cannot contain numbers.`,
@@ -1027,9 +1064,6 @@ export default function LeadModal() {
       });
     }
 
-    // Inside educationEntries loop, replace the existing board_university validation block
-
-    // English score (conditional)
     if (
       form.english_proficiency_test &&
       form.english_proficiency_test !== "none"
@@ -1060,10 +1094,16 @@ export default function LeadModal() {
             `Total score must be between 0 and ${max} for ${form.english_proficiency_test.toUpperCase()}.`,
           );
         }
-        // Character length validation (1-4 characters)
         const scoreStr = form.english_test_overall_score.toString();
         if (scoreStr.length < 1 || scoreStr.length > 4) {
           errors.push("Total score must be 1-4 characters long.");
+        }
+        if (form.english_proficiency_test !== "ielts") {
+          if (scoreStr.includes(".")) {
+            errors.push(
+              `${form.english_proficiency_test.toUpperCase()} score must be an integer.`,
+            );
+          }
         }
       }
     }
@@ -1071,14 +1111,12 @@ export default function LeadModal() {
     return errors;
   };
 
-  // ─── Submit handler ──────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e?.preventDefault();
 
     const validationErrors = validate();
     if (validationErrors.length > 0) {
       toast.error(validationErrors.join(" "), { toastId: "validation-error" });
-
       return;
     }
 
@@ -1096,7 +1134,6 @@ export default function LeadModal() {
         submitData.counsellor_id = user.id;
       }
 
-      // Prepare education array (remove frontend temp ids)
       submitData.education = educationEntries.map(({ id, ...rest }) => rest);
 
       if (mode === "add") {
@@ -1133,13 +1170,13 @@ export default function LeadModal() {
 
       let successMessage;
       if (mode === "add") {
-        successMessage = "Lead added successfully";
+        successMessage =
+          "Lead added successfully. Please assign a counsellor to this lead.";
       } else if (mode === "edit") {
         successMessage = "Lead updated successfully";
       } else if (mode === "assign" && editLead) {
         const prevId = editLead.counsellor_id;
         const newId = form.counsellor_id;
-
         if (prevId && !newId) {
           successMessage = "Counsellor unassigned successfully";
         } else if (!prevId && newId) {
@@ -1150,11 +1187,10 @@ export default function LeadModal() {
           successMessage = "Counsellor assignment updated";
         }
       } else {
-        successMessage = "Counsellor assigned successfully"; // fallback
+        successMessage = "Counsellor assigned successfully";
       }
 
       toast.success(successMessage, { toastId: "lead-save-success" });
-
       navigate(isCounsellor ? "/counsellor/leads" : "/admin/leads");
     } catch (err) {
       toast.error("Failed to save: " + err.message, {
@@ -1196,7 +1232,7 @@ export default function LeadModal() {
     );
   }
 
-  // ─── Assign Mode (unchanged) ─────────────────────────────────────────────
+  // Assign Mode (unchanged)
   if (isAssignMode && editLead) {
     const assignedCounsellor = counsellors.find(
       (c) => String(c.user?.id || c.id) === String(editLead?.counsellor_id),
@@ -1204,7 +1240,6 @@ export default function LeadModal() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4 md:p-6">
         <div className="">
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <button
@@ -1213,7 +1248,6 @@ export default function LeadModal() {
               >
                 <ArrowLeft size={20} className="text-slate-600" />
               </button>
-
               <div>
                 <h1 className="text-xl md:text-xl font-semibold text-slate-900">
                   Assign Counsellor
@@ -1224,24 +1258,19 @@ export default function LeadModal() {
               </div>
             </div>
           </div>
-
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* LEFT SIDE - Lead Information */}
             <div className="xl:col-span-2">
               <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                {/* Top Banner */}
                 <div className="relative bg-[#009E99] px-6 py-8">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-bold text-white">
                         {editLead?.name || "Unnamed Lead"}
                       </h2>
-
                       <div className="flex flex-wrap items-center gap-2 mt-3">
                         <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-medium backdrop-blur-sm">
                           {sourceLabel}
                         </span>
-
                         {editLead?.preferred_country && (
                           <span className="px-3 py-1 rounded-full bg-white/15 text-white text-xs font-medium backdrop-blur-sm">
                             {editLead.preferred_country}
@@ -1249,21 +1278,17 @@ export default function LeadModal() {
                         )}
                       </div>
                     </div>
-
                     <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl font-bold shrink-0">
                       {editLead?.name?.charAt(0)?.toUpperCase() || "L"}
                     </div>
                   </div>
                 </div>
-
-                {/* Information Sections */}
                 <div className="p-6 space-y-8">
                   <div>
                     <div className="flex items-center gap-2 mb-5">
                       <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
                         <User size={18} className="text-blue-600" />
                       </div>
-
                       <div>
                         <h3 className="font-semibold text-slate-900">
                           Personal Information
@@ -1273,45 +1298,38 @@ export default function LeadModal() {
                         </p>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <InfoRow
                         icon={<Mail size={16} />}
                         label="Email Address"
                         value={editLead?.email}
                       />
-
                       <InfoRow
                         icon={<Phone size={16} />}
                         label="Phone Number"
                         value={editLead?.phone}
                       />
-
                       <InfoRow
                         icon={<Calendar size={16} />}
                         label="Date of Birth"
                         value={editLead?.dob}
                       />
-
                       <InfoRow
                         icon={<Heart size={16} />}
                         label="Marital Status"
                         value={editLead?.marital_status}
                       />
-
                       <InfoRow
                         icon={<UserCircle size={16} />}
                         label="Father Name"
                         value={editLead?.father_name}
                       />
-
                       <InfoRow
                         icon={<Phone size={16} />}
                         label="Father Contact"
                         value={editLead?.father_contact}
                       />
                     </div>
-
                     {editLead?.home_address && (
                       <div className="mt-4">
                         <InfoRow
@@ -1322,13 +1340,11 @@ export default function LeadModal() {
                       </div>
                     )}
                   </div>
-
                   <div>
                     <div className="flex items-center gap-2 mb-5">
                       <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
                         <GraduationCap size={18} className="text-indigo-600" />
                       </div>
-
                       <div>
                         <h3 className="font-semibold text-slate-900">
                           Educational Information
@@ -1338,7 +1354,6 @@ export default function LeadModal() {
                         </p>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {editLead?.education && editLead.education.length > 0 ? (
                         editLead.education.map((edu, idx) => (
@@ -1370,7 +1385,6 @@ export default function LeadModal() {
                         </div>
                       )}
                     </div>
-
                     {editLead?.english_proficiency_test &&
                       editLead?.english_proficiency_test !== "none" && (
                         <div className="mt-4">
@@ -1385,8 +1399,6 @@ export default function LeadModal() {
                 </div>
               </div>
             </div>
-
-            {/* RIGHT SIDE - Assignment Panel */}
             <div className="xl:col-span-1">
               <div className="sticky top-6">
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200">
@@ -1395,7 +1407,6 @@ export default function LeadModal() {
                       <div className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center">
                         <UserCircle size={22} className="text-blue-600" />
                       </div>
-
                       <div>
                         <h3 className="text-lg font-semibold text-slate-900">
                           Counsellor Assignment
@@ -1406,24 +1417,20 @@ export default function LeadModal() {
                       </div>
                     </div>
                   </div>
-
                   <div className="p-6">
                     <div className="mb-5 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                       <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
                         Current Assignment
                       </p>
-
                       {assignedCounsellor ? (
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center font-semibold">
                             {assignedCounsellor.name?.charAt(0)?.toUpperCase()}
                           </div>
-
                           <div>
                             <p className="font-semibold text-slate-800">
                               {assignedCounsellor.name}
                             </p>
-
                             <p className="text-xs text-emerald-600 font-medium">
                               Currently Assigned
                             </p>
@@ -1434,12 +1441,10 @@ export default function LeadModal() {
                           <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center">
                             <User size={18} />
                           </div>
-
                           <div>
                             <p className="font-semibold text-slate-700">
                               Unassigned
                             </p>
-
                             <p className="text-xs text-amber-600 font-medium">
                               No counsellor assigned yet
                             </p>
@@ -1447,7 +1452,6 @@ export default function LeadModal() {
                         </div>
                       )}
                     </div>
-
                     <div className="mb-6 relative z-50">
                       <SearchableCounsellorSelect
                         counsellors={counsellors}
@@ -1455,7 +1459,6 @@ export default function LeadModal() {
                         onChange={handleCustomChange}
                       />
                     </div>
-
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
@@ -1464,7 +1467,6 @@ export default function LeadModal() {
                       >
                         Cancel
                       </button>
-
                       <AddButton
                         label="Assign Counsellor"
                         loading={saving}
@@ -1481,7 +1483,7 @@ export default function LeadModal() {
     );
   }
 
-  // ─── Add / Edit Mode (full form) ─────────────────────────────────────────
+  // Add / Edit Mode (full form)
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <div className="">
@@ -1502,7 +1504,6 @@ export default function LeadModal() {
                 : "Edit Lead"}
           </h1>
         </div>
-
         <form
           onSubmit={handleSubmit}
           className="bg-white rounded-2xl shadow-sm"
@@ -1563,18 +1564,8 @@ export default function LeadModal() {
                     labelName="Father's Contact"
                   />
                 </div>
-
                 <div className="space-y-1">
                   <div className="relative">
-                    {/* <textarea
-                      name="home_address"
-                      value={form.home_address}
-                      onChange={handleCustomChange}
-                      rows={2}
-                      maxLength={255}
-                      className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                    /> */}
-
                     <TextareaField
                       labelName="Home Address"
                       name="home_address"
@@ -1585,7 +1576,6 @@ export default function LeadModal() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField
                     labelName="Applicant Email *"
@@ -1642,8 +1632,8 @@ export default function LeadModal() {
                       type="text"
                       value={countrySearchTerm}
                       onChange={(e) => {
-                        // 🔹 Trim leading spaces from country search
-                        const trimmed = e.target.value.replace(/^\s+/, "");
+                        let trimmed = e.target.value.replace(/^\s+/, "");
+                        trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, ""); // restrict to alphanumeric + spaces
                         setCountrySearchTerm(trimmed);
                         setCountryDropdownOpen(true);
                       }}
@@ -1694,8 +1684,6 @@ export default function LeadModal() {
                     </div>
                   )}
                 </div>
-
-                {/* Home Address */}
               </div>
             </div>
 
@@ -1705,7 +1693,6 @@ export default function LeadModal() {
                 <GraduationCap size={18} className="text-blue-500" />{" "}
                 Educational Information
               </h3>
-
               <div className="bg-slate-50 p-2 rounded-lg mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SearchableDropdown
@@ -1727,13 +1714,11 @@ export default function LeadModal() {
                     <label className="text-gray-600 text-xs font-semibold mb-1">
                       Year Awarded <span className="text-red-500">*</span>
                     </label>
-
                     <div className="relative">
                       <CalendarDays
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                         size={16}
                       />
-
                       <input
                         type="text"
                         name="year_awarded"
@@ -1741,7 +1726,6 @@ export default function LeadModal() {
                         placeholder="YYYY"
                         maxLength={4}
                         onChange={(e) => {
-                          // 🔹 Trim leading spaces and then keep only digits
                           let trimmed = e.target.value.replace(/^\s+/, "");
                           let value = trimmed.replace(/\D/g, "");
                           if (value.length > 4) return;
@@ -1767,65 +1751,9 @@ export default function LeadModal() {
                       labelName="Grades / CGPA"
                       name="grades_cgpa"
                       value={tempDegree.grades_cgpa}
-                      handlerChange={(e) => {
-                        // 🔹 Trim leading spaces before processing
-                        let rawValue = e.target.value;
-                        let value = rawValue.replace(/^\s+/, "");
-                        const rule = DEGREE_GRADE_RULES[tempDegree.degree];
-
-                        // stop typing after max length
-                        if (
-                          value.length > getGradeMaxLength(tempDegree.degree)
-                        ) {
-                          return;
-                        }
-
-                        // numeric validation
-                        if (
-                          rule?.type === "numeric" ||
-                          rule?.type === "numeric_or_grades"
-                        ) {
-                          // allow only numbers OR grades
-                          if (/^[0-9A-Za-z+.\s]*$/.test(value)) {
-                            setTempDegree((prev) => ({
-                              ...prev,
-                              grades_cgpa: value,
-                            }));
-                          }
-                          return;
-                        }
-
-                        // cgpa validation
-                        if (rule?.type === "cgpa") {
-                          // allow numbers and decimal only
-                          if (/^[0-9.]*$/.test(value)) {
-                            setTempDegree((prev) => ({
-                              ...prev,
-                              grades_cgpa: value,
-                            }));
-                          }
-                          return;
-                        }
-
-                        // grades only
-                        if (rule?.type === "grades_list") {
-                          if (/^[A-Za-z+]*$/.test(value)) {
-                            setTempDegree((prev) => ({
-                              ...prev,
-                              grades_cgpa: value.toUpperCase(),
-                            }));
-                          }
-                          return;
-                        }
-
-                        setTempDegree((prev) => ({
-                          ...prev,
-                          grades_cgpa: value,
-                        }));
-                      }}
+                      handlerChange={handleGradesChange}
                       icon={<BarChart size={16} />}
                       placeholder={getGradePlaceholder(tempDegree.degree)}
-                      // Add error styling if gradeError present
                       className={gradeError ? "border-red-500" : ""}
                     />
                     {gradeError && (
@@ -1840,7 +1768,7 @@ export default function LeadModal() {
                             if (rule.type === "numeric_or_grades")
                               return `Allowed: ${rule.numeric.min}–${rule.numeric.max} or grades ${rule.grades.join(", ")}`;
                             if (rule.type === "cgpa")
-                              return `CGPA range: ${rule.min}–${rule.max} (4.0 scale)`;
+                              return `CGPA range: ${rule.min}–${rule.max} (4.0 scale) – use numbers, dot, slash`;
                             if (rule.type === "numeric")
                               return `Range: ${rule.min}–${rule.max}`;
                             if (rule.type === "grades_list")
@@ -1857,20 +1785,12 @@ export default function LeadModal() {
                           labelName="Board / University"
                           name="board_university"
                           value={tempDegree.board_university}
-                          handlerChange={(e) => {
-                            let rawValue = e.target.value;
-                            let trimmed = rawValue.replace(/^\s+/, "");
-                            setTempDegree((prev) => ({
-                              ...prev,
-                              board_university: trimmed,
-                            }));
-                          }}
+                          handlerChange={handleBoardUniversityChange}
                           icon={<School size={16} />}
                           placeholder="e.g., CBSE, Punjab University, etc."
                           maxLength={55}
                         />
                       </div>
-
                       <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
                         <button
                           type="button"
@@ -1884,7 +1804,6 @@ export default function LeadModal() {
                         >
                           {tempDegree.editingId ? "Edit" : "Add"}
                         </button>
-
                         {tempDegree.editingId && (
                           <button
                             type="button"
@@ -1936,12 +1855,10 @@ export default function LeadModal() {
                           <X size={14} />
                         </button>
                       </div>
-
                       <div className="flex items-start gap-4">
                         <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg shadow-inner">
                           {edu.degree?.charAt(0)?.toUpperCase() || "D"}
                         </div>
-
                         <div className="flex-1">
                           <h4 className="font-semibold text-slate-800 text-base mb-1 pr-12">
                             {edu.degree}
@@ -1951,7 +1868,6 @@ export default function LeadModal() {
                               <Calendar size={12} className="text-slate-500" />
                               {edu.year_awarded}
                             </span>
-
                             {edu.grades_cgpa && (
                               <span className="inline-flex items-center gap-1">
                                 <BarChart
@@ -1961,7 +1877,6 @@ export default function LeadModal() {
                                 {edu.grades_cgpa}
                               </span>
                             )}
-
                             {edu.board_university && (
                               <span className="inline-flex items-center gap-1">
                                 <School size={12} className="text-slate-500" />
@@ -2006,6 +1921,7 @@ export default function LeadModal() {
                         name="english_test_overall_score"
                         value={form.english_test_overall_score}
                         onChange={handleTotalScoreChange}
+                        onBlur={handleScoreBlur}
                         maxLength={4}
                         className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
                         placeholder="Enter total score"
@@ -2026,13 +1942,14 @@ export default function LeadModal() {
                               : form.english_proficiency_test === "pte"
                                 ? "90"
                                 : ""}
+                        {form.english_proficiency_test !== "ielts" &&
+                          " (integer only)"}
                       </p>
                     </div>
                   )}
               </div>
             </div>
           </div>
-
           <div className="p-6 border-t border-slate-100 bg-white sticky bottom-0">
             <div className="flex justify-end gap-3">
               <button

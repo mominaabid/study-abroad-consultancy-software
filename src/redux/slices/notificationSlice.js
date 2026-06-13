@@ -17,8 +17,46 @@ const safeFormatTime = (dateValue) => {
   return dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
+// NEW: Format timestamp as per requirement
+const formatDisplayTimestamp = (dateValue) => {
+  if (!dateValue) return "Just Now";
+
+  const date = new Date(dateValue);
+
+  if (isNaN(date.getTime())) {
+    return "Invalid Date";
+  }
+
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+  const timeStr = date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  // Recent notifications
+  if (diffMinutes < 5) {
+    return `Just Now • ${timeStr}`;
+  }
+
+  // Older notifications
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = date.toLocaleString("default", {
+    month: "short",
+  });
+  const year = date.getFullYear();
+
+  return `${day} ${month} ${year}, ${timeStr}`;
+};
+
 // Helper to format a DB notification into the UI shape
 const formatNotification = (notif) => {
+  const createdDate =
+    notif.createdAt || notif.created_at || notif.updatedAt || notif.updated_at;
+
   let icon = "📢";
   let bgColor = "bg-blue-50";
   let textColor = "text-blue-700";
@@ -93,10 +131,9 @@ const formatNotification = (notif) => {
     bgColor,
     textColor,
     metadata: notif.metadata,
-    // FIX: Provide a safe formatted date string (full date + time)
-    formattedDate: safeFormatDate(notif.created_at),
-    // Keep the short time string for compact displays
-    time: safeFormatTime(notif.created_at),
+    formattedDate: safeFormatDate(createdDate),
+    time: safeFormatTime(createdDate),
+    displayTimestamp: formatDisplayTimestamp(createdDate),
     isRead: Boolean(notif.is_read),
   };
 };
@@ -108,7 +145,27 @@ export const fetchUnreadNotifications = createAsyncThunk(
     const token = localStorage.getItem("token");
     if (!token) return rejectWithValue("No token");
     try {
-      const res = await fetch(`${BASE_URL}/notifications?unread=true`, {
+      const res = await fetch(`${BASE_URL}/notifications?is_read=true`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      return data.notifications;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+// NEW: Thunk to fetch ALL notifications (read + unread)
+export const fetchAllNotifications = createAsyncThunk(
+  "notifications/fetchAll",
+  async (_, { rejectWithValue }) => {
+    const token = localStorage.getItem("token");
+    if (!token) return rejectWithValue("No token");
+    try {
+      // Force include read + unread
+      const res = await fetch(`${BASE_URL}/notifications?all=true`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -128,6 +185,28 @@ export const markAllNotificationsRead = createAsyncThunk(
     try {
       const res = await fetch(`${BASE_URL}/notifications/mark-all-read`, {
         method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      return true;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+// NEW: Thunk to delete ALL notifications for the user
+export const deleteAllNotifications = createAsyncThunk(
+  "notifications/deleteAll",
+  async (_, { rejectWithValue }) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${BASE_URL}/notifications`, {
+        method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -183,20 +262,19 @@ const notificationSlice = createSlice({
       }
 
       const now = new Date();
+
       state.items.unshift({
         id: Date.now(),
-        message: message,
-        type: type || "info",
-        icon: icon,
-        bgColor: bgColor,
-        textColor: textColor,
+        message,
+        type,
+        icon,
+        bgColor,
+        textColor,
         metadata: metadata || {},
-        // FIX: Provide both full date and short time for consistency
-        formattedDate: now.toLocaleString(),
-        time: now.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        createdAt: now.toISOString(),
+        formattedDate: safeFormatDate(now),
+        time: safeFormatTime(now),
+        displayTimestamp: formatDisplayTimestamp(now),
         isRead: false,
       });
       state.unreadCount += 1;
@@ -239,8 +317,18 @@ const notificationSlice = createSlice({
         state.items = action.payload.map(formatNotification);
         state.unreadCount = state.items.filter((item) => !item.isRead).length;
       })
+      // NEW: Case for fetchAllNotifications
+      .addCase(fetchAllNotifications.fulfilled, (state, action) => {
+        state.items = action.payload.map(formatNotification);
+        state.unreadCount = state.items.filter((item) => !item.isRead).length;
+      })
       .addCase(markAllNotificationsRead.fulfilled, (state) => {
         state.items.forEach((item) => (item.isRead = true));
+        state.unreadCount = 0;
+      })
+      // NEW: Case for deleteAllNotifications
+      .addCase(deleteAllNotifications.fulfilled, (state) => {
+        state.items = [];
         state.unreadCount = 0;
       });
   },

@@ -6,20 +6,11 @@ import { useDispatch } from "react-redux";
 import { addNotification } from "../../redux/slices/notificationSlice";
 
 import { InputField } from "../InputFields/InputField";
-import { OptionField } from "../InputFields/OptionField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
-import { CancelButton } from "../CustomButtons/CancelButton";
 import { Title } from "../Title";
 import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  CreditCard,
-  XCircleIcon,
-} from "lucide-react";
+import { User, Mail, MapPin, CreditCard } from "lucide-react";
 
 const INITIAL_STATE = {
   name: "",
@@ -32,14 +23,79 @@ const INITIAL_STATE = {
   status: "active",
 };
 
+// Validation rules
+const validateForm = (formData) => {
+  const errors = {};
+
+  // Name (required)
+  if (!formData.name.trim()) {
+    errors.name = "Full Name is required";
+  } else if (formData.name.trim().length < 3) {
+    errors.name = "Full Name must be at least 3 characters";
+  } else if (formData.name.length > 50) {
+    errors.name = "Full Name cannot exceed 50 characters";
+  } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+    errors.name = "Only letters and spaces allowed";
+  }
+
+  // Father Name (optional but validated if provided)
+  if (formData.father_name.trim()) {
+    if (formData.father_name.trim().length < 3) {
+      errors.father_name =
+        "Father's Name must be at least 3 characters if provided";
+    } else if (formData.father_name.length > 50) {
+      errors.father_name = "Father's Name cannot exceed 50 characters";
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.father_name)) {
+      errors.father_name = "Only letters and spaces allowed";
+    }
+  }
+
+  // Email (required)
+  const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z.-]+\.[a-zA-Z]{2,}$/;
+  if (!formData.email.trim()) {
+    errors.email = "Email is required";
+  } else if (!emailRegex.test(formData.email)) {
+    errors.email = "Enter a valid email address (e.g., name@example.com)";
+  }
+
+  // Phone (required)
+  const phoneDigits = formData.phone.replace(/\D/g, "");
+  if (!formData.phone.trim()) {
+    errors.phone = "Phone number is required";
+  } else if (phoneDigits.length < 9) {
+    errors.phone = "Phone number must have at least 9 digits";
+  }
+
+  // CNIC (optional but must be valid if provided)
+  if (formData.cnic.trim()) {
+    const cnicPattern = /^\d{5}-\d{7}-\d{1}$/;
+    if (!cnicPattern.test(formData.cnic)) {
+      errors.cnic = "CNIC must be in format 00000-0000000-0";
+    }
+  }
+
+  // Address (optional but validated if provided)
+  if (formData.address.trim()) {
+    if (formData.address.trim().length < 3) {
+      errors.address = "Address must be at least 3 characters if provided";
+    } else if (formData.address.length > 250) {
+      errors.address = "Address cannot exceed 250 characters";
+    }
+  }
+
+  return errors;
+};
+
 export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState(INITIAL_STATE);
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
 
   useEffect(() => {
     if (!isOpen) {
       setFormData(INITIAL_STATE);
+      setErrors({});
     }
   }, [isOpen]);
 
@@ -52,6 +108,7 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
 
     if (name === "phone") {
       setFormData((prev) => ({ ...prev, [name]: value }));
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
       return;
     }
 
@@ -79,61 +136,31 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
     }
 
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
+    // Clear error for this field when user starts typing
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
-
-  const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z.-]+\.[a-zA-Z]{2,}$/;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (formData.name.trim().length < 3) {
-      return toast.error("Full Name must be at least 3 characters" , { toastId: "bas-3-n-c" });
-    }
-
-    if (
-      formData.father_name &&
-      formData.father_name.trim().length > 0 &&
-      formData.father_name.trim().length < 3
-    ) {
-      return toast.error("Father's Name must be at least 3 characters" , { toastId: "aba-ka-name-teen-char" });
-    }
-
-    if (
-      formData.address &&
-      formData.address.trim().length > 0 &&
-      formData.address.trim().length < 3
-    ) {
-      return toast.error("Address must be at least 3 characters" , { toastId: "pta-teen-hinsay" });
-    }
-
-    if (!formData.email.trim()) {
-      return toast.error("Email is required" , { toastId: "mail-cned" });
-    }
-
-    if (!emailRegex.test(formData.email)) {
-      return toast.error("Please enter a valid email address" , { toastId: "sai-mail-dalo" });
-    }
-
-    if (!formData.phone || formData.phone.replace(/\D/g, "").length < 9) {
-      return toast.error("Valid phone number is required" , { toastId: "sai-pta-no-dalo" });
-    }
-
-    if (formData.cnic && formData.cnic.length !== 15) {
-      return toast.error("CNIC must be in format: 00000-0000000-0" , { toastId: "sai-cnic-add-kr-do" });
+    // Validate all fields
+    const validationErrors = validateForm(formData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return; // Stop submission
     }
 
     try {
       setLoading(true);
-
       const token = localStorage.getItem("token");
 
       await axios.post(`${BASE_URL}/admin/addCounsellor`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      toast.success("Counsellor added successfully!" , { toastId: "Konslar-add" });
+      toast.success("Counsellor added successfully!", {
+        toastId: "Konslar-add",
+      });
 
       dispatch(
         addNotification({
@@ -142,10 +169,14 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
       );
 
       setFormData(INITIAL_STATE);
+      setErrors({});
       onClose();
       if (onSuccess) onSuccess();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to add counsellor" , { toastId: "konslar-add-nhi-horha" });
+      toast.error(
+        error?.response?.data?.message || "Failed to add counsellor",
+        { toastId: "konslar-add-nhi-horha" },
+      );
     } finally {
       setLoading(false);
     }
@@ -158,45 +189,66 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
 
         <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              labelName="Full Name *"
-              name="name"
-              type="text"
-              icon={<User size={18} />}
-              value={formData.name}
-              handlerChange={handleChange}
-              placeholder="Full Name (Min 3, Max 50)"
-            />
-            <InputField
-              labelName="Father Name "
-              name="father_name"
-              type="text"
-              icon={<User size={18} />}
-              value={formData.father_name}
-              handlerChange={handleChange}
-              placeholder="Father's Name (Min 3, Max 50)"
-            />
+            <div>
+              <InputField
+                labelName="Full Name *"
+                name="name"
+                type="text"
+                icon={<User size={18} />}
+                value={formData.name}
+                handlerChange={handleChange}
+                placeholder="Full Name (Min 3, Max 50)"
+              />
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.name}</p>
+              )}
+            </div>
+            <div>
+              <InputField
+                labelName="Father Name"
+                name="father_name"
+                type="text"
+                icon={<User size={18} />}
+                value={formData.father_name}
+                handlerChange={handleChange}
+                placeholder="Father's Name (Min 3, Max 50)"
+              />
+              {errors.father_name && (
+                <p className="text-red-500 text-xs mt-1 ml-1">
+                  {errors.father_name}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputField
-              labelName="Email Address *"
-              name="email"
-              type="email"
-              icon={<Mail size={18} />}
-              value={formData.email}
-              handlerChange={handleChange}
-              placeholder="email@example.com"
-            />
-            <PhoneInputWithCountry
-              value={formData.phone}
-              onChange={handleChange}
-              name="phone"
-              labelName="Phone Number *"
-            />
+            <div>
+              <InputField
+                labelName="Email Address *"
+                name="email"
+                type="email"
+                icon={<Mail size={18} />}
+                value={formData.email}
+                handlerChange={handleChange}
+                placeholder="email@example.com"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>
+              )}
+            </div>
+            <div>
+              <PhoneInputWithCountry
+                value={formData.phone}
+                onChange={handleChange}
+                name="phone"
+                labelName="Phone Number *"
+              />
+              {errors.phone && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.phone}</p>
+              )}
+            </div>
           </div>
 
-          {/* Updated CNIC section to span 2 columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <InputField
@@ -208,18 +260,26 @@ export const AddCounsellorModal = ({ isOpen, onClose, onSuccess }) => {
                 handlerChange={handleChange}
                 placeholder="34104-0000000-0"
               />
+              {errors.cnic && (
+                <p className="text-red-500 text-xs mt-1 ml-1">{errors.cnic}</p>
+              )}
             </div>
           </div>
 
-          <TextareaField
-            labelName="Address"
-            name="address"
-            type="text"
-            icon={<MapPin size={18} />}
-            value={formData.address}
-            handlerChange={handleChange}
-            placeholder="Full Address (Min 3, Max 250)"
-          />
+          <div>
+            <TextareaField
+              labelName="Address"
+              name="address"
+              type="text"
+              icon={<MapPin size={18} />}
+              value={formData.address}
+              handlerChange={handleChange}
+              placeholder="Full Address (Min 3, Max 250)"
+            />
+            {errors.address && (
+              <p className="text-red-500 text-xs mt-1 ml-1">{errors.address}</p>
+            )}
+          </div>
 
           <div className="flex items-center justify-end gap-3 pt-6">
             <button

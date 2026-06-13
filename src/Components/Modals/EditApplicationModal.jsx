@@ -91,6 +91,20 @@ function InfoRow({ icon, label, value }) {
   );
 }
 
+// Helper: format English score (same as in LeadModal)
+const formatEnglishScore = (testType, rawScore) => {
+  if (!rawScore || rawScore === "") return rawScore;
+  const num = parseFloat(rawScore);
+  if (isNaN(num)) return rawScore;
+
+  if (testType === "ielts") {
+    return num.toFixed(2);
+  } else if (["toefl", "pte", "duolingo"].includes(testType)) {
+    return Math.round(num).toString();
+  }
+  return rawScore;
+};
+
 export default function EditApplicationModal({
   isOpen,
   onClose,
@@ -156,6 +170,16 @@ export default function EditApplicationModal({
 
   useEffect(() => {
     if (application) {
+      let formattedScore = application.english_test_overall_score || "";
+      if (
+        application.english_proficiency_test &&
+        application.english_test_overall_score
+      ) {
+        formattedScore = formatEnglishScore(
+          application.english_proficiency_test,
+          application.english_test_overall_score,
+        );
+      }
       setFormData({
         user_id: application.user_id || application.student_id || "",
         target_university: application.target_university || "",
@@ -171,8 +195,7 @@ export default function EditApplicationModal({
         study_level: "",
         grades_cgpa: "",
         english_proficiency_test: application.english_proficiency_test || "",
-        english_test_overall_score:
-          application.english_test_overall_score || "",
+        english_test_overall_score: formattedScore,
         year_awarded: "",
         board_university: "",
         counselor_notes: application.counselor_notes || "",
@@ -222,6 +245,13 @@ export default function EditApplicationModal({
       ) {
         newErrors.english_test_overall_score =
           "Score can have at most 2 decimal place";
+      }
+      // For non‑IELTS tests, disallow decimal
+      if (
+        formData.english_proficiency_test !== "ielts" &&
+        formData.english_test_overall_score.includes(".")
+      ) {
+        newErrors.english_test_overall_score = `${formData.english_proficiency_test.toUpperCase()} score must be an integer.`;
       }
     }
 
@@ -288,7 +318,22 @@ export default function EditApplicationModal({
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
     if (name === "english_test_overall_score") {
-      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
+      // For non‑IELTS, strip decimal immediately
+      const testType = formData.english_proficiency_test;
+      let newValue = value;
+      if (testType !== "ielts" && value.includes(".")) {
+        newValue = value.split(".")[0];
+      }
+      if (newValue !== "" && !/^\d*\.?\d{0,2}$/.test(newValue)) return;
+      setFormData((prev) => ({ ...prev, [name]: newValue }));
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrs = { ...prev };
+          delete newErrs[name];
+          return newErrs;
+        });
+      }
+      return;
     }
     if (name === "year_awarded") {
       if (value !== "" && !/^\d{0,4}$/.test(value)) return;
@@ -308,6 +353,19 @@ export default function EditApplicationModal({
         delete newErrs[name];
         return newErrs;
       });
+    }
+  };
+
+  const handleScoreBlur = () => {
+    const testType = formData.english_proficiency_test;
+    const currentScore = formData.english_test_overall_score;
+    if (!testType || testType === "none" || !currentScore) return;
+    const formatted = formatEnglishScore(testType, currentScore);
+    if (formatted !== currentScore) {
+      setFormData((prev) => ({
+        ...prev,
+        english_test_overall_score: formatted,
+      }));
     }
   };
 
@@ -547,6 +605,7 @@ export default function EditApplicationModal({
                     name="english_test_overall_score"
                     value={formData.english_test_overall_score}
                     onChange={handleFieldChange}
+                    onBlur={handleScoreBlur}
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-100 outline-none"
                   />
                 </FormField>

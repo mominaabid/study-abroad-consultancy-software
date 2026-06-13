@@ -74,6 +74,20 @@ function InfoSection({ title, children }) {
   );
 }
 
+// Helper: format English score (same as in LeadModal)
+const formatEnglishScore = (testType, rawScore) => {
+  if (!rawScore || rawScore === "") return rawScore;
+  const num = parseFloat(rawScore);
+  if (isNaN(num)) return rawScore;
+
+  if (testType === "ielts") {
+    return num.toFixed(2);
+  } else if (["toefl", "pte", "duolingo"].includes(testType)) {
+    return Math.round(num).toString();
+  }
+  return rawScore;
+};
+
 export default function CreateApplicationModal({
   isOpen,
   onClose,
@@ -143,6 +157,17 @@ export default function CreateApplicationModal({
   useEffect(() => {
     if (selectedStudentForCreate) {
       // For a preselected student: only fill name, email, phone; keep educational fields empty
+      let formattedScore =
+        selectedStudentForCreate.english_test_overall_score || "";
+      if (
+        selectedStudentForCreate.english_proficiency_test &&
+        selectedStudentForCreate.english_test_overall_score
+      ) {
+        formattedScore = formatEnglishScore(
+          selectedStudentForCreate.english_proficiency_test,
+          selectedStudentForCreate.english_test_overall_score,
+        );
+      }
       setFormData({
         user_id:
           selectedStudentForCreate.user_id || selectedStudentForCreate.id || "",
@@ -154,14 +179,13 @@ export default function CreateApplicationModal({
         target_country: "",
         deadline: "",
         status: "inquiry",
-        study_level: "", // do NOT auto‑fill
-        grades_cgpa: "", // do NOT auto‑fill
+        study_level: "",
+        grades_cgpa: "",
         english_proficiency_test:
           selectedStudentForCreate.english_proficiency_test || "",
-        english_test_overall_score:
-          selectedStudentForCreate.english_test_overall_score || "",
-        year_awarded: "", // do NOT auto‑fill
-        board_university: "", // do NOT auto‑fill
+        english_test_overall_score: formattedScore,
+        year_awarded: "",
+        board_university: "",
         counselor_notes: "",
         consultancy_fee: "",
       });
@@ -230,6 +254,13 @@ export default function CreateApplicationModal({
       ) {
         newErrors.english_test_overall_score =
           "Score can have at most 2 decimal places";
+      }
+      // For non‑IELTS tests, disallow decimal
+      if (
+        formData.english_proficiency_test !== "ielts" &&
+        formData.english_test_overall_score.includes(".")
+      ) {
+        newErrors.english_test_overall_score = `${formData.english_proficiency_test.toUpperCase()} score must be an integer.`;
       }
     }
 
@@ -321,7 +352,23 @@ export default function CreateApplicationModal({
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
     if (name === "english_test_overall_score") {
-      if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
+      // For non‑IELTS, immediately strip decimal
+      const testType = formData.english_proficiency_test;
+      let newValue = value;
+      if (testType !== "ielts" && value.includes(".")) {
+        newValue = value.split(".")[0];
+      }
+      if (newValue !== "" && !/^\d*\.?\d{0,2}$/.test(newValue)) return;
+      // Update with possibly stripped value
+      setFormData((prev) => ({ ...prev, [name]: newValue }));
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrs = { ...prev };
+          delete newErrs[name];
+          return newErrs;
+        });
+      }
+      return;
     }
     if (name === "year_awarded") {
       if (value !== "" && !/^\d{0,4}$/.test(value)) return;
@@ -335,18 +382,25 @@ export default function CreateApplicationModal({
         (s) => (s.user_id || s.id) === parseInt(value),
       );
       if (selectedStudent) {
+        let formattedScore = selectedStudent.english_test_overall_score || "";
+        if (
+          selectedStudent.english_proficiency_test &&
+          selectedStudent.english_test_overall_score
+        ) {
+          formattedScore = formatEnglishScore(
+            selectedStudent.english_proficiency_test,
+            selectedStudent.english_test_overall_score,
+          );
+        }
         setFormData((prev) => ({
           ...prev,
           user_id: value,
           full_name: selectedStudent.name || "",
           email: selectedStudent.email || "",
           phone: selectedStudent.phone || "",
-          // Keep previous educational values (they are read‑only and will be overwritten by manual copy)
-          // Do NOT auto‑fill study_level, grades_cgpa, year_awarded, board_university
           english_proficiency_test:
             selectedStudent.english_proficiency_test || "",
-          english_test_overall_score:
-            selectedStudent.english_test_overall_score || "",
+          english_test_overall_score: formattedScore,
         }));
         fetchLeadEducation(selectedStudent.user_id || selectedStudent.id);
       } else {
@@ -360,13 +414,11 @@ export default function CreateApplicationModal({
           return newErrs;
         });
       }
-
       return;
     }
 
     if (name === "consultancy_fee") {
       if (value.length > 12) return;
-
       if (value !== "" && !/^\d*\.?\d{0,2}$/.test(value)) return;
     }
 
@@ -377,6 +429,19 @@ export default function CreateApplicationModal({
         delete newErrs[name];
         return newErrs;
       });
+    }
+  };
+
+  const handleScoreBlur = () => {
+    const testType = formData.english_proficiency_test;
+    const currentScore = formData.english_test_overall_score;
+    if (!testType || testType === "none" || !currentScore) return;
+    const formatted = formatEnglishScore(testType, currentScore);
+    if (formatted !== currentScore) {
+      setFormData((prev) => ({
+        ...prev,
+        english_test_overall_score: formatted,
+      }));
     }
   };
 
@@ -645,6 +710,7 @@ export default function CreateApplicationModal({
                     name="english_test_overall_score"
                     value={formData.english_test_overall_score}
                     onChange={handleFieldChange}
+                    onBlur={handleScoreBlur}
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none"
                   />
                 </FormField>
