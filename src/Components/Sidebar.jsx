@@ -12,6 +12,8 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  Bot,
+  Box,
 } from "lucide-react";
 import logo from "../assets/favicon.png";
 import ExpandedLogo from "../assets/Educatia-Logo.png";
@@ -42,6 +44,61 @@ const ADMIN_MENU = [
   { name: "Accounts", icon: <CreditCard size={20} />, path: "/admin/accounts" },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/admin/chats" },
   { name: "Counsellors", icon: <User size={20} />, path: "/admin/counsellors" },
+  {
+    name: "Chatbot Panel",
+    icon: <Bot size={20} />,
+    path: "/admin/chatbot-panel",
+    submenu: [
+      { name: "Dashboard", path: "/admin/chatbot-panel" },
+      {
+        category: "User Configurations",
+        items: [
+          { name: "Users", path: "/admin/chatbot-panel?table=users" },
+        ],
+      },
+      {
+        category: "Locations",
+        items: [
+          { name: "Countries", path: "/admin/chatbot-panel?table=countries" },
+          { name: "States", path: "/admin/chatbot-panel?table=states" },
+          { name: "Cities", path: "/admin/chatbot-panel?table=cities" },
+        ],
+      },
+      {
+        category: "Academics",
+        items: [
+          { name: "Universities", path: "/admin/chatbot-panel?table=institutes" },
+          { name: "Campuses", path: "/admin/chatbot-panel?table=campuses" },
+          { name: "Programs", path: "/admin/chatbot-panel?table=programs" },
+          { name: "Program Fees", path: "/admin/chatbot-panel?table=program_fees" },
+          { name: "Scholarships", path: "/admin/chatbot-panel?table=scholarships" },
+        ],
+      },
+      {
+        category: "Admissions",
+        items: [
+          { name: "Program Docs", path: "/admin/chatbot-panel?table=program_required_documents" },
+          { name: "Master Docs", path: "/admin/chatbot-panel?table=required_docs" },
+          { name: "English Requirements", path: "/admin/chatbot-panel?table=english_requirements" },
+          { name: "Pathways", path: "/admin/chatbot-panel?table=admission_pathways" },
+        ],
+      },
+      {
+        category: "Student Leads & Logs",
+        items: [
+          { name: "Student Leads", path: "/admin/chatbot-panel?table=student_leads" },
+          { name: "Chat Sessions", path: "/admin/chatbot-panel?table=chat_sessions" },
+          { name: "Chat Messages", path: "/admin/chatbot-panel?table=chat_messages" },
+        ],
+      },
+      {
+        category: "Office Info",
+        items: [
+          { name: "Office Contact", path: "/admin/chatbot-panel?table=business_info" },
+        ],
+      },
+    ],
+  },
 ];
 
 const COUNSELLOR_MENU = [
@@ -63,6 +120,61 @@ const COUNSELLOR_MENU = [
     path: "/counsellor/applications",
   },
   { name: "Chats", icon: <MessageSquare size={20} />, path: "/counsellor/chats" },
+  {
+    name: "Chatbot Panel",
+    icon: <Bot size={20} />,
+    path: "/counsellor/chatbot-panel",
+    submenu: [
+      { name: "Dashboard", path: "/counsellor/chatbot-panel" },
+      {
+        category: "User Configurations",
+        items: [
+          { name: "Users", path: "/counsellor/chatbot-panel?table=users" },
+        ],
+      },
+      {
+        category: "Locations",
+        items: [
+          { name: "Countries", path: "/counsellor/chatbot-panel?table=countries" },
+          { name: "States", path: "/counsellor/chatbot-panel?table=states" },
+          { name: "Cities", path: "/counsellor/chatbot-panel?table=cities" },
+        ],
+      },
+      {
+        category: "Academics",
+        items: [
+          { name: "Universities", path: "/counsellor/chatbot-panel?table=institutes" },
+          { name: "Campuses", path: "/counsellor/chatbot-panel?table=campuses" },
+          { name: "Programs", path: "/counsellor/chatbot-panel?table=programs" },
+          { name: "Program Fees", path: "/counsellor/chatbot-panel?table=program_fees" },
+          { name: "Scholarships", path: "/counsellor/chatbot-panel?table=scholarships" },
+        ],
+      },
+      {
+        category: "Admissions",
+        items: [
+          { name: "Program Docs", path: "/counsellor/chatbot-panel?table=program_required_documents" },
+          { name: "Master Docs", path: "/counsellor/chatbot-panel?table=required_docs" },
+          { name: "English Requirements", path: "/counsellor/chatbot-panel?table=english_requirements" },
+          { name: "Pathways", path: "/counsellor/chatbot-panel?table=admission_pathways" },
+        ],
+      },
+      {
+        category: "Student Leads & Logs",
+        items: [
+          { name: "Student Leads", path: "/counsellor/chatbot-panel?table=student_leads" },
+          { name: "Chat Sessions", path: "/counsellor/chatbot-panel?table=chat_sessions" },
+          { name: "Chat Messages", path: "/counsellor/chatbot-panel?table=chat_messages" },
+        ],
+      },
+      {
+        category: "Office Info",
+        items: [
+          { name: "Office Contact", path: "/counsellor/chatbot-panel?table=business_info" },
+        ],
+      },
+    ],
+  },
 ];
 
 const STUDENT_MENU = [
@@ -152,9 +264,30 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
     }));
   };
 
-  // Check if any submenu item is active
+  const [expandedCategories, setExpandedCategories] = useState({
+    "Academics": true,
+    "Student Leads & Logs": true,
+    "Locations": true,
+    "Admissions": true,
+  });
+
+  const toggleCategory = (catName, e) => {
+    if (e) e.stopPropagation();
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [catName]: !prev[catName],
+    }));
+  };
+
   const isSubmenuActive = (submenu) => {
-    return submenu?.some((item) => location.pathname === item.path);
+    const current = location.pathname + location.search;
+    return submenu?.some((item) => {
+      if (item.path && (current === item.path || location.pathname === item.path)) return true;
+      if (item.items) {
+        return item.items.some((sub) => current === sub.path || location.pathname === sub.path);
+      }
+      return false;
+    });
   };
 
   return (
@@ -255,6 +388,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                   {/* Main menu item with submenu toggle */}
                   <div
                     onClick={() => {
+                      if (item.path) navigate(item.path);
                       if (isExpanded) {
                         toggleSubmenu(item.name);
                       } else {
@@ -289,9 +423,69 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
 
                   {/* Submenu items */}
                   {isExpanded && isExpandedMenu && (
-                    <div className="ml-8 space-y-1">
+                    <div className="ml-6 space-y-1.5 border-l-2 border-gray-100 pl-2">
                       {item.submenu.map((subItem, subIndex) => {
-                        const isSubItemActive = location.pathname === subItem.path;
+                        const currentPath = location.pathname + location.search;
+
+                        // Check if this subItem is a Category with sub-items
+                        if (subItem.category) {
+                          const isCategoryExpanded = expandedCategories[subItem.category] !== false;
+                          const hasActiveNested = subItem.items.some(
+                            (nested) => currentPath === nested.path
+                          );
+
+                          return (
+                            <div key={subIndex} className="space-y-1">
+                              {/* Category Header */}
+                              <div
+                                onClick={(e) => toggleCategory(subItem.category, e)}
+                                className={`flex items-center justify-between px-2 py-1 rounded-lg cursor-pointer transition-colors text-[11px] font-bold uppercase tracking-wider ${
+                                  hasActiveNested
+                                    ? "text-[#009E99] bg-[#009E99]/5"
+                                    : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"
+                                }`}
+                              >
+                                <span className="truncate">{subItem.category}</span>
+                                {isCategoryExpanded ? (
+                                  <ChevronDown size={13} className="text-gray-400 flex-shrink-0" />
+                                ) : (
+                                  <ChevronRight size={13} className="text-gray-400 flex-shrink-0" />
+                                )}
+                              </div>
+
+                              {/* Nested Submodules */}
+                              {isCategoryExpanded && (
+                                <div className="ml-2.5 space-y-1 border-l border-teal-200/60 pl-2">
+                                  {subItem.items.map((nested, nIdx) => {
+                                    const isNestedActive = currentPath === nested.path;
+                                    return (
+                                      <div
+                                        key={nIdx}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigate(nested.path);
+                                          if (!isDesktop) setIsOpen(false);
+                                        }}
+                                        className={`flex items-center px-2.5 py-1.5 rounded-md cursor-pointer transition-all duration-150 text-xs ${
+                                          isNestedActive
+                                            ? "bg-[#009E99] text-white shadow-sm font-semibold"
+                                            : "hover:bg-[#009E99]/10 hover:text-[#009E99] text-gray-600 font-medium"
+                                        }`}
+                                      >
+                                        <span className="truncate">{nested.name}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        // Regular subItem (like Dashboard)
+                        const isSubItemActive =
+                          currentPath === subItem.path ||
+                          (subItem.path === location.pathname && !location.search);
                         return (
                           <div
                             key={subIndex}
@@ -301,11 +495,11 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                             }}
                             className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-all duration-200 text-sm ${
                               isSubItemActive
-                                ? "bg-[#009E99] text-white shadow-md"
-                                : "hover:bg-[#009E99]/10 hover:text-[#009E99] text-gray-600"
+                                ? "bg-[#009E99] text-white shadow-md font-semibold"
+                                : "hover:bg-[#009E99]/10 hover:text-[#009E99] text-gray-600 font-medium"
                             }`}
                           >
-                            <span className="ml-2">{subItem.name}</span>
+                            <span className="ml-1">{subItem.name}</span>
                           </div>
                         );
                       })}

@@ -32,6 +32,7 @@ import Countries from "./Pages/Countries";
 import Cities from "./Pages/Cities";
 import Universities from "./Pages/Universities";
 import DropdownConfig from "./Pages/DropdownConfig";
+import ChatbotPanel from "./Pages/AdminPage/ChatbotPanel";
 
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
@@ -134,6 +135,7 @@ export default function App() {
               <Route path="leads/:id/assign" element={<LeadModal />} />
               <Route path="counsellors" element={<Counsellor />} />
               <Route path="chats" element={<AdminChatPage />} />
+              <Route path="chatbot-panel" element={<ChatbotPanel />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="applications" element={<CounsellorApplication />} />
               <Route path="profile" element={<AdminProfile />} />
@@ -155,6 +157,7 @@ export default function App() {
               <Route path="leads/new" element={<LeadModal />} />
               <Route path="leads/:id/edit" element={<LeadModal />} />
               <Route path="chats" element={<CounsellorChat />} />
+              <Route path="chatbot-panel" element={<ChatbotPanel />} />
               <Route path="documents" element={<CounsellorDocuments />} />
               <Route path="applications" element={<CounsellorApplication />} />
               <Route path="profile" element={<CounsellorProfile />} />
