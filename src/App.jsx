@@ -1,4 +1,4 @@
-// App.jsx
+// App.jsx - Fixed version
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -8,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
 import { selectUser } from "./redux/slices/authSlice";
 import { fetchUnreadNotifications } from "./redux/slices/notificationSlice";
-import { fetchConversations } from "./redux/slices/chatSlice"; // ✅ import the thunk
+import { fetchConversations } from "./redux/slices/chatSlice";
 import useSSE from "./redux/hooks/useSSE";
 import { connectAbly } from "./services/ablyService";
 import "./App.css";
@@ -26,14 +26,15 @@ import Leads from "./Pages/AdminPage/Leads";
 import LeadModal from "./Components/LeadsComponents/LeadModal";
 import { Counsellor } from "./Pages/AdminPage/Counsellor";
 import AdminPayments from "./Pages/AdminPage/AdminPayments";
-// import { AdminApplications } from "./Pages/AdminPage/AdminApplications"; // ✅ reuses CounsellorApplication
 import { AdminProfile } from "./Pages/AdminPage/AdminProfile";
 import Accounts from "./Components/Accounts/Accounts";
-
+import Countries from "./Pages/Countries";
+import Cities from "./Pages/Cities";
+import Universities from "./Pages/Universities";
+import DropdownConfig from "./Pages/DropdownConfig";
 
 import { CounsellorDashboard } from "./Pages/CounsellorPage/CounsellorDashboard";
 import CounsellorLeads from "./Pages/CounsellorPage/Counsellorleads";
-
 import CounsellorChat from "./Pages/CounsellorPage/CounsellorChat";
 import CounsellorDocuments from "./Pages/CounsellorPage/CounsellorDocuments";
 import { CounsellorApplication } from "./Pages/CounsellorPage/CounsellorApplication";
@@ -46,7 +47,6 @@ import { StudentApplication } from "./Pages/StudentPage/StudentApplication";
 import StudentPayments from "./Pages/StudentPage/StudentPayment";
 import { StudentProfile } from "./Pages/StudentPage/StudentProfile";
 
-// SSE initializer (unchanged)
 const SSEInitializer = ({ children }) => {
   const user = useSelector(selectUser);
   useEffect(() => {
@@ -70,34 +70,29 @@ const AblyInitializer = () => {
     connectAbly(token)
       .then(() => console.log("✅ Ably ready"))
       .catch((err) => console.error("❌ Ably init failed:", err));
-  }, [user?.id]); // re-runs if user changes (login/logout)
+  }, [user?.id]);
 
-  return null; // renders nothing
+  return null;
 };
 
 export default function App() {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
 
-  // Load user on app mount
   useEffect(() => {
     dispatch(loadUser());
   }, [dispatch]);
 
-  // When user becomes authenticated, fetch unread notifications
   useEffect(() => {
     if (user) {
       dispatch(fetchUnreadNotifications());
     }
   }, [user, dispatch]);
 
-  // ✅ Fetch conversations on user load and poll every 30 seconds
   useEffect(() => {
     if (user) {
-      // Initial fetch
       dispatch(fetchConversations());
 
-      // Poll every 30 seconds to keep badge count updated
       const interval = setInterval(() => {
         dispatch(fetchConversations());
       }, 30000);
@@ -143,6 +138,11 @@ export default function App() {
               <Route path="applications" element={<CounsellorApplication />} />
               <Route path="profile" element={<AdminProfile />} />
               <Route path="accounts" element={<Accounts />} />
+              {/* ✅ Fixed: Removed leading '/' - these are now relative paths */}
+              <Route path="countries" element={<Countries />} />
+              <Route path="cities" element={<Cities />} />
+              <Route path="universities" element={<Universities />} />
+              <Route path="config" element={<DropdownConfig />} />
             </Route>
           </Route>
 
@@ -158,6 +158,11 @@ export default function App() {
               <Route path="documents" element={<CounsellorDocuments />} />
               <Route path="applications" element={<CounsellorApplication />} />
               <Route path="profile" element={<CounsellorProfile />} />
+              {/* ✅ Fixed: Removed leading '/' */}
+              <Route path="countries" element={<Countries />} />
+              <Route path="cities" element={<Cities />} />
+              <Route path="universities" element={<Universities />} />
+              <Route path="config" element={<DropdownConfig />} />
             </Route>
           </Route>
 
@@ -172,7 +177,6 @@ export default function App() {
               <Route path="profile" element={<StudentProfile />} />
               <Route path="payments" element={<StudentPayments />} />
               <Route path="accounts" element={<Accounts />} />
-
             </Route>
           </Route>
 

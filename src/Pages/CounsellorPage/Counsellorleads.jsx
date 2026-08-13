@@ -17,7 +17,7 @@ import { addNotification } from "../../redux/slices/notificationSlice";
 
 import {
   STAGES,
-  COUNTRIES,
+
   formatDate,
 } from "../../Components/LeadsComponents/LeadsConstants";
 import LeadDrawer from "../../Components/LeadsComponents/LeadDrawer";
@@ -71,6 +71,7 @@ export default function CounsellorLeads() {
   const dispatch = useDispatch();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [countries, setCountries] = useState([]);
   const [view, setView] = useState("kanban");
   const [search, setSearch] = useState("");
   const [filterCountry, setFilterCountry] = useState("All Countries");
@@ -93,42 +94,139 @@ export default function CounsellorLeads() {
   });
 
   // ── Fetch MY leads only ─────────────────────────────────────────────────
-  const fetchLeads = useCallback(async (page = 1) => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+// CounsellorLeads.jsx - Complete fixed fetchLeads
 
-      const res = await fetch(`${BASE_URL}/counsellor/leads?page=${page}`, {
+// CounsellorLeads.jsx - Complete fixed fetchLeads with fallback
+
+const fetchLeads = useCallback(async (page = 1) => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setLeads([]);
+      return;
+    }
+
+    // ✅ Try primary endpoint
+    let res = await fetch(`${BASE_URL}/counsellor/leads?page=${page}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    let data = await res.json();
+    console.log("📥 Primary API response:", data);
+
+    let leadsData = [];
+    let total = 0;
+    let totalPages = 1;
+
+    // ✅ If primary endpoint fails or returns empty, try alternative
+    if (!res.ok || !data.success || (data.data && !data.data.leads && !Array.isArray(data.data))) {
+      console.log("⚠️ Primary endpoint failed, trying alternative...");
+      
+      // Try applications/students endpoint
+      res = await fetch(`${BASE_URL}/counsellor/applications/students`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-      const leadsData = Array.isArray(data) ? data : data.data || [];
-      setLeads(leadsData);
-      setPagination({
-        page,
-        totalPages: data.totalPages || 1,
-        total: data.total || leadsData.length,
-      });
-    } catch (err) {
-      console.error("Failed to fetch counsellor leads:", err);
-    } finally {
-      setLoading(false);
+      
+      if (res.ok) {
+        data = await res.json();
+        console.log("📥 Alternative API response:", data);
+        
+        if (data.success && data.students) {
+          leadsData = data.students;
+          total = leadsData.length;
+          console.log("📊 Found leads in alternative endpoint:", leadsData.length);
+        }
+      }
+    } else {
+      // ✅ Process primary response
+      if (data.success && data.data) {
+        if (data.data.leads && Array.isArray(data.data.leads)) {
+          leadsData = data.data.leads;
+          total = data.data.pagination?.total || leadsData.length;
+          totalPages = data.data.pagination?.totalPages || 1;
+        } else if (Array.isArray(data.data)) {
+          leadsData = data.data;
+          total = leadsData.length;
+        }
+      } else if (Array.isArray(data)) {
+        leadsData = data;
+        total = leadsData.length;
+      }
     }
-  }, []);
 
-  useEffect(() => {
+    // ✅ If still no data, try leads endpoint without pagination
+    if (leadsData.length === 0) {
+      console.log("⚠️ No leads found, trying without pagination...");
+      res = await fetch(`${BASE_URL}/counsellor/leads`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (res.ok) {
+        data = await res.json();
+        console.log("📥 No pagination API response:", data);
+        
+        if (data.success && data.data && data.data.leads) {
+          leadsData = data.data.leads;
+          total = leadsData.length;
+        }
+      }
+    }
+
+    console.log("✅ Final leads data:", leadsData);
+    console.log("✅ Total leads:", leadsData.length);
+
+    setLeads(leadsData);
+    setPagination({
+      page: parseInt(page),
+      totalPages: totalPages || Math.ceil(total / 10) || 1,
+      total: total || leadsData.length,
+    });
+  } catch (err) {
+    console.error("❌ Failed to fetch counsellor leads:", err);
+    setLeads([]);
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
+// CounsellorLeads.jsx - Add this with other states
+
+
+// Add this function
+const fetchCountries = useCallback(async () => {
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        
+        const res = await fetch(`${BASE_URL}/countries`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        if (data.success) {
+            const countryNames = data.data.map(c => c.name);
+            setCountries(["All Countries", ...countryNames]);
+        }
+    } catch (err) {
+        console.error("Failed to fetch countries:", err);
+    }
+}, []);
+useEffect(() => {
     fetchLeads(1);
-  }, [fetchLeads]);
+    fetchCountries();  // ✅ ADD THIS
+}, [fetchLeads, fetchCountries]);
 
   useEffect(() => {
     const handler = (e) => {

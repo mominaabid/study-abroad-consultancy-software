@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
-import { SOURCES, STUDY_LEVELS, EMPTY_FORM } from "./LeadsConstants";
+import { EMPTY_FORM } from "./LeadsConstants";
 import { InputField } from "../InputFields/InputField";
 import { TextareaField } from "../InputFields/TextareaField";
 import { AddButton } from "../CustomButtons/AddButton";
 import PhoneInputWithCountry from "../InputFields/PhoneInputWithCountry";
-import { COUNTRIES } from "../../constants/countries";
+
 import { BASE_URL } from "../../Content/Url";
 import {
   User,
@@ -15,7 +15,6 @@ import {
   Phone,
   Globe,
   GraduationCap,
-  Radio,
   Search,
   ChevronDown,
   Calendar,
@@ -27,7 +26,6 @@ import {
   School,
   FileText,
   ArrowLeft,
-  Plus,
   Edit,
 } from "lucide-react";
 
@@ -43,29 +41,14 @@ const SOURCE_ICONS = {
   agent: "🏢",
 };
 
-const MARITAL_STATUS_OPTIONS = [
-  { value: "single", label: "Single" },
-  { value: "married", label: "Married" },
-  { value: "divorced", label: "Divorced" },
-  { value: "widowed", label: "Widowed" },
-];
-
-const ENGLISH_TEST_OPTIONS = [
-  { value: "ielts", label: "IELTS" },
-  { value: "toefl", label: "TOEFL" },
-  { value: "pte", label: "PTE" },
-  { value: "duolingo", label: "Duolingo" },
-  { value: "none", label: "None" },
-];
-
 const DEGREE_GRADE_RULES = {
-  Metric: {
+  Matric: {
     type: "numeric_or_grades",
     numeric: { min: 600, max: 1200 },
     grades: ["A", "A+", "B", "B+", "C", "D", "E"],
     maxLength: 4,
   },
-  Inter: {
+  "Inter (12 years)": {
     type: "numeric_or_grades",
     numeric: { min: 600, max: 1200 },
     grades: ["A", "A+", "B", "B+", "C", "D", "E"],
@@ -83,19 +66,19 @@ const DEGREE_GRADE_RULES = {
     max: 4.0,
     maxLength: 4,
   },
-  DAE: {
+  "DAE (3 years)": {
     type: "numeric",
     min: 1700,
     max: 3550,
     maxLength: 4,
   },
-  ADP: {
+  "ADP (2 years)": {
     type: "numeric",
     min: 400,
     max: 800,
     maxLength: 3,
   },
-  Masters: {
+  "Masters (18 years)": {
     type: "cgpa",
     min: 2.5,
     max: 4.0,
@@ -105,6 +88,18 @@ const DEGREE_GRADE_RULES = {
     type: "grades_list",
     grades: ["A", "A+", "B", "B+", "C", "D", "E"],
     maxLength: 2,
+  },
+  "Post Graduate Diploma": {
+    type: "cgpa",
+    min: 2.5,
+    max: 4.0,
+    maxLength: 4,
+  },
+  PhD: {
+    type: "cgpa",
+    min: 2.5,
+    max: 4.0,
+    maxLength: 4,
   },
 };
 
@@ -210,7 +205,8 @@ const formatEnglishScore = (testType, rawScore) => {
   return rawScore;
 };
 
-// Searchable Dropdown Component (unchanged except inline handlers)
+// Searchable Dropdown Component
+// Searchable Dropdown Component - FIXED
 function SearchableDropdown({
   options = [],
   value,
@@ -240,8 +236,17 @@ function SearchableDropdown({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // ✅ FIXED: Proper handleSelect function
   const handleSelect = (opt) => {
-    onChange({ target: { name, value: opt.value } });
+    const newValue = opt.value;
+    // Create a synthetic event to match the expected onChange signature
+    const event = {
+      target: {
+        name: name,
+        value: newValue
+      }
+    };
+    onChange(event);
     setQuery("");
     setOpen(false);
   };
@@ -252,7 +257,7 @@ function SearchableDropdown({
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div
-        className="relative flex items-center w-full p-2.5 border border-gray-200 rounded-lg shadow bg-white text-gray-500 transition-all focus-within:ring-1 focus-within:ring-[#009E99]"
+        className="relative flex items-center w-full p-2.5 border border-gray-200 rounded-lg shadow bg-white text-gray-500 transition-all focus-within:ring-1 focus-within:ring-[#009E99] cursor-pointer"
         onClick={() => setOpen(true)}
       >
         {icon && (
@@ -263,16 +268,21 @@ function SearchableDropdown({
         <Search size={15} className="text-slate-400 shrink-0 mr-2" />
         <input
           type="text"
-          className="flex-1 outline-none bg-transparent text-gray-500 placeholder:text-gray-400 text-sm"
+          className="flex-1 outline-none bg-transparent text-gray-500 placeholder:text-gray-400 text-sm cursor-pointer"
           placeholder={selectedOption ? selectedOption.label : placeholder}
           value={open ? query : selectedOption ? selectedOption.label : ""}
           onChange={(e) => {
             let trimmed = e.target.value.replace(/^\s+/, "");
-            trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, ""); // Restrict to alphanumeric + spaces
+            trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, "");
             setQuery(trimmed);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
+          readOnly={!open} // ✅ Prevents input from capturing click events
+        />
+        <ChevronDown 
+          size={15} 
+          className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} 
         />
       </div>
       {open && (
@@ -309,46 +319,55 @@ function SearchableDropdown({
   );
 }
 
+// LeadModal.jsx - Replace the entire SearchableCounsellorSelect component
+
+// LeadModal.jsx - REPLACE SearchableCounsellorSelect with this
+
 function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  const counsellorsWithUnassigned = [
-    { id: "unassigned", name: "Unassigned", user: { id: "unassigned" } },
-    ...counsellors,
+  const counsellorsArray = Array.isArray(counsellors) ? counsellors : [];
+
+  const options = [
+    { id: null, name: "Unassigned", user: { id: null } },
+    ...counsellorsArray,
   ];
 
-  const selected = counsellorsWithUnassigned.find((c) => {
-    const cId = String(c.user?.id || c.id);
-    if (!value || value === "" || value === "null" || value === null)
-      return cId === "unassigned";
-    return cId === String(value);
-  });
+const selected = options.find((c) => {
+  const cId = c.counsellor_id;
+  if (!value || value === "" || value === "null" || value === null) {
+    return cId === null || cId === undefined;
+  }
+  return String(cId) === String(value);
+});
 
-  const filtered = counsellorsWithUnassigned.filter((c) =>
-    c.name?.toLowerCase().includes(query.toLowerCase()),
+  const filtered = options.filter((c) =>
+    c.name?.toLowerCase().includes(query.toLowerCase())
   );
 
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSelect = (c) => {
-    const id = String(c.user?.id || c.id);
-    const newValue = id === "unassigned" ? null : id;
-    onChange({ target: { name: "counsellor_id", value: newValue } });
-    setQuery("");
-    setOpen(false);
-  };
-
+const handleSelect = (c) => {
+  const id = c.counsellor_id;
+  const newValue = (!id || id === "null" || id === null) ? null : id;
+  console.log("✅ Selecting counsellor - id:", id, "newValue:", newValue);
+  onChange({ target: { name: "counsellor_id", value: newValue } });
+  setQuery("");
+  setOpen(false);
+};
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xl font-semibold text-gray-900 mb-1.5">
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
         Assign Counsellor
       </label>
       <div
@@ -363,7 +382,7 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
           value={open ? query : selected ? selected.name : ""}
           onChange={(e) => {
             let trimmed = e.target.value.replace(/^\s+/, "");
-            trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, ""); // Restrict input
+            trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, "");
             setQuery(trimmed);
             setOpen(true);
           }}
@@ -382,23 +401,28 @@ function SearchableCounsellorSelect({ counsellors = [], value, onChange }) {
                 No options found
               </div>
             ) : (
-              filtered.map((c) => {
-                const id = String(c.user?.id || c.id);
-                const isSelected =
-                  !value || value === "" || value === "null" || value === null
-                    ? id === "unassigned"
-                    : String(value) === id;
-                const isUnassigned = id === "unassigned";
-                return (
-                  <div
-                    key={id}
+            filtered.map((c) => {
+  const id = c.counsellor_id;
+  const isUnassigned = !id || id === "null" || id === null;
+
+  let isSelected = false;
+  if (!value || value === "" || value === "null" || value === null) {
+    isSelected = isUnassigned;
+  } else {
+    isSelected = String(value) === String(id);
+  }
+
+  return (
+    <div
+      key={isUnassigned ? "unassigned" : id}
+             
                     onClick={() => handleSelect(c)}
                     className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer text-sm transition-colors
                       ${isSelected ? "bg-blue-50 text-blue-700 font-medium" : "hover:bg-slate-50 text-slate-700"}`}
                   >
                     {!isUnassigned ? (
                       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                        {c.name?.charAt(0)?.toUpperCase()}
+                        {c.name?.charAt(0)?.toUpperCase() || "C"}
                       </div>
                     ) : (
                       <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 text-xs font-bold shrink-0">
@@ -459,17 +483,28 @@ export default function LeadModal() {
   else if (location.pathname.includes("/assign")) mode = "assign";
   const isAssignMode = mode === "assign";
 
+  // ✅ CONFIG STATE - Fetch from API
+  const [configs, setConfigs] = useState({
+    lead_source: [],
+    study_level: [],
+    english_test_type: [],
+    marital_status: [],
+    degree_type: [],
+  });
+
   const [form, setForm] = useState({
     ...EMPTY_FORM,
-    source: "walkin",
+    source_id: "",
     dob: "",
-    marital_status: "",
+    marital_status_id: "",
     father_name: "",
     father_contact: "",
     home_address: "",
-    english_proficiency_test: "",
+   counsellor_id: null,  // ✅
+    english_test_id: "",
     english_test_overall_score: "",
   });
+  
   const [saving, setSaving] = useState(false);
   const [counsellors, setCounsellors] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -481,7 +516,7 @@ export default function LeadModal() {
 
   const [educationEntries, setEducationEntries] = useState([]);
   const [tempDegree, setTempDegree] = useState({
-    degree: "",
+    degree_id: "",
     year_awarded: "",
     grades_cgpa: "",
     board_university: "",
@@ -489,46 +524,185 @@ export default function LeadModal() {
   });
   const [gradeError, setGradeError] = useState("");
 
-  const isDegreeDuplicate = (degree, editingId = null) => {
-    return educationEntries.some(
-      (entry) => entry.degree === degree && entry.id !== editingId,
-    );
-  };
-
   const [fieldErrors, setFieldErrors] = useState({
     name: "",
     fatherName: "",
     totalScore: "",
   });
 
-  const filteredCountries = COUNTRIES.filter(
-    (c) =>
-      c.country.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
-      c.iso.toLowerCase().includes(countrySearchTerm.toLowerCase()),
-  ).map((c) => ({ value: c.country, display: `${c.country} (${c.iso})` }));
+ 
+// LeadModal.jsx - Complete fixed function
 
-  const sourceOptions = SOURCES.map((s) => ({
-    value: s,
-    label: `${SOURCE_ICONS[s.toLowerCase()] || "📍"} ${s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ")}`,
-    icon: SOURCE_ICONS[s.toLowerCase()] || "📍",
+const fetchConfigs = async () => {
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(`${BASE_URL}/config`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch configs");
+        const data = await response.json();
+
+        console.log("Configs API response:", data); // Debug
+
+        if (data.success) {
+            // ✅ Helper to remove duplicates
+            const uniqueBy = (arr, key) => {
+                if (!arr || !Array.isArray(arr)) return [];
+                const seen = new Set();
+                return arr.filter(item => {
+                    const value = item[key]?.toLowerCase() || '';
+                    if (seen.has(value)) return false;
+                    seen.add(value);
+                    return true;
+                });
+            };
+
+            setConfigs({
+                lead_source: uniqueBy(data.data.lead_source, 'name'),
+                study_level: uniqueBy(data.data.study_level, 'name'),
+                english_test_type: uniqueBy(data.data.english_test_type, 'name'),
+                marital_status: uniqueBy(data.data.marital_status, 'name'),
+                degree_type: uniqueBy(data.data.degree_type, 'name'),
+            });
+        }
+    } catch (error) {
+        console.error("Error fetching configs:", error);
+    }
+};
+const [countries, setCountries] = useState([]);
+
+// ✅ REPLACE the entire fetchCountries function with this:
+const fetchCountries = useCallback(async () => {
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${BASE_URL}/countries`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (data.success) {
+            // ✅ Flatten the nested array
+            const countryData = Array.isArray(data.data) && Array.isArray(data.data[0]) 
+                ? data.data[0] 
+                : data.data;
+            setCountries(countryData || []);
+        }
+    } catch (err) {
+        console.error("Failed to fetch countries:", err);
+    }
+}, []);
+
+// ✅ ADD THESE FUNCTIONS after fetchCountries:
+const fetchCitiesByCountry = useCallback(async (countryId) => {
+    if (!countryId) {
+        setCities([]);
+        return;
+    }
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${BASE_URL}/countries/${countryId}/cities`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (data.success) {
+            setCities(data.data);
+        }
+    } catch (err) {
+        console.error("Failed to fetch cities:", err);
+    }
+}, []);
+
+const fetchUniversitiesByCountry = useCallback(async (countryId) => {
+    if (!countryId) {
+        setUniversities([]);
+        return;
+    }
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${BASE_URL}/countries/${countryId}/universities`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (data.success) {
+            setUniversities(data.data);
+        }
+    } catch (err) {
+        console.error("Failed to fetch universities:", err);
+    }
+}, []);
+  // ✅ DYNAMIC OPTIONS FROM CONFIGS
+const sourceOptions = configs.lead_source.map((s) => ({
+    value: s.id,
+    label: s.name,
+}));
+
+  const studyLevelOptions = configs.study_level.map((s) => ({
+    value: s.id,
+    label: s.name,
+  }));
+const degreeOptions = configs.degree_type.map((s) => ({
+    value: s.id,
+    label: s.name,
+}));
+
+  const englishTestOptions = [
+    ...configs.english_test_type.map((t) => ({
+      value: t.id,
+      label: t.name,
+    })),
+    { value: "none", label: "None" },
+  ];
+
+  const maritalStatusOptions = configs.marital_status.map((s) => ({
+    value: s.id,
+    label: s.name,
   }));
 
-  const studyLevelOptions = STUDY_LEVELS.map((l) => ({ value: l, label: l }));
+  const isDegreeDuplicate = (degreeId, editingId = null) => {
+    return educationEntries.some(
+      (entry) => entry.degree_id === degreeId && entry.id !== editingId,
+    );
+  };
+
+// ✅ REPLACE with this safe version
+const filteredCountries = (countries || [])
+  .filter((c) => {
+    if (!c) return false;
+    const searchTerm = countrySearchTerm.toLowerCase();
+    return (
+      (c.name && c.name.toLowerCase().includes(searchTerm)) ||
+      (c.code && c.code.toLowerCase().includes(searchTerm))
+    );
+  })
+  .map((c) => ({ 
+    value: c.name, 
+    display: `${c.name} (${c.code || 'N/A'})` 
+  }));
 
   useEffect(() => {
-    if (!tempDegree.degree) {
+    if (!tempDegree.degree_id) {
       setGradeError("");
       return;
     }
-    const error = validateGrade(tempDegree.degree, tempDegree.grades_cgpa);
+    const degreeName = studyLevelOptions.find(
+      (s) => s.value === tempDegree.degree_id
+    )?.label;
+    const error = validateGrade(degreeName, tempDegree.grades_cgpa);
     setGradeError(error || "");
-  }, [tempDegree.degree, tempDegree.grades_cgpa]);
+  }, [tempDegree.degree_id, tempDegree.grades_cgpa, studyLevelOptions]);
 
-  // ========== RESTRICTED FIELD HANDLERS ==========
+  // ========== FIELD HANDLERS ==========
   const handleNameChange = (e) => {
     let rawValue = e.target.value;
     let cleaned = rawValue.replace(/^\s+/, "");
-    // Allow only letters A-Z, a-z, and spaces
     cleaned = cleaned.replace(/[^A-Za-z\s]/g, "");
     let error = "";
     if (cleaned !== rawValue) {
@@ -561,16 +735,13 @@ export default function LeadModal() {
   const handleEmailChange = (e) => {
     let rawValue = e.target.value;
     let cleaned = rawValue.replace(/^\s+/, "");
-    // Allowed email characters: letters, digits, dot, hyphen, underscore, plus, at
     cleaned = cleaned.replace(/[^a-zA-Z0-9.@_+-]/g, "");
     setForm((prev) => ({ ...prev, email: cleaned }));
   };
 
-  // For Board/University field (inside education)
   const handleBoardUniversityChange = (e) => {
     let rawValue = e.target.value;
     let cleaned = rawValue.replace(/^\s+/, "");
-    // Allow only alphanumeric and spaces
     cleaned = cleaned.replace(/[^a-zA-Z0-9\s]/g, "");
     setTempDegree((prev) => ({
       ...prev,
@@ -578,19 +749,19 @@ export default function LeadModal() {
     }));
   };
 
-  // Grades change handler (enhanced to block special chars based on degree type)
   const handleGradesChange = (e) => {
     let rawValue = e.target.value;
     let value = rawValue.replace(/^\s+/, "");
-    const rule = DEGREE_GRADE_RULES[tempDegree.degree];
+    const degreeName = studyLevelOptions.find(
+      (s) => s.value === tempDegree.degree_id
+    )?.label;
+    const rule = DEGREE_GRADE_RULES[degreeName];
 
-    // max length
-    if (value.length > getGradeMaxLength(tempDegree.degree)) {
+    if (value.length > getGradeMaxLength(degreeName)) {
       return;
     }
 
     if (rule?.type === "numeric" || rule?.type === "numeric_or_grades") {
-      // For numeric/grades: allow digits, letters A-Z, plus, dot, space
       if (/^[0-9A-Za-z+.\s]*$/.test(value)) {
         setTempDegree((prev) => ({ ...prev, grades_cgpa: value }));
       }
@@ -598,7 +769,6 @@ export default function LeadModal() {
     }
 
     if (rule?.type === "cgpa") {
-      // CGPA: allow digits, dot, slash (for fractions like 3.5/4.0)
       if (/^[0-9./]*$/.test(value)) {
         setTempDegree((prev) => ({ ...prev, grades_cgpa: value }));
       }
@@ -606,7 +776,6 @@ export default function LeadModal() {
     }
 
     if (rule?.type === "grades_list") {
-      // Only letters and plus sign
       if (/^[A-Za-z+]*$/.test(value)) {
         setTempDegree((prev) => ({
           ...prev,
@@ -616,7 +785,6 @@ export default function LeadModal() {
       return;
     }
 
-    // Default fallback
     setTempDegree((prev) => ({ ...prev, grades_cgpa: value }));
   };
 
@@ -630,7 +798,7 @@ export default function LeadModal() {
       cleaned = cleaned.slice(0, cleaned.lastIndexOf("."));
     }
 
-    const testType = form.english_proficiency_test;
+    const testType = form.english_test_id;
     if (testType !== "ielts" && cleaned.includes(".")) {
       cleaned = cleaned.split(".")[0];
     }
@@ -659,8 +827,8 @@ export default function LeadModal() {
         }
       }
     } else if (
-      form.english_proficiency_test &&
-      form.english_proficiency_test !== "none"
+      form.english_test_id &&
+      form.english_test_id !== "none"
     ) {
       error = "Total score is required for selected English test";
     }
@@ -670,7 +838,7 @@ export default function LeadModal() {
   };
 
   const handleScoreBlur = () => {
-    const testType = form.english_proficiency_test;
+    const testType = form.english_test_id;
     const currentScore = form.english_test_overall_score;
     if (!testType || testType === "none" || !currentScore) return;
     const formatted = formatEnglishScore(testType, currentScore);
@@ -699,37 +867,96 @@ export default function LeadModal() {
     }
   };
 
-  const handleCustomChange = (e) => {
-    const { name, value } = e.target;
-    let processedValue = value;
-    if (typeof processedValue === "string") {
-      processedValue = processedValue.replace(/^\s+/, "");
+const handleCustomChange = (e) => {
+  const { name, value } = e.target;
+  console.log("📝 handleCustomChange - name:", name, "value:", value, "type:", typeof value);
+  
+  // ✅ Handle counsellor_id separately
+  if (name === "counsellor_id") {
+    // If value is null, undefined, "null", or empty string → set to null
+    if (value === null || value === undefined || value === "null" || value === "") {
+      setForm(prev => {
+        console.log("📝 Setting counsellor_id to null");
+        return { ...prev, counsellor_id: null };
+      });
+    } else {
+      // Convert to number
+      const numValue = Number(value);
+      console.log("📝 Setting counsellor_id to:", numValue);
+      setForm(prev => ({ ...prev, counsellor_id: isNaN(numValue) ? null : numValue }));
     }
-    setForm((prev) => ({ ...prev, [name]: processedValue }));
+    return;
+  }
+
+  // Handle other fields
+  let processedValue = value;
+  if (typeof processedValue === "string") {
+    processedValue = processedValue.replace(/^\s+/, "");
+  }
+
+  const fieldMap = {
+    source: "source_id",
+    marital_status: "marital_status_id",
+    english_proficiency_test: "english_test_id",
   };
+  const dbFieldName = fieldMap[name] || name;
+  setForm(prev => ({ ...prev, [dbFieldName]: processedValue }));
+};
 
   const getApiBaseUrl = useCallback(
     () =>
       isCounsellor ? `${BASE_URL}/counsellor/leads` : `${BASE_URL}/admin/leads`,
     [isCounsellor],
   );
+// LeadModal.jsx - Replace fetchCounsellors
 
-  const fetchCounsellors = useCallback(async () => {
-    if (isCounsellor) return;
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-      const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setCounsellors(Array.isArray(data) ? data : data.data || []);
-    } catch {
-      console.error("Failed to fetch counsellors");
+// LeadModal.jsx - Replace fetchCounsellors
+
+const fetchCounsellors = useCallback(async () => {
+  // ✅ Don't skip for counsellor - we need to show "Unassigned" option anyway
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setCounsellors([]);
+      return;
     }
-  }, [isCounsellor]);
-
+    const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    console.log("📥 Counsellors API response:", data);
+    
+    // ✅ Handle nested array structure
+    let counsellorsData = [];
+    
+    if (data.success && data.data) {
+      // Check if data.data.counsellors exists
+      if (data.data.counsellors) {
+        // If it's a nested array, flatten it
+        if (Array.isArray(data.data.counsellors) && data.data.counsellors.length > 0) {
+          // Check if first element is also an array (nested)
+          if (Array.isArray(data.data.counsellors[0])) {
+            counsellorsData = data.data.counsellors[0] || [];
+          } else {
+            counsellorsData = data.data.counsellors;
+          }
+        }
+      } else if (Array.isArray(data.data)) {
+        // Fallback: if data.data is an array
+        counsellorsData = data.data;
+      }
+    } else if (Array.isArray(data)) {
+      counsellorsData = data;
+    }
+    
+    console.log("📊 Processed counsellors:", counsellorsData);
+    setCounsellors(counsellorsData);
+  } catch (error) {
+    console.error("❌ Failed to fetch counsellors:", error);
+    setCounsellors([]);
+  }
+}, []);
   const fetchLead = useCallback(
     async (leadId) => {
       setLoading(true);
@@ -752,9 +979,9 @@ export default function LeadModal() {
         setSelectedCountries(countries);
 
         let formattedScore = lead.english_test_overall_score || "";
-        if (lead.english_proficiency_test && lead.english_test_overall_score) {
+        if (lead.english_test_id && lead.english_test_overall_score) {
           formattedScore = formatEnglishScore(
-            lead.english_proficiency_test,
+            lead.english_test_id,
             lead.english_test_overall_score,
           );
         }
@@ -763,15 +990,16 @@ export default function LeadModal() {
           name: lead.name || "",
           email: lead.email || "",
           phone: lead.phone || "",
-          source: lead.source || "walkin",
+          source_id: lead.source_id || "",
           preferred_country: lead.preferred_country || "",
           counsellor_id: lead.counsellor_id || null,
           dob: lead.dob || "",
-          marital_status: lead.marital_status || "",
+          marital_status_id: lead.marital_status_id || "",
           father_name: lead.father_name || "",
           father_contact: lead.father_contact || "",
           home_address: lead.home_address || "",
-          english_proficiency_test: lead.english_proficiency_test || "",
+     
+          english_test_id: lead.english_test_id || "",
           english_test_overall_score: formattedScore,
         });
 
@@ -792,6 +1020,14 @@ export default function LeadModal() {
     [getApiBaseUrl, isCounsellor, navigate],
   );
 
+  // ✅ FETCH CONFIGS ON MOUNT
+  useEffect(() => {
+    fetchConfigs();
+    fetchCounsellors();
+     fetchCountries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (isCounsellor && mode === "add") {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -799,29 +1035,32 @@ export default function LeadModal() {
     }
   }, [isCounsellor, mode]);
 
-  useEffect(() => {
-    fetchCounsellors();
-    if (mode !== "add" && id) {
-      fetchLead(id);
-    } else {
-      setForm({
-        ...EMPTY_FORM,
-        source: "walkin",
-        counsellor_id: isCounsellor
-          ? JSON.parse(localStorage.getItem("user") || "{}").id || null
-          : null,
-        dob: "",
-        marital_status: "",
-        father_name: "",
-        father_contact: "",
-        home_address: "",
-        english_proficiency_test: "",
-        english_test_overall_score: "",
-      });
-      setSelectedCountries([]);
-      setEducationEntries([]);
-    }
-  }, [mode, id, isCounsellor, fetchCounsellors, fetchLead]);
+// ✅ FETCH LEAD DATA ON MOUNT OR MODE CHANGE
+useEffect(() => {
+  // If we have an ID and we're in edit or assign mode, fetch the lead
+  if (id && (mode === "edit" || mode === "assign")) {
+    fetchLead(id);
+  }
+  // If we're in add mode, reset the form
+  else if (mode === "add") {
+    setForm({
+      ...EMPTY_FORM,
+      source_id: "",
+      counsellor_id: isCounsellor
+        ? JSON.parse(localStorage.getItem("user") || "{}").id || null
+        : null,
+      dob: "",
+      marital_status_id: "",
+      father_name: "",
+      father_contact: "",
+      home_address: "",
+      english_test_id: "",
+      english_test_overall_score: "",
+    });
+    setSelectedCountries([]);
+    setEducationEntries([]);
+  }
+}, [mode, id, isCounsellor, fetchLead]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -836,7 +1075,7 @@ export default function LeadModal() {
   }, []);
 
   const handleAddOrUpdateEducation = () => {
-    if (!tempDegree.degree) {
+    if (!tempDegree.degree_id) {
       toast.error("Degree is required", { toastId: "degree-required" });
       return;
     }
@@ -845,7 +1084,7 @@ export default function LeadModal() {
       return;
     }
 
-    if (isDegreeDuplicate(tempDegree.degree, tempDegree.editingId)) {
+    if (isDegreeDuplicate(tempDegree.degree_id, tempDegree.editingId)) {
       toast.error("This degree has already been added for this student.", {
         toastId: "duplicate-degree",
       });
@@ -875,7 +1114,7 @@ export default function LeadModal() {
           edu.id === tempDegree.editingId
             ? {
                 ...edu,
-                degree: tempDegree.degree,
+                degree_id: tempDegree.degree_id,
                 year_awarded: year,
                 grades_cgpa: trimmedGrades,
                 board_university: trimmedBoard,
@@ -886,18 +1125,18 @@ export default function LeadModal() {
       );
       toast.success("Education updated", { toastId: "edu-updated" });
     } else {
-      const newEntry = {
-        id: Date.now(),
-        degree: tempDegree.degree,
-        year_awarded: year,
-        grades_cgpa: trimmedGrades || null,
-        board_university: trimmedBoard || null,
-      };
+  const newEntry = {
+    id: Date.now(),
+    degree_id: tempDegree.degree_id,  // ← CORRECT
+    year_awarded: year,
+    grades_cgpa: trimmedGrades || null,
+    board_university: trimmedBoard || null,
+};
       setEducationEntries((prev) => [...prev, newEntry]);
       toast.success("Degree added", { toastId: "degree-added" });
     }
     setTempDegree({
-      degree: "",
+      degree_id: "",
       year_awarded: "",
       grades_cgpa: "",
       board_university: "",
@@ -913,7 +1152,7 @@ export default function LeadModal() {
 
   const handleEditEducation = (entry) => {
     setTempDegree({
-      degree: entry.degree,
+      degree_id: entry.degree_id,
       year_awarded: entry.year_awarded,
       grades_cgpa: entry.grades_cgpa || "",
       board_university: entry.board_university || "",
@@ -923,7 +1162,7 @@ export default function LeadModal() {
 
   const handleCancelEdit = () => {
     setTempDegree({
-      degree: "",
+      degree_id: "",
       year_awarded: "",
       grades_cgpa: "",
       board_university: "",
@@ -932,186 +1171,204 @@ export default function LeadModal() {
     setGradeError("");
   };
 
-  const validate = () => {
-    const errors = [];
+// LeadModal.jsx - Update validate function
 
-    if (!form.name?.trim()) {
-      errors.push("Name is required.");
+const validate = () => {
+  // ✅ If in assign mode, only validate counsellor_id
+if (isAssignMode) {
+  const errors = [];
+  // Allow null for unassignment - only validate if it's a number
+  if (form.counsellor_id !== null && form.counsellor_id !== undefined && form.counsellor_id !== '') {
+    const numValue = Number(form.counsellor_id);
+    if (isNaN(numValue)) {
+      errors.push("Invalid counsellor selection.");
+    }
+  }
+  return errors;
+}
+
+  // ✅ Full validation for add/edit mode
+  const errors = [];
+
+  if (!form.name?.trim()) {
+    errors.push("Name is required.");
+  } else {
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(form.name.trim())) {
+      errors.push("Name must contain only letters and spaces.");
+    } else if (form.name.trim().length < 3 || form.name.trim().length > 50) {
+      errors.push("Name must be 3–50 characters long.");
+    }
+  }
+
+  if (!form.email?.trim()) {
+    errors.push("Email is required.");
+  } else {
+    const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
+    const trimmedEmail = form.email.trim();
+    if (!emailRegex.test(trimmedEmail)) {
+      errors.push("Email must be a valid format (e.g., name@domain.com).");
     } else {
-      const nameRegex = /^[A-Za-z\s]+$/;
-      if (!nameRegex.test(form.name.trim())) {
-        errors.push("Name must contain only letters and spaces.");
-      } else if (form.name.trim().length < 3 || form.name.trim().length > 50) {
-        errors.push("Name must be 3–50 characters long.");
+      const localPart = trimmedEmail.split("@")[0];
+      if (localPart.length > 0 && /^\d/.test(localPart)) {
+        errors.push("Email local part (before @) cannot start with a digit.");
       }
     }
+  }
 
-    if (!form.email?.trim()) {
-      errors.push("Email is required.");
-    } else {
-      const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
-      const trimmedEmail = form.email.trim();
-      if (!emailRegex.test(trimmedEmail)) {
-        errors.push("Email must be a valid format (e.g., name@domain.com).");
-      } else {
-        const localPart = trimmedEmail.split("@")[0];
-        if (localPart.length > 0 && /^\d/.test(localPart)) {
-          errors.push("Email local part (before @) cannot start with a digit.");
-        }
-      }
+  if (!form.phone?.trim()) {
+    errors.push("Phone number is required.");
+  } else {
+    const digits = form.phone.replace(/\D/g, "");
+    if (digits.length < 11) {
+      errors.push("Phone number must have at least 11 digits.");
     }
+  }
 
-    if (!form.phone?.trim()) {
-      errors.push("Phone number is required.");
-    } else {
-      const digits = form.phone.replace(/\D/g, "");
-      if (digits.length < 11) {
-        errors.push("Phone number must have at least 11 digits.");
-      }
+  if (form.father_name?.trim()) {
+    const fatherNameRegex = /^[A-Za-z\s]+$/;
+    if (!fatherNameRegex.test(form.father_name.trim())) {
+      errors.push("Father name must contain only letters and spaces.");
     }
-
-    if (form.father_name?.trim()) {
-      const fatherNameRegex = /^[A-Za-z\s]+$/;
-      if (!fatherNameRegex.test(form.father_name.trim())) {
-        errors.push("Father name must contain only letters and spaces.");
-      }
-      if (
-        form.father_name.trim().length < 3 ||
-        form.father_name.trim().length > 50
-      ) {
-        errors.push("Father name must be 3–50 characters long.");
-      }
-    }
-
-    if (form.father_contact?.trim()) {
-      const digits = form.father_contact.replace(/\D/g, "");
-      if (digits.length < 11) {
-        errors.push(
-          "Father contact must have at least 11 digits (if provided).",
-        );
-      }
-    }
-
-    if (form.dob) {
-      const age = calculateAge(form.dob);
-      if (age === null || age <= 16) {
-        errors.push(
-          "Date of birth must make the applicant older than 16 years.",
-        );
-      }
-    }
-
-    if (!form.source?.trim()) {
-      errors.push("Source must be selected.");
-    }
-
-    if (selectedCountries.length === 0) {
-      errors.push("At least one preferred country must be selected.");
-    }
-
-    if (form.home_address?.trim()) {
-      const addr = form.home_address.trim();
-      const addressRegex = /^[a-zA-Z0-9\s.,!?;:\-()'"&@#/]+$/;
-      if (!addressRegex.test(addr)) {
-        errors.push(
-          "Home address may only contain letters, numbers, spaces, and basic punctuation (.,!?;:-_()'\"&@#/).",
-        );
-      } else if (addr.length < 3 || addr.length > 255) {
-        errors.push(
-          "Home address must be 3–255 characters long (if provided).",
-        );
-      }
-    }
-
-    if (educationEntries.length === 0) {
-      errors.push("At least one degree entry is required.");
-    } else {
-      educationEntries.forEach((edu, idx) => {
-        if (!edu.degree) {
-          errors.push(`Degree #${idx + 1}: Degree is required.`);
-        }
-        if (!edu.year_awarded) {
-          errors.push(`Degree #${idx + 1}: Year awarded is required.`);
-        } else {
-          const year = Number(edu.year_awarded);
-          const currentYear = new Date().getFullYear();
-          if (isNaN(year) || year < 1950 || year > currentYear) {
-            errors.push(
-              `Degree #${idx + 1}: Year awarded must be between 1950 and ${currentYear}.`,
-            );
-          }
-        }
-
-        if (edu.board_university?.trim()) {
-          const boardValue = edu.board_university;
-          if (boardValue[0] === " ") {
-            errors.push(
-              `Degree #${idx + 1}: Board/University cannot start with a space.`,
-            );
-          }
-          if (/\d/.test(boardValue)) {
-            errors.push(
-              `Degree #${idx + 1}: Board/University cannot contain numbers.`,
-            );
-          }
-          const trimmedLength = boardValue.trim().length;
-          if (trimmedLength < 3 || trimmedLength > 55) {
-            errors.push(
-              `Degree #${idx + 1}: Board/University must be 3–55 characters long (if provided).`,
-            );
-          }
-        }
-      });
-    }
-
     if (
-      form.english_proficiency_test &&
-      form.english_proficiency_test !== "none"
+      form.father_name.trim().length < 3 ||
+      form.father_name.trim().length > 50
     ) {
-      const score = parseFloat(form.english_test_overall_score);
-      if (isNaN(score)) {
-        errors.push("Total score is required for the selected English test.");
+      errors.push("Father name must be 3–50 characters long.");
+    }
+  }
+
+  if (form.father_contact?.trim()) {
+    const digits = form.father_contact.replace(/\D/g, "");
+    if (digits.length < 11) {
+      errors.push(
+        "Father contact must have at least 11 digits (if provided).",
+      );
+    }
+  }
+
+  if (form.dob) {
+    const age = calculateAge(form.dob);
+    if (age === null || age <= 16) {
+      errors.push(
+        "Date of birth must make the applicant older than 16 years.",
+      );
+    }
+  }
+
+  if (!form.source_id) {
+    errors.push("Source must be selected.");
+  }
+
+  if (selectedCountries.length === 0) {
+    errors.push("At least one preferred country must be selected.");
+  }
+
+  if (form.home_address?.trim()) {
+    const addr = form.home_address.trim();
+    const addressRegex = /^[a-zA-Z0-9\s.,!?;:\-()'"&@#/]+$/;
+    if (!addressRegex.test(addr)) {
+      errors.push(
+        "Home address may only contain letters, numbers, spaces, and basic punctuation (.,!?;:-_()'\"&@#/).",
+      );
+    } else if (addr.length < 3 || addr.length > 255) {
+      errors.push(
+        "Home address must be 3–255 characters long (if provided).",
+      );
+    }
+  }
+
+  if (educationEntries.length === 0) {
+    errors.push("At least one degree entry is required.");
+  } else {
+    educationEntries.forEach((edu, idx) => {
+      if (!edu.degree_id) {
+        errors.push(`Degree #${idx + 1}: Degree is required.`);
+      }
+      if (!edu.year_awarded) {
+        errors.push(`Degree #${idx + 1}: Year awarded is required.`);
       } else {
-        let max = 0;
-        switch (form.english_proficiency_test) {
-          case "ielts":
-            max = 9;
-            break;
-          case "toefl":
-            max = 120;
-            break;
-          case "pte":
-            max = 90;
-            break;
-          case "duolingo":
-            max = 160;
-            break;
-          default:
-            max = 999;
-        }
-        if (score < 0 || score > max) {
+        const year = Number(edu.year_awarded);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year) || year < 1950 || year > currentYear) {
           errors.push(
-            `Total score must be between 0 and ${max} for ${form.english_proficiency_test.toUpperCase()}.`,
+            `Degree #${idx + 1}: Year awarded must be between 1950 and ${currentYear}.`,
           );
         }
-        const scoreStr = form.english_test_overall_score.toString();
-        if (scoreStr.length < 1 || scoreStr.length > 4) {
-          errors.push("Total score must be 1-4 characters long.");
+      }
+
+      if (edu.board_university?.trim()) {
+        const boardValue = edu.board_university;
+        if (boardValue[0] === " ") {
+          errors.push(
+            `Degree #${idx + 1}: Board/University cannot start with a space.`,
+          );
         }
-        if (form.english_proficiency_test !== "ielts") {
-          if (scoreStr.includes(".")) {
-            errors.push(
-              `${form.english_proficiency_test.toUpperCase()} score must be an integer.`,
-            );
-          }
+        if (/\d/.test(boardValue)) {
+          errors.push(
+            `Degree #${idx + 1}: Board/University cannot contain numbers.`,
+          );
+        }
+        const trimmedLength = boardValue.trim().length;
+        if (trimmedLength < 3 || trimmedLength > 55) {
+          errors.push(
+            `Degree #${idx + 1}: Board/University must be 3–55 characters long (if provided).`,
+          );
         }
       }
-    }
+    });
+  }
 
-    return errors;
-  };
+  if (
+    form.english_test_id &&
+    form.english_test_id !== "none"
+  ) {
+    const score = parseFloat(form.english_test_overall_score);
+    if (isNaN(score)) {
+      errors.push("Total score is required for the selected English test.");
+    } else {
+      let max = 0;
+      const testName = englishTestOptions.find(
+        (t) => t.value === form.english_test_id
+      )?.label?.toLowerCase();
+      switch (testName) {
+        case "ielts":
+          max = 9;
+          break;
+        case "toefl":
+          max = 120;
+          break;
+        case "pte":
+          max = 90;
+          break;
+        case "duolingo":
+          max = 160;
+          break;
+        default:
+          max = 999;
+      }
+      if (score < 0 || score > max) {
+        errors.push(
+          `Total score must be between 0 and ${max} for ${testName?.toUpperCase() || "this test"}.`,
+        );
+      }
+      const scoreStr = form.english_test_overall_score.toString();
+      if (scoreStr.length < 1 || scoreStr.length > 4) {
+        errors.push("Total score must be 1-4 characters long.");
+      }
+      if (testName !== "ielts" && scoreStr.includes(".")) {
+        errors.push(
+          `${testName?.toUpperCase() || "This test"} score must be an integer.`,
+        );
+      }
+    }
+  }
+
+  return errors;
+};
 
   const handleSubmit = async (e) => {
+    console.log("🔥 handleSubmit CALLED");
     e?.preventDefault();
 
     const validationErrors = validate();
@@ -1129,12 +1386,49 @@ export default function LeadModal() {
       const baseUrl = getApiBaseUrl();
       const submitData = { ...form };
 
-      if (isCounsellor && !submitData.counsellor_id) {
+      // ✅ Clean data - only keep valid fields
+      const validFields = [
+        "name",
+        "email",
+        "phone",
+        "source_id",
+        "preferred_country",
+        "counsellor_id",
+        "dob",
+        "marital_status_id",
+        "father_name",
+        "father_contact",
+        "home_address", 
+        "english_test_id",
+        "english_test_overall_score",
+        "education",
+      ];
+
+const cleanedData = {};
+Object.keys(submitData).forEach((key) => {
+  if (validFields.includes(key)) {
+    let value = submitData[key];
+    
+    // ✅ FIX: Format date to YYYY-MM-DD
+    if (key === 'dob' && value) {
+      const dateObj = new Date(value);
+      if (!isNaN(dateObj.getTime())) {
+        value = dateObj.toISOString().split('T')[0];
+      } else {
+        value = null;
+      }
+    }
+    
+    cleanedData[key] = value;
+  }
+});
+
+      if (isCounsellor && !cleanedData.counsellor_id) {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
-        submitData.counsellor_id = user.id;
+        cleanedData.counsellor_id = user.id;
       }
 
-      submitData.education = educationEntries.map(({ id, ...rest }) => rest);
+      cleanedData.education = educationEntries.map(({ id, ...rest }) => rest);
 
       if (mode === "add") {
         url = baseUrl;
@@ -1142,14 +1436,17 @@ export default function LeadModal() {
       } else if (mode === "edit") {
         url = `${baseUrl}/${id}`;
         method = "PUT";
-      } else {
-        url = `${BASE_URL}/admin/leads/${id}/assign`;
-        method = "PUT";
-        submitData.counsellor_id = form.counsellor_id
-          ? Number(form.counsellor_id)
-          : null;
-      }
-
+ } else {
+  url = `${BASE_URL}/admin/leads/${id}/assign`;
+  method = "PUT";
+  // Handle unassignment explicitly
+  if (form.counsellor_id === null || form.counsellor_id === undefined || form.counsellor_id === '') {
+    cleanedData.counsellor_id = null;
+  } else {
+    cleanedData.counsellor_id = Number(form.counsellor_id);
+  }
+}
+console.log("🚀 About to fetch:", url, method, cleanedData);
       const res = await fetch(url, {
         method,
         headers: {
@@ -1158,8 +1455,8 @@ export default function LeadModal() {
         },
         body: JSON.stringify(
           method === "PUT" && mode === "assign"
-            ? { counsellor_id: submitData.counsellor_id }
-            : submitData,
+            ? { counsellor_id: cleanedData.counsellor_id }
+            : cleanedData,
         ),
       });
 
@@ -1220,8 +1517,8 @@ export default function LeadModal() {
     setForm((prev) => ({ ...prev, preferred_country: updated.join(", ") }));
   };
 
-  const sourceLabel = editLead?.source
-    ? `${SOURCE_ICONS[editLead.source.toLowerCase()] || "📍"} ${editLead.source.charAt(0).toUpperCase() + editLead.source.slice(1).replace(/_/g, " ")}`
+  const sourceLabel = editLead?.source_id
+    ? sourceOptions.find((s) => s.value === editLead.source_id)?.label || "—"
     : "—";
 
   if (loading) {
@@ -1232,11 +1529,13 @@ export default function LeadModal() {
     );
   }
 
-  // Assign Mode (unchanged)
+  // Assign Mode
   if (isAssignMode && editLead) {
-    const assignedCounsellor = counsellors.find(
+ const assignedCounsellor = Array.isArray(counsellors) 
+  ? counsellors.find(
       (c) => String(c.user?.id || c.id) === String(editLead?.counsellor_id),
-    );
+    )
+  : null;
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4 md:p-6">
         <div className="">
@@ -1317,7 +1616,11 @@ export default function LeadModal() {
                       <InfoRow
                         icon={<Heart size={16} />}
                         label="Marital Status"
-                        value={editLead?.marital_status}
+                        value={
+                          maritalStatusOptions.find(
+                            (m) => m.value === editLead?.marital_status_id
+                          )?.label || "—"
+                        }
                       />
                       <InfoRow
                         icon={<UserCircle size={16} />}
@@ -1356,42 +1659,51 @@ export default function LeadModal() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {editLead?.education && editLead.education.length > 0 ? (
-                        editLead.education.map((edu, idx) => (
-                          <div
-                            key={idx}
-                            className="p-3 bg-slate-50 rounded-lg border border-slate-200"
-                          >
-                            <p className="font-medium text-slate-800">
-                              {edu.degree}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              Year: {edu.year_awarded}
-                            </p>
-                            {edu.grades_cgpa && (
-                              <p className="text-xs text-slate-500">
-                                Grades: {edu.grades_cgpa}
+                        editLead.education.map((edu, idx) => {
+                          const degreeName = studyLevelOptions.find(
+                            (s) => s.value === edu.degree_id
+                          )?.label;
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 bg-slate-50 rounded-lg border border-slate-200"
+                            >
+                              <p className="font-medium text-slate-800">
+                                {degreeName || edu.degree_id}
                               </p>
-                            )}
-                            {edu.board_university && (
                               <p className="text-xs text-slate-500">
-                                Board/Uni: {edu.board_university}
+                                Year: {edu.year_awarded}
                               </p>
-                            )}
-                          </div>
-                        ))
+                              {edu.grades_cgpa && (
+                                <p className="text-xs text-slate-500">
+                                  Grades: {edu.grades_cgpa}
+                                </p>
+                              )}
+                              {edu.board_university && (
+                                <p className="text-xs text-slate-500">
+                                  Board/Uni: {edu.board_university}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })
                       ) : (
                         <div className="col-span-2 text-center text-slate-400 p-4">
                           No education details added
                         </div>
                       )}
                     </div>
-                    {editLead?.english_proficiency_test &&
-                      editLead?.english_proficiency_test !== "none" && (
+                    {editLead?.english_test_id &&
+                      editLead?.english_test_id !== "none" && (
                         <div className="mt-4">
                           <InfoRow
                             icon={<FileText size={16} />}
                             label="English Test"
-                            value={`${editLead.english_proficiency_test.toUpperCase()} • ${editLead.english_test_overall_score || "No score"}`}
+                            value={`${
+                              englishTestOptions.find(
+                                (t) => t.value === editLead.english_test_id
+                              )?.label || "Test"
+                            } • ${editLead.english_test_overall_score || "No score"}`}
                           />
                         </div>
                       )}
@@ -1599,18 +1911,18 @@ export default function LeadModal() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SearchableDropdown
-                    name="marital_status"
-                    options={MARITAL_STATUS_OPTIONS}
-                    value={form.marital_status}
+                    name="marital_status_id"
+                    options={maritalStatusOptions}
+                    value={form.marital_status_id}
                     onChange={handleCustomChange}
                     label="Marital Status"
                     placeholder="Select marital status..."
                     icon={<Heart size={16} />}
                   />
                   <SearchableDropdown
-                    name="source"
+                    name="source_id"
                     options={sourceOptions}
-                    value={form.source}
+                    value={form.source_id}
                     onChange={handleCustomChange}
                     label="Source"
                     placeholder="Search source..."
@@ -1633,7 +1945,7 @@ export default function LeadModal() {
                       value={countrySearchTerm}
                       onChange={(e) => {
                         let trimmed = e.target.value.replace(/^\s+/, "");
-                        trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, ""); // restrict to alphanumeric + spaces
+                        trimmed = trimmed.replace(/[^a-zA-Z0-9\s]/g, "");
                         setCountrySearchTerm(trimmed);
                         setCountryDropdownOpen(true);
                       }}
@@ -1696,13 +2008,13 @@ export default function LeadModal() {
               <div className="bg-slate-50 p-2 rounded-lg mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SearchableDropdown
-                    name="degree"
-                    options={studyLevelOptions}
-                    value={tempDegree.degree}
+                    name="degree_id"
+                   options={degreeOptions}
+                    value={tempDegree.degree_id}
                     onChange={(e) =>
                       setTempDegree((prev) => ({
                         ...prev,
-                        degree: e.target.value,
+                        degree_id: e.target.value,
                       }))
                     }
                     label="Degree"
@@ -1753,18 +2065,28 @@ export default function LeadModal() {
                       value={tempDegree.grades_cgpa}
                       handlerChange={handleGradesChange}
                       icon={<BarChart size={16} />}
-                      placeholder={getGradePlaceholder(tempDegree.degree)}
+                      placeholder={getGradePlaceholder(
+                        studyLevelOptions.find(
+                          (s) => s.value === tempDegree.degree_id
+                        )?.label
+                      )}
                       className={gradeError ? "border-red-500" : ""}
                     />
                     {gradeError && (
                       <p className="text-xs text-red-500 mt-1">{gradeError}</p>
                     )}
-                    {tempDegree.degree &&
-                      DEGREE_GRADE_RULES[tempDegree.degree] &&
+                    {tempDegree.degree_id &&
+                      studyLevelOptions.find(
+                        (s) => s.value === tempDegree.degree_id
+                      ) &&
                       !gradeError && (
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           {(() => {
-                            const rule = DEGREE_GRADE_RULES[tempDegree.degree];
+                            const degreeName = studyLevelOptions.find(
+                              (s) => s.value === tempDegree.degree_id
+                            )?.label;
+                            const rule = DEGREE_GRADE_RULES[degreeName];
+                            if (!rule) return "";
                             if (rule.type === "numeric_or_grades")
                               return `Allowed: ${rule.numeric.min}–${rule.numeric.max} or grades ${rule.grades.join(", ")}`;
                             if (rule.type === "cgpa")
@@ -1832,62 +2154,73 @@ export default function LeadModal() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {educationEntries.map((edu) => (
-                    <div
-                      key={edu.id}
-                      className="group relative bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200"
-                    >
-                      <div className="absolute top-3 right-3 flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => handleEditEducation(edu)}
-                          className="p-1.5 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-                          title="Edit degree"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveEducation(edu.id)}
-                          className="p-1.5 text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                          title="Remove degree"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                      <div className="flex items-start gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg shadow-inner">
-                          {edu.degree?.charAt(0)?.toUpperCase() || "D"}
+                  {educationEntries.map((edu) => {
+                    const degreeName = studyLevelOptions.find(
+                      (s) => s.value === edu.degree_id
+                    )?.label;
+                    return (
+                      <div
+                        key={edu.id}
+                        className="group relative bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200"
+                      >
+                        <div className="absolute top-3 right-3 flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => handleEditEducation(edu)}
+                            className="p-1.5 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                            title="Edit degree"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEducation(edu.id)}
+                            className="p-1.5 text-slate-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                            title="Remove degree"
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-slate-800 text-base mb-1 pr-12">
-                            {edu.degree}
-                          </h4>
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
-                            <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full">
-                              <Calendar size={12} className="text-slate-500" />
-                              {edu.year_awarded}
-                            </span>
-                            {edu.grades_cgpa && (
-                              <span className="inline-flex items-center gap-1">
-                                <BarChart
+                        <div className="flex items-start gap-4">
+                          <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-lg shadow-inner">
+                            {degreeName?.charAt(0)?.toUpperCase() || "D"}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-slate-800 text-base mb-1 pr-12">
+                              {degreeName || edu.degree_id}
+                            </h4>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
+                              <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-full">
+                                <Calendar
                                   size={12}
                                   className="text-slate-500"
                                 />
-                                {edu.grades_cgpa}
+                                {edu.year_awarded}
                               </span>
-                            )}
-                            {edu.board_university && (
-                              <span className="inline-flex items-center gap-1">
-                                <School size={12} className="text-slate-500" />
-                                {edu.board_university}
-                              </span>
-                            )}
+                              {edu.grades_cgpa && (
+                                <span className="inline-flex items-center gap-1">
+                                  <BarChart
+                                    size={12}
+                                    className="text-slate-500"
+                                  />
+                                  {edu.grades_cgpa}
+                                </span>
+                              )}
+                              {edu.board_university && (
+                                <span className="inline-flex items-center gap-1">
+                                  <School
+                                    size={12}
+                                    className="text-slate-500"
+                                  />
+                                  {edu.board_university}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1901,17 +2234,17 @@ export default function LeadModal() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <SearchableDropdown
-                    name="english_proficiency_test"
-                    options={ENGLISH_TEST_OPTIONS}
-                    value={form.english_proficiency_test}
+                    name="english_test_id"
+                    options={englishTestOptions}
+                    value={form.english_test_id}
                     onChange={handleCustomChange}
                     label="English Proficiency Test"
                     placeholder="Select test..."
                     icon={<FileText size={16} />}
                   />
                 </div>
-                {form.english_proficiency_test &&
-                  form.english_proficiency_test !== "none" && (
+                {form.english_test_id &&
+                  form.english_test_id !== "none" && (
                     <div className="space-y-1">
                       <label className="block text-sm font-medium text-slate-700">
                         Total Score
@@ -1933,16 +2266,24 @@ export default function LeadModal() {
                       )}
                       <p className="text-[10px] text-slate-400">
                         Range: 0–
-                        {form.english_proficiency_test === "toefl"
-                          ? "120"
-                          : form.english_proficiency_test === "duolingo"
-                            ? "160"
-                            : form.english_proficiency_test === "ielts"
-                              ? "9"
-                              : form.english_proficiency_test === "pte"
-                                ? "90"
-                                : ""}
-                        {form.english_proficiency_test !== "ielts" &&
+                        {(() => {
+                          const testName = englishTestOptions.find(
+                            (t) => t.value === form.english_test_id
+                          )?.label?.toLowerCase();
+                          switch (testName) {
+                            case "toefl":
+                              return "120";
+                            case "duolingo":
+                              return "160";
+                            case "ielts":
+                              return "9";
+                            case "pte":
+                              return "90";
+                            default:
+                              return "";
+                          }
+                        })()}
+                        {form.english_test_id !== "ielts" &&
                           " (integer only)"}
                       </p>
                     </div>

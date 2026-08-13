@@ -53,8 +53,8 @@ export const CounsellorDashboard = () => {
         const res = await fetch(`${BASE_URL}/counsellor/leads`, {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
-        const data = await res.json();
-        setLeads(Array.isArray(data) ? data : data.data || []);
+    const data = await res.json();
+setLeads(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []);
       } catch (err) {
         console.error("Counsellor leads fetch error:", err);
       }

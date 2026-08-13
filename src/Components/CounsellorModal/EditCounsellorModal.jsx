@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
-import { User, Mail, IdCard, MapPin, Users, CreditCard } from "lucide-react";
+import { User, Mail, MapPin, Users, CreditCard } from "lucide-react";
 
 import { InputField } from "../InputFields/InputField";
 import { TextareaField } from "../InputFields/TextareaField";
@@ -28,8 +28,7 @@ const validateForm = (formData) => {
   // Father Name (optional but validated if provided)
   if (formData.father_name?.trim()) {
     if (formData.father_name.trim().length < 3) {
-      errors.father_name =
-        "Father's Name must be at least 3 characters if provided";
+      errors.father_name = "Father's Name must be at least 3 characters if provided";
     } else if (formData.father_name.length > 50) {
       errors.father_name = "Father's Name cannot exceed 50 characters";
     } else if (!/^[a-zA-Z\s]+$/.test(formData.father_name)) {
@@ -86,11 +85,20 @@ export const EditCounsellorModal = ({
   // Initialize form data when counselor changes
   useEffect(() => {
     if (counselor) {
-      setFormData(counselor);
+      setFormData({
+        name: counselor.name || '',
+        father_name: counselor.father_name || '',
+        email: counselor.email || '',
+        phone: counselor.phone || '',
+        cnic: counselor.cnic || '',
+        address: counselor.address || '',
+        status: counselor.status || 'active',
+        role: counselor.role || 'counsellor',
+      });
     }
   }, [counselor]);
 
-  // Reset errors when modal opens or counselor changes
+  // Reset errors when modal opens
   useEffect(() => {
     if (isOpen) {
       setErrors({});
@@ -102,10 +110,8 @@ export const EditCounsellorModal = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Prevent leading spaces
     if (value.startsWith(" ")) return;
 
-    // Handle phone separately (no formatting, just store)
     if (name === "phone") {
       setFormData((prev) => ({ ...prev, [name]: value }));
       setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -114,18 +120,15 @@ export const EditCounsellorModal = ({
 
     let formattedValue = value;
 
-    // Max length restrictions
     if ((name === "name" || name === "father_name") && value.length > 50)
       return;
     if (name === "address" && value.length > 250) return;
 
-    // Only letters and spaces for name/father_name
     if (name === "name" || name === "father_name") {
       const alphaRegex = /^[a-zA-Z\s]*$/;
       if (!alphaRegex.test(formattedValue)) return;
     }
 
-    // CNIC formatting
     if (name === "cnic") {
       const nums = value.replace(/\D/g, "");
       if (nums.length > 13) return;
@@ -139,14 +142,12 @@ export const EditCounsellorModal = ({
     }
 
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
-    // Clear error for this field when user starts typing
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate all fields
     const validationErrors = validateForm(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -159,32 +160,45 @@ export const EditCounsellorModal = ({
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const counsellorId = counselor.id || counselor._id;
+      
+      const counsellorId = counselor.counsellor_id || counselor.id || counselor._id;
+      
+      console.log("📤 Updating counsellor with ID:", counsellorId);
 
       const payload = {
-        ...formData,
-        phone: formData.phone?.trim(),
+        name: formData.name,
+        father_name: formData.father_name,
+        email: formData.email,
+        phone: formData.phone,
+        cnic: formData.cnic,
+        address: formData.address,
+        role: formData.role || 'counsellor',
+        status: formData.status || 'active',
       };
 
+      // ✅ FIXED: Use the correct URL
       const res = await axios.put(
-        `${BASE_URL}/admin/updateCounsellor/${counsellorId}`,
+        `${BASE_URL}/admin/counsellors/${counsellorId}`,
         payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
-      toast.success(res.data?.message || "Counselor updated successfully", {
-        toastId: "counsellor-updated",
-      });
-      onClose();
-      if (onSuccess) onSuccess();
+      
+      if (res.data.success) {
+        toast.success(res.data?.message || "Counselor updated successfully", {
+          toastId: "counsellor-updated",
+        });
+        onClose();
+        if (onSuccess) onSuccess();
+      }
     } catch (error) {
-      console.error(error);
+      console.error("❌ Update error:", error);
       toast.error(
         error?.response?.data?.message || "Failed to update counselor",
-        { toastId: "fail-update-counsellor" },
+        { toastId: "fail-update-counsellor" }
       );
     } finally {
       setLoading(false);

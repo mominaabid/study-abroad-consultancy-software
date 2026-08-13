@@ -1,3 +1,4 @@
+// Counsellor.jsx
 import { useCallback, useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -42,23 +43,79 @@ export const Counsellor = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedCounsellor, setSelectedCounsellor] = useState(null);
 
-  const getAllCounsellors = async () => {
+  // ✅ FIX: Get counsellors with proper data extraction
+// Counsellor.jsx - Replace getAllCounsellors
+
+const getAllCounsellors = async () => {
+  try {
     const token = localStorage.getItem("token");
     const res = await axios.get(`${BASE_URL}/admin/getCounsellors`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return res.data;
-  };
+    
+    console.log("📥 Counsellors API response:", res.data);
+    
+    let counsellorsData = [];
+    
+    if (res.data.success && res.data.data) {
+      if (res.data.data.counsellors) {
+        let counsellors = res.data.data.counsellors;
+        
+        // ✅ Check if it's a 2D array
+        if (Array.isArray(counsellors) && counsellors.length > 0) {
+          // If first element is an array, flatten it
+          if (Array.isArray(counsellors[0])) {
+            counsellors = counsellors[0];
+          }
+          
+          // ✅ Remove numeric keys and clean the data
+          counsellorsData = counsellors
+            .filter(c => c && typeof c === 'object') // ✅ Filter out null/undefined
+            .map(c => {
+              // If the object has numeric keys like "0", "1", extract the actual data
+              if (c && typeof c === 'object' && !Array.isArray(c)) {
+                const keys = Object.keys(c);
+                if (keys.length === 1 && !isNaN(keys[0])) {
+                  const extracted = c[keys[0]];
+                  // ✅ Only return if extracted has a counsellor_id or id
+                  if (extracted && (extracted.counsellor_id || extracted.id)) {
+                    return extracted;
+                  }
+                  return null;
+                }
+                return c;
+              }
+              return c;
+            })
+            .filter(c => c && (c.counsellor_id || c.id || c.user_id)); // ✅ Filter out invalid entries
+        } else if (Array.isArray(counsellors)) {
+          counsellorsData = counsellors.filter(c => c && (c.counsellor_id || c.id || c.user_id));
+        }
+      } else if (Array.isArray(res.data.data)) {
+        counsellorsData = res.data.data.filter(c => c && (c.counsellor_id || c.id || c.user_id));
+      }
+    } else if (Array.isArray(res.data)) {
+      counsellorsData = res.data.filter(c => c && (c.counsellor_id || c.id || c.user_id));
+    }
+    
+    console.log("📊 Processed counsellors:", counsellorsData);
+    return counsellorsData;
+  } catch (error) {
+    console.error("❌ Error fetching counsellors:", error);
+    return [];
+  }
+};
 
   const fetchCounsellors = useCallback(async () => {
     try {
       const data = await getAllCounsellors();
-      setAllCounsellors(data);
+      setAllCounsellors(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
       toast.error("Failed to load counsellors", {
         toastId: "counsellor-load-error",
       });
+      setAllCounsellors([]);
     }
   }, []);
 
@@ -68,10 +125,22 @@ export const Counsellor = () => {
       const res = await axios.get(`${BASE_URL}/admin/leads`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = Array.isArray(res.data) ? res.data : res.data.data || [];
-      setLeads(data);
+      
+      let leadsData = [];
+      if (res.data.success && res.data.data) {
+        if (res.data.data.leads && Array.isArray(res.data.data.leads)) {
+          leadsData = res.data.data.leads;
+        } else if (Array.isArray(res.data.data)) {
+          leadsData = res.data.data;
+        }
+      } else if (Array.isArray(res.data)) {
+        leadsData = res.data;
+      }
+      
+      setLeads(leadsData);
     } catch (err) {
-      console.error(err);
+      console.error("❌ Error fetching leads:", err);
+      setLeads([]);
     }
   };
 
@@ -104,7 +173,7 @@ export const Counsellor = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      const id = selectedCounsellor.id || selectedCounsellor._id;
+      const id = selectedCounsellor.id || selectedCounsellor._id || selectedCounsellor.counsellor_id;
       const token = localStorage.getItem("token");
       await axios.delete(`${BASE_URL}/admin/deleteCounsellor/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -128,10 +197,15 @@ export const Counsellor = () => {
     setIsDeleteOpen(true);
   };
 
-  // Build counsellor list with lead-based stats
+  // ✅ Build counsellor list with lead-based stats
   const counsellorsWithLeads = useMemo(() => {
-    return allCounsellors.map((c) => {
-      const counselorLeads = leads.filter((l) => l.counsellor_id === c.user_id);
+    const counsellorsArray = Array.isArray(allCounsellors) ? allCounsellors : [];
+    const leadsArray = Array.isArray(leads) ? leads : [];
+    
+    return counsellorsArray.map((c) => {
+      const counsellorId = c.user_id || c.counsellor_id || c.id;
+      const counselorLeads = leadsArray.filter((l) => l.counsellor_id === counsellorId);
+      
       const assignedCount = counselorLeads.length;
       const counsellingCount = counselorLeads.filter(
         isLeadInCounsellingStage,
@@ -148,13 +222,16 @@ export const Counsellor = () => {
     });
   }, [allCounsellors, leads]);
 
-  // Overall statistics based on the new fields
+  // ✅ Overall statistics
   const stats = useMemo(() => {
-    const totalAssignedLeads = counsellorsWithLeads.reduce(
+    const counsellorsArray = Array.isArray(allCounsellors) ? allCounsellors : [];
+    const counsellorsWithLeadsArray = Array.isArray(counsellorsWithLeads) ? counsellorsWithLeads : [];
+    
+    const totalAssignedLeads = counsellorsWithLeadsArray.reduce(
       (sum, c) => sum + (c.assigned_leads || 0),
       0,
     );
-    const totalCounsellingStudents = counsellorsWithLeads.reduce(
+    const totalCounsellingStudents = counsellorsWithLeadsArray.reduce(
       (sum, c) => sum + (c.counsellingStageCount || 0),
       0,
     );
@@ -164,15 +241,16 @@ export const Counsellor = () => {
         : 0;
 
     return {
-      total: allCounsellors.length,
-      active: allCounsellors.filter((c) => c.status === "active").length,
+      total: counsellorsArray.length,
+      active: counsellorsArray.filter((c) => c.status === "active").length,
       totalCounsellingStudents,
       overallCounsellingConv,
     };
   }, [counsellorsWithLeads, allCounsellors]);
 
   const filteredCounsellors = useMemo(() => {
-    return counsellorsWithLeads.filter((c) => {
+    const counsellorsArray = Array.isArray(counsellorsWithLeads) ? counsellorsWithLeads : [];
+    return counsellorsArray.filter((c) => {
       const name = c.name?.toLowerCase() || "";
       const role = c.role?.toLowerCase() || "";
       const q = search.toLowerCase();
@@ -190,7 +268,7 @@ export const Counsellor = () => {
 
   return (
     <div className="flex flex-col h-full w-full bg-gradient-to-br from-gray-50 to-gray-100/50 overflow-x-hidden overflow-y-auto font-sans text-slate-700">
-      {/* ── Mobile top bar: only Add button on top right ── */}
+      {/* ── Mobile top bar ── */}
       <div className="flex justify-end items-center px-4 pt-3 sm:hidden">
         <AddBtnInHeader
           label="Add Counsellor"
@@ -212,7 +290,7 @@ export const Counsellor = () => {
         />
       </div>
 
-      {/* ── Mobile search (only visible on mobile) ── */}
+      {/* ── Mobile search ── */}
       <div className="sm:hidden px-4 pb-2">
         <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100 w-full">
           <Search size={16} className="text-gray-400 flex-shrink-0" />
@@ -226,7 +304,7 @@ export const Counsellor = () => {
         </div>
       </div>
 
-      {/* ── Desktop header (search + add) – hidden on mobile ── */}
+      {/* ── Desktop header ── */}
       <div className="hidden sm:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4">
         <div>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -254,8 +332,8 @@ export const Counsellor = () => {
       {/* ── Content ── */}
       <div className="px-4 sm:px-6 pb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-          {filteredCounsellors.map((c) => (
-            <div key={c.id || c._id} className="min-w-0 w-full">
+          {filteredCounsellors.map((c, index) => (
+            <div key={c.counsellor_id || c.id || index} className="min-w-0 w-full">
               <CounselorCard
                 counselor={c}
                 onEdit={() => handleEditClick(c)}
@@ -267,7 +345,7 @@ export const Counsellor = () => {
         </div>
 
         {filteredCounsellors.length === 0 && (
-          <div className="text-center py-12 sm:py-20 bg-white rounded-lg border border-dashed border-slate-300 mt-6 mx-0">
+          <div className="text-center py-12 sm:py-20  rounded-lg border border-dashed border-slate-300 mt-6 mx-0">
             <p className="text-slate-500 italic px-4">
               No counsellors found matching your search
             </p>

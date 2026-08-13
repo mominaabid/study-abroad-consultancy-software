@@ -190,26 +190,29 @@ export function KanbanCard({
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-        <span className="text-[11px] text-gray-400">
-          {timeAgo(lead.createdAt)}
-        </span>
 
-        {lead.counsellor ? (
-          <span className="text-[11px] text-teal-600 font-semibold bg-teal-50 px-2 py-0.5 rounded-full">
-            {lead.counsellor.name.split(" ")[0]}
-          </span>
-        ) : lead.counsellor_id ? (
-          <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-            Assigned
-          </span>
-        ) : (
-          <span className="text-[11px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
-            Unassigned
-          </span>
-        )}
-      </div>
+
+
+{/* Footer */}
+<div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+  <span className="text-[11px] text-gray-400">
+    {timeAgo(lead.created_at)} {/* ✅ Changed from lead.createdAt to lead.created_at */}
+  </span>
+
+  {lead.counsellor ? (
+    <span className="text-[11px] text-teal-600 font-semibold bg-teal-50 px-2 py-0.5 rounded-full">
+      {lead.counsellor.name.split(" ")[0]}
+    </span>
+  ) : lead.counsellor_id ? (
+    <span className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+      Assigned
+    </span>
+  ) : (
+    <span className="text-[11px] text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+      Unassigned
+    </span>
+  )}
+</div>
     </div>
   );
 }

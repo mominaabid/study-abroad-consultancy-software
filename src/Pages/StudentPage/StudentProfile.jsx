@@ -23,141 +23,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { BASE_URL } from "../../Content/Url";
-import { PHONE_COUNTRIES } from "../../constants/countries";
 import PhoneInputWithCountry from "../../Components/InputFields/PhoneInputWithCountry";
-
-// Helper: get country object from country name
-const getCountryByName = (countryName) => {
-  if (!countryName) return null;
-  return PHONE_COUNTRIES.find(
-    (c) => c.name.toLowerCase() === countryName.toLowerCase(),
-  );
-};
-
-// Country selector component (responsive)
-const CountrySelector = ({ value, onChange, disabled, error }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const dropdownRef = useRef(null);
-
-  const selectedCountry = getCountryByName(value);
-
-  const filteredCountries = PHONE_COUNTRIES.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.value.includes(searchTerm),
-  );
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-        setSearchTerm("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleSelectCountry = (country) => {
-    onChange(country.name);
-    setDropdownOpen(false);
-    setSearchTerm("");
-  };
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => !disabled && setDropdownOpen((prev) => !prev)}
-        disabled={disabled}
-        className={`w-full flex items-center justify-between px-3 py-2.5 sm:px-4 border rounded-xl bg-white transition ${
-          disabled
-            ? "bg-gray-50 border-gray-100 text-gray-600 cursor-not-allowed"
-            : "border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-teal-400"
-        }`}
-      >
-        <div className="flex items-center gap-2 truncate">
-          {selectedCountry ? (
-            <>
-              <CountryFlag
-                countryCode={selectedCountry.iso}
-                svg
-                style={{ width: "1.4em", height: "1.1em", borderRadius: "2px" }}
-                title={selectedCountry.name}
-              />
-              <span className="text-sm font-medium text-gray-700 truncate">
-                {selectedCountry.name} ({selectedCountry.value})
-              </span>
-            </>
-          ) : (
-            <span className="text-gray-500 text-sm">Select country</span>
-          )}
-        </div>
-        {!disabled && (
-          <ChevronDown
-            size={16}
-            className={`text-gray-400 transition-transform shrink-0 ${
-              dropdownOpen ? "rotate-180" : ""
-            }`}
-          />
-        )}
-      </button>
-
-      {dropdownOpen && !disabled && (
-        <div className="absolute z-50 left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
-          <div className="p-2 border-b border-gray-100">
-            <div className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg bg-gray-50">
-              <Search size={13} className="text-gray-400 shrink-0" />
-              <input
-                autoFocus
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search country..."
-                className="flex-1 bg-transparent text-sm focus:outline-none text-gray-700 min-w-0"
-              />
-            </div>
-          </div>
-          <div className="max-h-52 overflow-y-auto">
-            {filteredCountries.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-400">No results</div>
-            ) : (
-              filteredCountries.map((country) => (
-                <div
-                  key={country.id}
-                  onClick={() => handleSelectCountry(country)}
-                  className={`flex items-center justify-between px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
-                    value === country.name
-                      ? "bg-teal-50 text-teal-700 font-medium"
-                      : "text-gray-700"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <CountryFlag
-                      countryCode={country.iso}
-                      svg
-                      style={{
-                        width: "1.4em",
-                        height: "1.1em",
-                        borderRadius: "2px",
-                      }}
-                    />
-                    <span className="truncate">{country.name}</span>
-                  </div>
-                  <span className="text-xs text-gray-400 shrink-0 ml-2">
-                    {country.value}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-    </div>
-  );
-};
 
 // Profile Info Card component (responsive)
 const ProfileInfoCard = ({
@@ -183,7 +49,162 @@ const ProfileInfoCard = ({
   </div>
 );
 
-// Edit Student Profile Modal (fully responsive, scrollable on mobile)
+// Country selector component with API integration
+const CountrySelector = ({ value, onChange, disabled, error }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [countries, setCountries] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Fetch countries from API
+  useEffect(() => {
+    const fetchCountries = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${BASE_URL}/countries`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        const countryData = response.data?.data || response.data || [];
+        setCountries(countryData);
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+        toast.error("Failed to load countries");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  const selectedCountry = countries.find(
+    (c) => c.name.toLowerCase() === value?.toLowerCase()
+  );
+
+  const filteredCountries = countries.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.code?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectCountry = (country) => {
+    onChange(country.name);
+    setDropdownOpen(false);
+    setSearchTerm("");
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => !disabled && setDropdownOpen((prev) => !prev)}
+        disabled={disabled || loading}
+        className={`w-full flex items-center justify-between px-3 py-2.5 sm:px-4 border rounded-xl bg-white transition ${
+          disabled || loading
+            ? "bg-gray-50 border-gray-100 text-gray-600 cursor-not-allowed"
+            : "border-gray-200 hover:border-gray-300 focus:ring-2 focus:ring-teal-400"
+        }`}
+      >
+        <div className="flex items-center gap-2 truncate">
+          {loading ? (
+            <span className="text-gray-500 text-sm">Loading countries...</span>
+          ) : selectedCountry ? (
+            <>
+              <CountryFlag
+                countryCode={selectedCountry.code}
+                svg
+                style={{ width: "1.4em", height: "1.1em", borderRadius: "2px" }}
+                title={selectedCountry.name}
+              />
+              <span className="text-sm font-medium text-gray-700 truncate">
+                {selectedCountry.name} ({selectedCountry.code})
+              </span>
+            </>
+          ) : (
+            <span className="text-gray-500 text-sm">Select country</span>
+          )}
+        </div>
+        {!disabled && !loading && (
+          <ChevronDown
+            size={16}
+            className={`text-gray-400 transition-transform shrink-0 ${
+              dropdownOpen ? "rotate-180" : ""
+            }`}
+          />
+        )}
+      </button>
+
+      {dropdownOpen && !disabled && !loading && (
+        <div className="absolute z-50 left-0 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-gray-100">
+            <div className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg bg-gray-50">
+              <Search size={13} className="text-gray-400 shrink-0" />
+              <input
+                autoFocus
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search country..."
+                className="flex-1 bg-transparent text-sm focus:outline-none text-gray-700 min-w-0"
+              />
+            </div>
+          </div>
+          <div className="max-h-52 overflow-y-auto">
+            {filteredCountries.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-400">
+                {searchTerm ? "No matching countries" : "No countries available"}
+              </div>
+            ) : (
+              filteredCountries.map((country) => (
+                <div
+                  key={country.id}
+                  onClick={() => handleSelectCountry(country)}
+                  className={`flex items-center justify-between px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${
+                    value === country.name
+                      ? "bg-teal-50 text-teal-700 font-medium"
+                      : "text-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <CountryFlag
+                      countryCode={country.code}
+                      svg
+                      style={{
+                        width: "1.4em",
+                        height: "1.1em",
+                        borderRadius: "2px",
+                      }}
+                    />
+                    <span className="truncate">{country.name}</span>
+                  </div>
+                  <span className="text-xs text-gray-400 shrink-0 ml-2">
+                    {country.code}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+    </div>
+  );
+};
+
+// Edit Student Profile Modal
 const EditStudentProfileModal = ({
   isOpen,
   onClose,
@@ -195,7 +216,6 @@ const EditStudentProfileModal = ({
     name: "",
     phone: "",
     preferred_country: "",
-    study_level: "",
   });
 
   useEffect(() => {
@@ -204,7 +224,6 @@ const EditStudentProfileModal = ({
         name: profile.name || "",
         phone: profile.phone || "",
         preferred_country: profile.preferred_country || "",
-        study_level: profile.study_level || "",
       });
     }
   }, [isOpen, profile]);
@@ -220,8 +239,6 @@ const EditStudentProfileModal = ({
       if (!alphaRegex.test(formattedValue)) return;
       if (formattedValue.length > 50) return;
     }
-
-    if (name === "study_level" && value.length > 50) return;
 
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
   };
@@ -247,10 +264,6 @@ const EditStudentProfileModal = ({
       toast.error("Preferred country is required");
       return false;
     }
-    if (!formData.study_level.trim()) {
-      toast.error("Study level is required");
-      return false;
-    }
     return true;
   };
 
@@ -265,9 +278,7 @@ const EditStudentProfileModal = ({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-      {/* Modal container: full width on small, max-w-2xl on larger, max-h-90vh */}
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-        {/* Fixed header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
           <h2 className="text-xl font-bold text-gray-800">Edit Profile</h2>
           <button
@@ -279,7 +290,6 @@ const EditStudentProfileModal = ({
           </button>
         </div>
 
-        {/* Scrollable form area */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-2 sm:pt-4">
           <form
             onSubmit={handleSave}
@@ -287,7 +297,6 @@ const EditStudentProfileModal = ({
             className="space-y-5"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {/* Full Name - full width */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name <span className="text-teal-600">*</span>
@@ -306,7 +315,6 @@ const EditStudentProfileModal = ({
                 </div>
               </div>
 
-              {/* Email (read-only) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email Address
@@ -317,7 +325,6 @@ const EditStudentProfileModal = ({
                 </div>
               </div>
 
-              {/* Phone Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Phone Number <span className="text-teal-600">*</span>
@@ -333,7 +340,6 @@ const EditStudentProfileModal = ({
                 />
               </div>
 
-              {/* Preferred Country */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Preferred Country <span className="text-teal-600">*</span>
@@ -345,28 +351,8 @@ const EditStudentProfileModal = ({
                   error={!formData.preferred_country && "Country is required"}
                 />
               </div>
-
-              {/* Study Level */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Study Level <span className="text-teal-600">*</span>
-                </label>
-                <div className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-teal-200 focus-within:border-teal-400 transition">
-                  <BookOpen size={18} className="text-gray-400 shrink-0" />
-                  <input
-                    type="text"
-                    name="study_level"
-                    value={formData.study_level}
-                    onChange={handleChange}
-                    className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400 min-w-0"
-                    placeholder="e.g., Bachelor, Master, PhD"
-                    disabled={isUpdating}
-                  />
-                </div>
-              </div>
             </div>
 
-            {/* Status & Registered Date - stacked on mobile, side by side on tablet+ */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -394,7 +380,6 @@ const EditStudentProfileModal = ({
           </form>
         </div>
 
-        {/* Fixed footer with action buttons */}
         <div className="flex flex-wrap items-center justify-end gap-3 p-4 border-t border-gray-100 bg-white shrink-0">
           <button
             type="button"
@@ -440,7 +425,26 @@ export const StudentProfile = () => {
       const res = await axios.get(`${BASE_URL}/student/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setProfile(res.data);
+
+      const profileData = res.data?.data || res.data;
+
+      setProfile({
+        id: profileData.id,
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
+        preferred_country: profileData.preferred_country,
+        profilePictureUrl: profileData.profilePictureUrl || null,
+        createdAt: profileData.created_at || profileData.createdAt,
+        counsellor_name: profileData.counsellor?.name || "Unassigned",
+        education: profileData.education?.map((edu) => ({
+          id: edu.id,
+          degree: edu.degree_name || edu.degree,
+          year_awarded: edu.year_awarded,
+          grades_cgpa: edu.grades_cgpa,
+          board_university: edu.board_university,
+        })) || [],
+      });
     } catch (err) {
       console.error("Profile fetch error:", err);
       toast.error(err?.response?.data?.message || "Failed to load profile", {
@@ -486,9 +490,12 @@ export const StudentProfile = () => {
           },
         },
       );
+
+      const data = response.data?.data || response.data;
+
       setProfile((prev) => ({
         ...prev,
-        profilePictureUrl: response.data.profilePictureUrl,
+        profilePictureUrl: data.profilePictureUrl,
       }));
       toast.success("Profile picture updated successfully");
     } catch (error) {
@@ -504,19 +511,28 @@ export const StudentProfile = () => {
     setIsUpdating(true);
     try {
       const token = localStorage.getItem("token");
-      const payload = {
-        name: formData.name,
-        phone: formData.phone,
-        preferred_country: formData.preferred_country,
-        study_level: formData.study_level,
-      };
+
       const response = await axios.put(
         `${BASE_URL}/student/updateProfile`,
-        payload,
+        {
+          name: formData.name,
+          phone: formData.phone,
+          preferred_country: formData.preferred_country,
+        },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      setProfile(response.data);
+      const updatedData = response.data?.data || response.data;
+
+      setProfile((prev) => ({
+        ...prev,
+        name: updatedData.name,
+        phone: updatedData.phone,
+        preferred_country: updatedData.preferred_country,
+        updatedAt: updatedData.updated_at || updatedData.updatedAt,
+        counsellor_name: updatedData.counsellor?.name || "Unassigned",
+      }));
+
       toast.success("Profile updated successfully!");
       setModalOpen(false);
     } catch (error) {
@@ -573,29 +589,21 @@ export const StudentProfile = () => {
       label: "Preferred Country",
       value: profile.preferred_country || "—",
     },
-    { icon: BookOpen, label: "Study Level", value: profile.study_level || "—" },
     {
       icon: Calendar,
       label: "Joined Date",
       value: formatDate(profile.createdAt),
     },
-    {
-      icon: Shield,
-      label: "Role",
-      value: "Student",
-      valueColor: "text-teal-600",
-    },
+
     {
       icon: Briefcase,
       label: "Assigned Counsellor",
-      value:
-        profile.counsellor?.name || profile.counsellor_name || "Unassigned",
+      value: profile.counsellor_name || "Unassigned",
     },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-3">
-      {/* Main container */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 md:p-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Left Section - Profile Summary */}

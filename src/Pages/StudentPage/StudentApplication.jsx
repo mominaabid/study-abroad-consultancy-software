@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { BASE_URL } from "../../Content/Url";
@@ -42,43 +42,27 @@ const authAxios = {
     axios.delete(url, { headers: { Authorization: `Bearer ${getToken()}` } }),
 };
 
-// Document types configuration
-const DOC_TYPES = [
-  { key: "passport", label: "Passport Copy", required: false, icon: User },
-  {
-    key: "transcript",
-    label: "Academic Transcript",
-    required: false,
-    icon: FileText,
-  },
-  {
-    key: "sop",
-    label: "Statement of Purpose",
-    required: false,
-    icon: FileText,
-  },
-  {
-    key: "ielts",
-    label: "IELTS / English Test",
-    required: false,
-    icon: BarChart,
-  },
-  { key: "photo", label: "Passport Photo", required: false, icon: User },
-  {
-    key: "recommendation",
-    label: "Recommendation Letter",
-    required: false,
-    icon: FileText,
-  },
-  {
-    key: "financial",
-    label: "Financial Statement",
-    required: false,
-    icon: FileText,
-  },
-  { key: "cv", label: "CV / Resume", required: false, icon: FileText },
-  { key: "other", label: "Other Document", required: false, icon: FileText },
-];
+// ── Helper: safely turn any API response shape into an array ──
+const extractArray = (payload, keys = []) => {
+  if (!payload) return [];
+  if (Array.isArray(payload)) {
+    // handle accidental 2D array e.g. [[...]]
+    if (payload.length === 1 && Array.isArray(payload[0])) return payload[0];
+    return payload;
+  }
+  for (const key of keys) {
+    if (Array.isArray(payload[key])) return payload[key];
+  }
+  if (payload.data) return extractArray(payload.data, keys);
+  return [];
+};
+
+// ── Helper: safe replace for values that might not be strings ──
+const humanize = (val) => {
+  if (typeof val === "string") return val.replace(/_/g, " ");
+  if (val === null || val === undefined) return "";
+  return String(val);
+};
 
 // Responsive Document Upload Modal
 function DocumentUploadModal({
@@ -91,36 +75,52 @@ function DocumentUploadModal({
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // handleSubmit now receives the event from AddButton
+  useEffect(() => {
+    if (!isOpen) {
+      setFile(null);
+      setLoading(false);
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e) => {
-    e.preventDefault(); // prevent any default behaviour
+    e.preventDefault();
     if (!file) {
-      toast.error("Please select a file", { toastId: "choose file" });
+      toast.error("Please select a file", { toastId: "choose-file" });
+      return;
+    }
+    if (!docType) {
+      toast.error("No document type selected", { toastId: "no-doc-type" });
       return;
     }
 
     setLoading(true);
     const formData = new FormData();
     formData.append("application_id", application.id);
-    formData.append("doc_type", docType.key);
+    // ✅ Send the human-readable label to match backend config_values.name lookup
+    formData.append("doc_type", docType.label || docType.key);
     formData.append("file", file);
 
     try {
       const res = await authAxios.post(
         `${BASE_URL}/student/documents/upload`,
         formData,
+        // let axios set multipart boundary automatically; no manual header needed
       );
-      if (res.data) {
+      if (res.data?.success !== false) {
         toast.success("Document uploaded successfully!", {
-          toastId: "doc-load",
+          toastId: "doc-upload-success",
         });
         onSuccess();
         onClose();
+      } else {
+        throw new Error(res.data?.message || "Upload failed");
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Upload failed", {
-        toastId: "viral load",
-      });
+      console.error("Upload error:", err);
+      toast.error(
+        err.response?.data?.message || err.message || "Upload failed",
+        { toastId: "doc-upload-failed" },
+      );
     } finally {
       setLoading(false);
     }
@@ -131,18 +131,16 @@ function DocumentUploadModal({
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-md w-full my-auto overflow-hidden shadow-xl">
-        {/* Custom Title component with close button */}
         <Title setModal={onClose} className="rounded-t-2xl">
           Upload Document
         </Title>
 
-        {/* Modal body */}
         <div className="p-4 sm:p-5">
           <p className="text-xs sm:text-sm text-gray-500 break-words mb-4">
             {docType?.label} for {application?.target_university}
           </p>
 
-          <form>
+          <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -178,7 +176,7 @@ function DocumentUploadModal({
 }
 
 // Responsive Document Card Component
-function DocumentCard({ doc, onRefresh }) {
+function DocumentCard({ doc }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getStatusBadge = () => {
@@ -221,6 +219,9 @@ function DocumentCard({ doc, onRefresh }) {
   const fileName =
     doc.original_name || (fileUrl ? fileUrl.split("/").pop() : "document");
 
+  const submittedDate =
+    doc.submitted_at || doc.created_at || doc.uploaded_at || null;
+
   return (
     <div className="bg-gray-50 rounded-xl p-3 hover:shadow-sm transition">
       <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
@@ -229,8 +230,8 @@ function DocumentCard({ doc, onRefresh }) {
             <FileText size={18} className="text-teal-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-800 text-sm break-words">
-              {fileName}
+            <p className="font-medium text-gray-800 text-sm break-words capitalize">
+              {humanize(doc.doc_type_label || doc.doc_type) || fileName}
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-1">
               <span
@@ -276,7 +277,9 @@ function DocumentCard({ doc, onRefresh }) {
         <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500 space-y-1">
           <p>
             <span className="font-medium">Submitted:</span>{" "}
-            {new Date(doc.submitted_at).toLocaleDateString()}
+            {submittedDate
+              ? new Date(submittedDate).toLocaleDateString()
+              : "Unknown"}
           </p>
           {doc.reviewed_at && (
             <p>
@@ -297,7 +300,7 @@ function DocumentCard({ doc, onRefresh }) {
           )}
           {fileUrl && (
             <p className="text-blue-600 break-words">
-              <a href={fileUrl} target="_blank" className="hover:underline">
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
                 📄 Click to open document
               </a>
             </p>
@@ -309,7 +312,7 @@ function DocumentCard({ doc, onRefresh }) {
 }
 
 // Responsive Application Card Component
-function ApplicationCard({ application, onRefresh }) {
+function ApplicationCard({ application, documentTypes }) {
   const [expanded, setExpanded] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
@@ -318,25 +321,28 @@ function ApplicationCard({ application, onRefresh }) {
     docType: null,
   });
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     setLoadingDocs(true);
     try {
       const res = await authAxios.get(
         `${BASE_URL}/student/documents?application_id=${application.id}`,
       );
-      setDocuments(res.data || []);
+      const docsList = extractArray(res.data, ["documents", "data"]);
+      setDocuments(docsList);
     } catch (err) {
       console.error("Error fetching documents:", err);
+      toast.error("Failed to load documents", { toastId: "docs-load-failed" });
+      setDocuments([]);
     } finally {
       setLoadingDocs(false);
     }
-  };
+  }, [application.id]);
 
   useEffect(() => {
     if (expanded) {
       fetchDocuments();
     }
-  }, [expanded, application.id]);
+  }, [expanded, fetchDocuments]);
 
   const getStatusColor = () => {
     const statusMap = {
@@ -366,12 +372,31 @@ function ApplicationCard({ application, onRefresh }) {
     return labelMap[application.status] || application.status;
   };
 
-  const docStatusMap = {};
-  documents.forEach((doc) => {
-    docStatusMap[doc.doc_type] = doc.status;
-  });
+  // Normalize each uploaded doc's type to the same "key" format used by documentTypes
+  // (lowercase, spaces -> underscores) so we can match against the checklist reliably,
+  // regardless of whether the backend returns a name, id, or slug for doc_type.
+  const normalizedDocs = useMemo(() => {
+    return documents.map((doc) => {
+      const rawType = doc.doc_type;
+      let key = "";
+      if (typeof rawType === "string") {
+        key = rawType.toLowerCase().replace(/\s+/g, "_");
+      } else if (rawType !== null && rawType !== undefined) {
+        // fallback: match by id against documentTypes list
+        const match = documentTypes.find((t) => String(t.id) === String(rawType));
+        key = match ? match.key : String(rawType);
+      }
+      return { ...doc, doc_type_key: key, doc_type_label: doc.doc_type_label || rawType };
+    });
+  }, [documents, documentTypes]);
 
-  const uploadedTypes = new Set(documents.map((d) => d.doc_type));
+  const docStatusMap = {};
+  normalizedDocs.forEach((doc) => {
+    docStatusMap[doc.doc_type_key] = doc.status;
+  });
+  const uploadedTypes = new Set(normalizedDocs.map((d) => d.doc_type_key));
+
+  const verifiedCount = normalizedDocs.filter((d) => d.status === "verified").length;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -424,93 +449,96 @@ function ApplicationCard({ application, onRefresh }) {
               <FileText size={14} className="text-teal-500" />
               Document Checklist
               <span className="text-xs text-gray-400">
-                ({documents.filter((d) => d.status === "verified").length}/
-                {documents.length} verified)
+                ({verifiedCount}/{normalizedDocs.length} verified)
               </span>
             </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {DOC_TYPES.map((docType) => {
-                const docStatus = docStatusMap[docType.key];
-                const isUploaded = uploadedTypes.has(docType.key);
-                let statusBadge = {
-                  bg: "bg-gray-100",
-                  text: "text-gray-500",
-                  label: "Not Uploaded",
-                };
 
-                if (docStatus === "verified")
-                  statusBadge = {
-                    bg: "bg-green-100",
-                    text: "text-green-700",
-                    label: "Verified",
-                  };
-                else if (docStatus === "rejected")
-                  statusBadge = {
-                    bg: "bg-red-100",
-                    text: "text-red-700",
-                    label: "Rejected",
-                  };
-                else if (docStatus === "review")
-                  statusBadge = {
-                    bg: "bg-blue-100",
-                    text: "text-blue-700",
-                    label: "In Review",
-                  };
-                else if (isUploaded)
-                  statusBadge = {
-                    bg: "bg-amber-100",
-                    text: "text-amber-700",
-                    label: "Pending",
+            {documentTypes.length === 0 ? (
+              <p className="text-sm text-gray-400">
+                No document types configured yet.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {documentTypes.map((docType) => {
+                  const docStatus = docStatusMap[docType.key];
+                  const isUploaded = uploadedTypes.has(docType.key);
+                  let statusBadge = {
+                    bg: "bg-gray-100",
+                    text: "text-gray-500",
+                    label: "Not Uploaded",
                   };
 
-                const showUploadButton =
-                  !isUploaded || docStatus === "rejected";
+                  if (docStatus === "verified")
+                    statusBadge = {
+                      bg: "bg-green-100",
+                      text: "text-green-700",
+                      label: "Verified",
+                    };
+                  else if (docStatus === "rejected")
+                    statusBadge = {
+                      bg: "bg-red-100",
+                      text: "text-red-700",
+                      label: "Rejected",
+                    };
+                  else if (docStatus === "review")
+                    statusBadge = {
+                      bg: "bg-blue-100",
+                      text: "text-blue-700",
+                      label: "In Review",
+                    };
+                  else if (isUploaded)
+                    statusBadge = {
+                      bg: "bg-amber-100",
+                      text: "text-amber-700",
+                      label: "Pending",
+                    };
 
-                return (
-                  <div
-                    key={docType.key}
-                    className="flex flex-wrap items-center justify-between gap-2 p-2 bg-white rounded-lg border border-gray-100"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <docType.icon
-                        size={14}
-                        className="text-gray-500 flex-shrink-0"
-                      />
-                      <span className="text-sm text-gray-700 break-words">
-                        {docType.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge.bg} ${statusBadge.text}`}
-                      >
-                        {statusBadge.label}
-                      </span>
-                      {showUploadButton && (
-                        <button
-                          onClick={() =>
-                            setUploadModal({ isOpen: true, docType: docType })
-                          }
-                          className="p-2 rounded-lg hover:bg-teal-50 text-teal-600 transition touch-manipulation"
-                          title={
-                            docStatus === "rejected" ? "Re-upload" : "Upload"
-                          }
+                  const showUploadButton =
+                    !isUploaded || docStatus === "rejected";
+
+                  return (
+                    <div
+                      key={docType.key}
+                      className="flex flex-wrap items-center justify-between gap-2 p-2 bg-white rounded-lg border border-gray-100"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText size={14} className="text-gray-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-700 break-words">
+                          {docType.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge.bg} ${statusBadge.text}`}
                         >
-                          <Upload size={14} />
-                        </button>
-                      )}
+                          {statusBadge.label}
+                        </span>
+                        {showUploadButton && (
+                          <button
+                            onClick={() =>
+                              setUploadModal({ isOpen: true, docType })
+                            }
+                            className="p-2 rounded-lg hover:bg-teal-50 text-teal-600 transition touch-manipulation"
+                            title={
+                              docStatus === "rejected" ? "Re-upload" : "Upload"
+                            }
+                          >
+                            <Upload size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Uploaded Documents List */}
           <div>
             <h4 className="font-semibold text-gray-800 text-sm mb-3 flex items-center gap-2">
               <Eye size={14} className="text-teal-500" />
-              Uploaded Documents ({documents.length})
+              Uploaded Documents ({normalizedDocs.length})
             </h4>
             {loadingDocs ? (
               <div className="text-center py-4">
@@ -519,18 +547,14 @@ function ApplicationCard({ application, onRefresh }) {
                   className="animate-spin mx-auto text-gray-400"
                 />
               </div>
-            ) : documents.length === 0 ? (
+            ) : normalizedDocs.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-4">
                 No documents uploaded yet
               </p>
             ) : (
               <div className="space-y-2">
-                {documents.map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    onRefresh={fetchDocuments}
-                  />
+                {normalizedDocs.map((doc) => (
+                  <DocumentCard key={doc.id} doc={doc} />
                 ))}
               </div>
             )}
@@ -553,24 +577,44 @@ function ApplicationCard({ application, onRefresh }) {
 // Main StudentApplication Component - Fully Responsive
 export const StudentApplication = () => {
   const [applications, setApplications] = useState([]);
+  const [documentTypes, setDocumentTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const fetchDocumentTypes = useCallback(async () => {
+    try {
+      const res = await authAxios.get(`${BASE_URL}/config/document_type`);
+      const types = extractArray(res.data, ["data"]);
+      const formatted = types.map((t) => ({
+        key: t.name?.toLowerCase().replace(/\s+/g, "_") || String(t.id),
+        label: t.name || "Unknown",
+        id: t.id,
+      }));
+      setDocumentTypes(formatted);
+    } catch (err) {
+      console.error("Failed to fetch document types:", err);
+      setDocumentTypes([]);
+    }
+  }, []);
+
   const fetchApplications = useCallback(async () => {
     try {
-      const res = await authAxios.get(`${BASE_URL}/getApplications`);
-      setApplications(res.data || []);
+      const res = await authAxios.get(`${BASE_URL}/student/applications`);
+      const payload = res?.data || {};
+      const apps = extractArray(payload, ["applications", "data"]);
+      setApplications(Array.isArray(apps) ? apps : []);
     } catch (err) {
       console.error("Error fetching applications:", err);
       if (err.response?.status === 401) {
         toast.error("Session expired. Please login again.", {
-          toastId: "sign-in again",
+          toastId: "sign-in-again",
         });
       } else {
         toast.error("Failed to load applications", {
           toastId: "app-load-failed",
         });
       }
+      setApplications([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -579,7 +623,8 @@ export const StudentApplication = () => {
 
   useEffect(() => {
     fetchApplications();
-  }, [fetchApplications]);
+    fetchDocumentTypes();
+  }, [fetchApplications, fetchDocumentTypes]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -602,9 +647,17 @@ export const StudentApplication = () => {
 
   return (
     <div className="p-2 sm:p-3 md:p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen overflow-x-hidden">
-      {/* (Optional header space – no extra UI added to preserve existing design) */}
+      <div className="flex justify-end mb-3">
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 hover:text-teal-600 transition"
+        >
+          <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+          Refresh
+        </button>
+      </div>
 
-      {/* Applications List */}
       {applications.length === 0 ? (
         <div className="bg-white rounded-2xl p-8 sm:p-12 text-center border border-gray-100">
           <GraduationCap size={48} className="mx-auto text-gray-300 mb-3" />
@@ -619,7 +672,7 @@ export const StudentApplication = () => {
             <ApplicationCard
               key={app.id}
               application={app}
-              onRefresh={fetchApplications}
+              documentTypes={documentTypes}
             />
           ))}
         </div>

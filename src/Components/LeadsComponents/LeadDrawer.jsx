@@ -18,22 +18,41 @@ import {
   ArrowRightCircle,
 } from "lucide-react";
 
+// ✅ FIXED: Handle invalid dates
 function formatDateTime(date) {
-  return new Date(date).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  if (!date) return "—";
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "—";
+    
+    return d.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (error) {
+    return "—";
+  }
 }
 
+// ✅ FIXED: Better grouping with null checks
 function groupLogs(logs) {
+  if (!logs || !Array.isArray(logs) || logs.length === 0) return [];
+  
   const groups = [];
   let i = 0;
+  
   while (i < logs.length) {
     const log = logs[i];
+    
+    if (!log || !log.action_type) {
+      i++;
+      continue;
+    }
+    
     if (log.action_type === "stage_changed") {
       const next = logs[i + 1];
       const paired =
@@ -41,6 +60,7 @@ function groupLogs(logs) {
         next.action_type === "note_added" &&
         next.performed_by_name === log.performed_by_name &&
         Math.abs(new Date(next.created_at) - new Date(log.created_at)) < 60000;
+      
       groups.push({
         type: "stage_with_note",
         stage: log,
@@ -48,13 +68,18 @@ function groupLogs(logs) {
       });
       i += paired ? 2 : 1;
     } else {
-      groups.push({ type: "note_only", note: log });
+      groups.push({ 
+        type: "note_only", 
+        note: log 
+      });
       i++;
     }
   }
+  
   return groups;
 }
 
+// ✅ FIXED: Clean note properly
 function cleanNote(note) {
   if (!note) return "";
   return note.replace(/^\[.+?\]\s*/g, "").trim();
@@ -89,18 +114,26 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
   const currentStageLabel =
     STAGES.find((s) => s.key === lead.status)?.label || lead.status;
 
+  // ✅ FIXED: Better error handling
   const fetchNotes = async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${BASE_URL}/admin/leads/${lead.id}/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
       if (res.ok) {
         const data = await res.json();
+        console.log("📥 Fetched logs:", data);
+        
+        const logsData = Array.isArray(data) ? data : [];
         const grouped = {};
-        data.forEach((log) => {
-          if (!log.note && !log.stage_to) return;
+        
+        logsData.forEach((log) => {
+          if (!log.note && !log.stage_to && !log.stage_from) return;
+          
           let stageKey = null;
+          
           if (log.stage_to) {
             const found = STAGES.find(
               (s) =>
@@ -109,6 +142,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
             );
             if (found) stageKey = found.key;
           }
+          
           if (!stageKey && log.note) {
             const match = log.note.match(/^\[(.+?)\]/);
             if (match) {
@@ -121,18 +155,22 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
               if (found) stageKey = found.key;
             }
           }
+          
           if (!stageKey) stageKey = lead.status;
+          
           if (!grouped[stageKey]) grouped[stageKey] = [];
+          
           grouped[stageKey].push({
-            content: log.note?.replace(/^\[.+?\]\s*/, "") || "",
+            content: log.note ? cleanNote(log.note) : "",
             author: log.performed_by_name || "System",
-            createdAt: log.created_at,
+            createdAt: log.created_at || new Date().toISOString(),
           });
         });
+        
         setStageNotes(grouped);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching notes:", err);
     }
   };
 
@@ -140,60 +178,39 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
     fetchNotes();
   }, [lead.id]);
 
+  // ✅ FIXED: Single useEffect for fetching logs
   useEffect(() => {
     if (activeTab === "logs" && lead.id) {
       setLogsLoading(true);
       fetch(`${BASE_URL}/admin/leads/${lead.id}/logs`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       })
-        .then((r) => r.json())
-        .then((data) =>
-          setLogs(
-            Array.isArray(data)
-              ? data.sort(
-                  (a, b) => new Date(b.created_at) - new Date(a.created_at),
-                )
-              : [],
-          ),
-        )
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch logs");
+          return res.json();
+        })
+        .then((data) => {
+          const logsData = Array.isArray(data) ? data : [];
+          const sorted = logsData.sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at),
+          );
+          setLogs(sorted);
+        })
+        .catch((err) => {
+          console.error("Error fetching logs:", err);
+          setLogs([]);
+        })
         .finally(() => setLogsLoading(false));
     }
   }, [activeTab, lead.id]);
 
+  // ✅ Clean up on unmount
   useEffect(() => {
-    let isMounted = true;
-    let currentLeadId = lead.id;
-
-    const fetchLogs = async () => {
-      if (!currentLeadId) return;
-      try {
-        const res = await fetch(
-          `${BASE_URL}/admin/leads/${currentLeadId}/logs`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          },
-        );
-        const data = await res.json();
-        if (isMounted && currentLeadId === lead.id) {
-          setLogs(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchLogs();
     return () => {
-      isMounted = false;
+      setStageNotes({});
+      setLogs([]);
     };
-  }, [lead.id]);
-
-  useEffect(() => {
-    fetchNotes();
-    return () => setStageNotes({});
-  }, [lead.id]);
+  }, []);
 
   const openStageModal = (stage) => {
     const ti = stageOrder.indexOf(stage.key);
@@ -287,9 +304,8 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
         <div className="p-5 max-h-[74vh] overflow-y-auto">
           {activeTab === "details" && (
             <>
-              {/* ── Lead Info Card ── */}
+              {/* Lead Info Card */}
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-5">
-                {/* Top row: source + study level + date */}
                 <div className="flex items-center gap-2 flex-wrap mb-3">
                   {lead.source && (
                     <span
@@ -311,14 +327,10 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                   )}
                 </div>
 
-                {/* Info grid */}
                 <div className="grid grid-cols-2 gap-2">
                   {lead.email && (
                     <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
-                      <FaEnvelope
-                        size={11}
-                        className="text-slate-400 flex-shrink-0"
-                      />
+                      <FaEnvelope size={11} className="text-slate-400 flex-shrink-0" />
                       <span className="text-[12px] text-slate-600 truncate">
                         {lead.email}
                       </span>
@@ -326,10 +338,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                   )}
                   {lead.phone && (
                     <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
-                      <FaPhone
-                        size={11}
-                        className="text-slate-400 flex-shrink-0"
-                      />
+                      <FaPhone size={11} className="text-slate-400 flex-shrink-0" />
                       <span className="text-[12px] text-slate-600 truncate">
                         {lead.phone}
                       </span>
@@ -337,10 +346,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                   )}
                   {lead.preferred_country && (
                     <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
-                      <FaGlobe
-                        size={11}
-                        className="text-slate-400 flex-shrink-0"
-                      />
+                      <FaGlobe size={11} className="text-slate-400 flex-shrink-0" />
                       <span className="text-[12px] text-slate-600 truncate">
                         {lead.preferred_country}
                       </span>
@@ -348,10 +354,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                   )}
                   {lead.counsellor?.name && (
                     <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-lg px-3 py-2">
-                      <FaHashtag
-                        size={11}
-                        className="text-slate-400 flex-shrink-0"
-                      />
+                      <FaHashtag size={11} className="text-slate-400 flex-shrink-0" />
                       <span className="text-[12px] text-slate-600 truncate">
                         {lead.counsellor.name}
                       </span>
@@ -360,7 +363,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                 </div>
               </div>
 
-              {/* ── Pipeline Stepper ── */}
+              {/* Pipeline Stepper */}
               <div className="mb-6">
                 <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-4">
                   Pipeline stages
@@ -407,7 +410,6 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
 
                     const isLocked = !isCurrent && !canMove.ok;
                     const isBack = ti < currentIndex;
-                    const isNext = ti === currentIndex + 1;
                     const isLast = i === STAGES.length - 1;
 
                     return (
@@ -466,11 +468,9 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                                 ? "Completed"
                                 : isLocked
                                   ? canMove.msg
-                                  : isNext
-                                    ? "Next stage — ready to advance"
-                                    : isBack
-                                      ? "Revert to this stage"
-                                      : "Advance to this stage"}
+                                  : isBack
+                                    ? "Revert to this stage"
+                                    : "Advance to this stage"}
                           </p>
 
                           {!isCurrent && !isLocked && (
@@ -493,7 +493,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                 </div>
               </div>
 
-              {/* ── Stage Notes ── */}
+              {/* Stage Notes */}
               <div className="border-t border-slate-100 pt-5">
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-2">
@@ -544,7 +544,8 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
               ) : (
                 <div className="flex flex-col">
                   {groupLogs(logs).map((g, gi) => {
-                    const isLast = gi === groupLogs(logs).length - 1;
+                    const groups = groupLogs(logs);
+                    const isLast = gi === groups.length - 1;
 
                     if (g.type === "stage_with_note") {
                       const s = g.stage;
@@ -566,22 +567,17 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                           STAGE_ORDER.indexOf(s.stage_from);
 
                       return (
-                        <div key={s.id} className="flex gap-3">
+                        <div key={s.id || gi} className="flex gap-3">
                           <div className="flex flex-col items-center w-8 flex-shrink-0">
                             <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0 z-10">
-                              <ArrowRightCircle
-                                size={15}
-                                className="text-teal-600"
-                              />
+                              <ArrowRightCircle size={15} className="text-teal-600" />
                             </div>
                             {!isLast && (
                               <div className="w-px flex-1 bg-slate-100 my-1 min-h-[12px]" />
                             )}
                           </div>
 
-                          <div
-                            className={`flex-1 min-w-0 ${!isLast ? "pb-4" : ""}`}
-                          >
+                          <div className={`flex-1 min-w-0 ${!isLast ? "pb-4" : ""}`}>
                             <div className="border border-slate-100 rounded-xl overflow-hidden bg-white">
                               <div className="flex items-center gap-2 px-4 py-3">
                                 <span className="text-[10px] font-medium bg-teal-50 text-teal-700 px-2.5 py-1 rounded-full">
@@ -597,9 +593,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                                   <span className="text-[11px] font-medium bg-slate-100 text-slate-500 px-3 py-1 rounded-full capitalize">
                                     {s.stage_from}
                                   </span>
-                                  <span className="text-slate-300 text-xs">
-                                    →
-                                  </span>
+                                  <span className="text-slate-300 text-xs">→</span>
                                   <span
                                     className={`text-[11px] font-medium px-3 py-1 rounded-full capitalize ${
                                       isBack
@@ -612,7 +606,6 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                                 </div>
                               )}
 
-                              {/* ✅ Display the system-generated note (e.g., "Moved from new to counseling") */}
                               {s.note && (
                                 <div className="border-t border-slate-100 px-4 py-3 flex gap-2.5">
                                   <div className="w-0.5 rounded-full bg-slate-300 flex-shrink-0 self-stretch min-h-[16px]" />
@@ -637,10 +630,10 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                                     ?.split(" ")
                                     .map((w) => w[0])
                                     .join("")
-                                    .slice(0, 2)}
+                                    .slice(0, 2) || "SY"}
                                 </div>
                                 <span className="text-[11px] text-slate-400">
-                                  {s.performed_by_name}
+                                  {s.performed_by_name || "System"}
                                 </span>
                               </div>
                             </div>
@@ -650,8 +643,10 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                     }
 
                     const n = g.note;
+                    const noteContent = cleanNote(n.note) || n.message || "No content";
+
                     return (
-                      <div key={n.id} className="flex gap-3">
+                      <div key={n.id || gi} className="flex gap-3">
                         <div className="flex flex-col items-center w-8 flex-shrink-0">
                           <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center flex-shrink-0 z-10">
                             <Clock size={14} className="text-violet-500" />
@@ -661,13 +656,11 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                           )}
                         </div>
 
-                        <div
-                          className={`flex-1 min-w-0 ${!isLast ? "pb-4" : ""}`}
-                        >
+                        <div className={`flex-1 min-w-0 ${!isLast ? "pb-4" : ""}`}>
                           <div className="border border-slate-100 rounded-xl overflow-hidden bg-white">
                             <div className="flex items-center gap-2 px-4 py-3">
                               <span className="text-[10px] font-medium bg-violet-50 text-violet-700 px-2.5 py-1 rounded-full">
-                                Note added
+                                {n.action_type === "stage_changed" ? "Stage changed" : "Note added"}
                               </span>
                               {n.stage_to && (
                                 <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full capitalize">
@@ -682,7 +675,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                             <div className="px-4 pb-3 flex gap-2.5">
                               <div className="w-0.5 rounded-full bg-violet-400 flex-shrink-0 self-stretch min-h-[16px]" />
                               <p className="text-[12px] text-slate-600 leading-relaxed">
-                                {cleanNote(n.note)}
+                                {noteContent || "—"}
                               </p>
                             </div>
 
@@ -692,10 +685,10 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                                   ?.split(" ")
                                   .map((w) => w[0])
                                   .join("")
-                                  .slice(0, 2)}
+                                  .slice(0, 2) || "SY"}
                               </div>
                               <span className="text-[11px] text-slate-400">
-                                {n.performed_by_name}
+                                {n.performed_by_name || "System"}
                               </span>
                             </div>
                           </div>
@@ -744,8 +737,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
 
             <div className="p-4">
               <p className="text-xs font-medium text-slate-500 mb-2">
-                Note{" "}
-                <span className="text-slate-300 font-normal">(required)</span>
+                Note <span className="text-slate-300 font-normal">(required)</span>
               </p>
               <textarea
                 value={stageNote}
@@ -790,7 +782,7 @@ export default function LeadDrawer({ lead, onClose, onStage }) {
                 onClick={() => setShowHistory(false)}
                 className="text-slate-400 hover:text-slate-600 transition-all"
               >
-                <XCircleIcon size={20} />
+                <X size={20} />
               </button>
             </div>
             <div className="p-5 overflow-auto max-h-[65vh] space-y-5">

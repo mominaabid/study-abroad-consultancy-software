@@ -36,6 +36,8 @@ export const Header = ({ isOpen, setIsOpen }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
     newPassword: "",
@@ -133,10 +135,61 @@ export const Header = ({ isOpen, setIsOpen }) => {
 
   // Fetch notifications when user is logged in
   useEffect(() => {
-    if (user && localStorage.getItem("token")) {
-      dispatch(fetchAllNotifications());
+    dispatch(fetchAllNotifications());
+  }, [dispatch]);
+
+  // ✅ Fetch profile image based on role
+  const fetchProfileImage = async () => {
+    if (!user) return;
+    
+    setProfileLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      let endpoint = "";
+      
+      // Determine endpoint based on role
+      if (user.role === "admin") {
+        endpoint = `${BASE_URL}/admin/profile`;
+      } else if (user.role === "counsellor") {
+        endpoint = `${BASE_URL}/counsellor/profile`;
+      } else if (user.role === "student") {
+        endpoint = `${BASE_URL}/student/profile`;
+      } else {
+        return;
+      }
+      
+      const response = await axios.get(endpoint, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      // Handle nested response structure
+      const profileData = response.data?.data || response.data;
+      
+      // Check for profile image in different possible fields
+      const image = 
+        profileData?.profilePictureUrl || 
+        profileData?.profile_picture || 
+        profileData?.profile_image ||
+        profileData?.profilePicture ||
+        null;
+      
+      setProfileImage(image);
+    } catch (error) {
+      console.error("Error fetching profile image:", error);
+      // Don't show toast error here - it's not critical
+    } finally {
+      setProfileLoading(false);
     }
-  }, [dispatch, user]);
+  };
+
+  // ✅ Fetch profile image when user changes
+  useEffect(() => {
+    if (user) {
+      fetchProfileImage();
+    }
+  }, [user]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -385,10 +438,14 @@ export const Header = ({ isOpen, setIsOpen }) => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-50 transition-colors focus:outline-none"
               >
+                {/* ✅ Updated profile image with fallback */}
                 <img
                   className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border-2 border-gray-100 shadow-sm"
-                  src={defaultAvatar}
+                  src={profileImage || defaultAvatar}
                   alt="User profile"
+                  onError={(e) => {
+                    e.target.src = defaultAvatar;
+                  }}
                 />
                 <ChevronDown
                   size={16}

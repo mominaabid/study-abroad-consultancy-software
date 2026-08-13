@@ -22,35 +22,26 @@ export const STATUS_STYLES = {
   rejected:       { bg: "bg-gray-100",   text: "text-gray-600",    ring: "ring-gray-200"    },
 };
 
-export const COUNTRIES = [
-  "All Countries","UK","USA","Canada","Australia","Germany",
-  "France","Japan","UAE","China","India","Brazil","Mexico",
-];
 
-export const SOURCES = [
-  "website","walkin","whatsapp","email","facebook",
-  "referral","google_ads","linkedin","agent",
-];
 
 // export const STUDY_LEVELS = ["Bachelor","Master","PhD","Diploma","Short Course"];
 
-export const STUDY_LEVELS = [
-  "Matric",
-  "Inter (12 years)",
-  "DAE (3 years)",
-  "ADP (2 years)",
-  "Bachelors (14 years)",
-  "Bachelors (16 years)",
-  "Masters (18 years)",
-  "Post Graduate Diploma",
-  "PhD",
-  "Short Courses",
-];
 
 export const EMPTY_FORM = {
-  name: "", email: "", phone: "",
-  source: "walkin", preferred_country: "",
-  study_level: "", counsellor_id: null,
+    name: "",
+    email: "",
+    phone: "",
+    source_id: "",        // ✅ Changed
+    preferred_country: "",
+    counsellor_id: null,
+    dob: "",
+    marital_status_id: "", // ✅ Changed
+    father_name: "",
+    father_contact: "",
+    home_address: "",
+    study_level_id: "",    // ✅ Changed
+    english_test_id: "",   // ✅ Changed
+    english_test_overall_score: "",
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────

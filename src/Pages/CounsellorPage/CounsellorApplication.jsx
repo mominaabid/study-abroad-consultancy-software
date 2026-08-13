@@ -1,3 +1,4 @@
+// CounsellorApplication.jsx - COMPLETE FIXED VERSION
 import React, {
   useState,
   useEffect,
@@ -90,25 +91,6 @@ const STATUS_OPTIONS = [
   { value: "reject", label: "Reject", color: "rose" },
 ];
 
-// Document types for counsellor upload
-const DOC_TYPES = [
-  { key: "passport", label: "Passport" },
-  { key: "transcript", label: "Academic Transcript" },
-  { key: "offer_letter", label: "Offer Letter" },
-  { key: "visa", label: "Visa" },
-  { key: "sop", label: "Statement of Purpose (SOP)" },
-  { key: "ielts", label: "IELTS / English Test Score" },
-  { key: "photo", label: "Photograph" },
-  { key: "recommendation", label: "Recommendation Letter" },
-  { key: "financial", label: "Financial Document" },
-  { key: "cv", label: "CV / Resume" },
-  { key: "other", label: "Other Document" },
-  { key: "acceptance_letter", label: "Acceptance Letter" },
-  { key: "visa_letter", label: "Visa Letter" },
-  { key: "scholarship_certificate", label: "Scholarship Certificate" },
-  { key: "fee_invoice", label: "Fee Invoice" },
-];
-
 // ===================== SCROLL LOCK HOOK =====================
 function useModalScrollLock(openStates) {
   const originalOverflowRef = useRef("");
@@ -119,7 +101,6 @@ function useModalScrollLock(openStates) {
 
   useEffect(() => {
     if (isAnyOpen && !isLockedRef.current) {
-      // Lock the body
       const body = document.body;
       originalOverflowRef.current = body.style.overflow;
       originalPaddingRightRef.current = body.style.paddingRight;
@@ -129,7 +110,6 @@ function useModalScrollLock(openStates) {
       body.style.overflow = "hidden";
       isLockedRef.current = true;
     } else if (!isAnyOpen && isLockedRef.current) {
-      // Restore original styles
       const body = document.body;
       body.style.overflow = originalOverflowRef.current;
       body.style.paddingRight = originalPaddingRightRef.current;
@@ -173,7 +153,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-100 sm:px-6">
+    <div className="flex items-center justify-between px-4 py-3  sm:px-6">
       <div className="flex flex-1 justify-between sm:hidden">
         <button
           onClick={() => onPageChange(currentPage - 1)}
@@ -270,6 +250,9 @@ function DocumentPreviewModal({
   documents,
   onVerify,
   onReject,
+  onToggleReceived,
+  isAdmin = false,
+  documentTypes = [],
 }) {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -293,6 +276,10 @@ function DocumentPreviewModal({
     setShowRejectModal(false);
     setSelectedDoc(null);
     setRejectReason("");
+  };
+
+  const handleToggleReceived = async (docId, currentStatus) => {
+    await onToggleReceived(docId, !currentStatus);
   };
 
   const getStatusBadge = (status) => {
@@ -338,6 +325,12 @@ function DocumentPreviewModal({
     return doc.file_path || doc.file_url;
   };
 
+  const getDocTypeDisplay = (doc) => {
+    if (doc.doc_type_name) return doc.doc_type_name;
+    if (doc.doc_type) return doc.doc_type.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+    return "Document";
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
@@ -346,9 +339,15 @@ function DocumentPreviewModal({
             Documents
           </Title>
 
-          <div className="px-4 sm:px-5 pt-2 pb-3 text-xs sm:text-sm text-gray-500 border-b border-gray-100">
-            {pendingDocs.length} pending, {verifiedDocs.length} verified,{" "}
-            {rejectedDocs.length} rejected
+          <div className="px-4 sm:px-5 pt-2 pb-3 text-xs sm:text-sm text-gray-500 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
+            <span>{documents.length} document(s) uploaded</span>
+            <span className="flex gap-2">
+              <span className="text-green-600">✓ {verifiedDocs.length} verified</span>
+              <span className="text-amber-600">⏳ {pendingDocs.length} pending</span>
+              {rejectedDocs.length > 0 && (
+                <span className="text-red-600">✗ {rejectedDocs.length} rejected</span>
+              )}
+            </span>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 sm:p-5">
@@ -363,9 +362,9 @@ function DocumentPreviewModal({
                   const status = getStatusBadge(doc.status);
                   const StatusIcon = status.icon;
                   const fileUrl = getFileUrl(doc);
-                  const fileName =
-                    doc.original_name ||
-                    (fileUrl ? fileUrl.split("/").pop() : "document");
+                  const docTypeDisplay = getDocTypeDisplay(doc);
+                  const isCollective = doc.is_collective === 1 || doc.is_collective === true;
+                  const isReceived = doc.is_received === 1 || doc.is_received === true;
 
                   return (
                     <div
@@ -380,8 +379,13 @@ function DocumentPreviewModal({
                               className="text-teal-600 shrink-0"
                             />
                             <span className="font-medium text-gray-800 capitalize">
-                              {doc.doc_type?.replace(/_/g, " ")}
+                              {docTypeDisplay}
                             </span>
+                            {isCollective && (
+                              <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+                                📄 Combined PDF
+                              </span>
+                            )}
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full ${status.bg} ${status.text} flex items-center gap-1`}
                             >
@@ -392,10 +396,51 @@ function DocumentPreviewModal({
                                 Shared by you
                               </span>
                             )}
+                            {isReceived ? (
+                              <span className="text-xs bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckCircle size={10} /> Received
+                              </span>
+                            ) : (
+                              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                                Not Received
+                              </span>
+                            )}
                           </div>
-                          <p className="text-sm text-gray-600 break-all">
-                            File: {fileName}
-                          </p>
+                          {isCollective && doc.collective_doc_ids && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              <span className="text-xs text-gray-500">Includes:</span>
+                              {(() => {
+                                try {
+                                  let ids = doc.collective_doc_ids;
+                                  if (typeof ids === 'string') {
+                                    ids = JSON.parse(ids);
+                                  }
+                                  if (!Array.isArray(ids)) return null;
+                                  
+                                  return ids.map((id) => {
+                                    const docType = documentTypes?.find(t => 
+                                      t.id === id || 
+                                      t.key === id || 
+                                      String(t.id) === String(id) ||
+                                      String(t.key) === String(id)
+                                    );
+                                    
+                                    return docType ? (
+                                      <span key={id} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                        {docType.label || docType.name || id}
+                                      </span>
+                                    ) : (
+                                      <span key={id} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                        {id}
+                                      </span>
+                                    );
+                                  });
+                                } catch (e) {
+                                  return null;
+                                }
+                              })()}
+                            </div>
+                          )}
                           <p className="text-xs text-gray-400">
                             Submitted:{" "}
                             {(() => {
@@ -430,7 +475,7 @@ function DocumentPreviewModal({
                             </p>
                           )}
                         </div>
-                        <div className="flex gap-2 self-end sm:self-start">
+                        <div className="flex gap-2 self-end sm:self-start flex-wrap">
                           {fileUrl && (
                             <a
                               href={fileUrl}
@@ -442,6 +487,25 @@ function DocumentPreviewModal({
                               <Eye size={16} className="text-gray-500" />
                             </a>
                           )}
+                          
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleToggleReceived(doc.id, isReceived)}
+                              className={`p-2 rounded-lg transition ${
+                                isReceived 
+                                  ? "hover:bg-teal-50 text-teal-600" 
+                                  : "hover:bg-gray-100 text-gray-400"
+                              }`}
+                              title={isReceived ? "Mark as Not Received" : "Mark as Received"}
+                            >
+                              {isReceived ? (
+                                <CheckCircle size={16} className="text-teal-600" />
+                              ) : (
+                                <Clock size={16} />
+                              )}
+                            </button>
+                          )}
+
                           {(doc.status === "pending" ||
                             doc.status === "review") && (
                             <>
@@ -490,7 +554,7 @@ function DocumentPreviewModal({
                 Reject Document
               </h2>
               <p className="text-sm text-gray-500">
-                Document: {selectedDoc?.doc_type?.replace(/_/g, " ")}
+                Document: {selectedDoc ? getDocTypeDisplay(selectedDoc) : ""}
               </p>
             </div>
             <div className="p-5 space-y-4">
@@ -523,7 +587,7 @@ function DocumentPreviewModal({
   );
 }
 
-// ===================== DOCUMENT UPLOAD MODAL =====================
+// ===================== DOCUMENT UPLOAD MODAL (WITH DYNAMIC DROPDOWN & RESPONSIVE) =====================
 function CounsellorDocumentModal({
   isOpen,
   onClose,
@@ -531,20 +595,75 @@ function CounsellorDocumentModal({
   student,
   application,
   blockedDocTypes = new Set(),
+  documentTypes = [],
 }) {
   const [formData, setFormData] = useState({
-    doc_type: "offer_letter",
+    doc_type: "",
     notes: "",
+    is_received: false,
+    is_collective: false,
+    collective_doc_ids: [],
   });
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const submittedRef = useRef(false);
 
-  const availableDocTypes = DOC_TYPES.filter(
-    (type) => !blockedDocTypes.has(type.key),
-  );
+  // ✅ DYNAMIC DROPDOWN: Filter available document types - EXCLUDE already added ones
+  const availableDocTypes = useMemo(() => {
+    console.log('🔍 All Document Types:', documentTypes);
+    console.log('🔍 Blocked Doc Types:', blockedDocTypes);
+    
+    if (!documentTypes || documentTypes.length === 0) {
+      return [];
+    }
+
+    const available = documentTypes.filter((type) => {
+      const isBlocked = 
+        blockedDocTypes.has(type.key) ||
+        blockedDocTypes.has(type.label) ||
+        blockedDocTypes.has(type.name) ||
+        blockedDocTypes.has(type.key?.toLowerCase()) ||
+        blockedDocTypes.has(type.label?.toLowerCase()) ||
+        blockedDocTypes.has(type.label?.toLowerCase().replace(/\s+/g, "_")) ||
+        blockedDocTypes.has(type.key?.toLowerCase().replace(/\s+/g, "_")) ||
+        blockedDocTypes.has(String(type.id)) ||
+        blockedDocTypes.has(type.id);
+      
+      return !isBlocked;
+    });
+
+    console.log('✅ Available Doc Types:', available);
+    return available;
+  }, [documentTypes, blockedDocTypes]);
 
   const noTypesAvailable = availableDocTypes.length === 0;
+
+  // Set default doc_type only when it's missing or no longer valid
+  useEffect(() => {
+    if (!isOpen || availableDocTypes.length === 0) return;
+
+    setFormData((prev) => {
+      const stillValid = availableDocTypes.some((t) => t.key === prev.doc_type);
+      if (stillValid) return prev;
+      return { ...prev, doc_type: availableDocTypes[0].key };
+    });
+  }, [isOpen, availableDocTypes]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      submittedRef.current = false;
+      setFile(null);
+      setErrors({});
+      setFormData({
+        doc_type: "",
+        notes: "",
+        is_received: false,
+        is_collective: false,
+        collective_doc_ids: [],
+      });
+    }
+  }, [isOpen]);
 
   const validate = () => {
     const newErrors = {};
@@ -578,14 +697,32 @@ function CounsellorDocumentModal({
     return newErrors;
   };
 
+  const toggleCollectiveDoc = (docKey) => {
+    setFormData(prev => {
+      const currentIds = prev.collective_doc_ids || [];
+      let newIds;
+      if (currentIds.includes(docKey)) {
+        newIds = currentIds.filter(id => id !== docKey);
+      } else {
+        newIds = [...currentIds, docKey];
+      }
+      return { ...prev, collective_doc_ids: newIds };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       toast.error("Please fix the errors", {
         toastId: "upload-validation-error",
       });
+      submittedRef.current = false;
       return;
     }
 
@@ -593,9 +730,18 @@ function CounsellorDocumentModal({
     const formDataObj = new FormData();
     formDataObj.append("student_email", student.email);
     formDataObj.append("application_id", application.id);
-    formDataObj.append("doc_type", formData.doc_type);
+    
+    const selectedDocType = documentTypes.find(t => t.key === formData.doc_type);
+    formDataObj.append("doc_type", selectedDocType ? selectedDocType.key : formData.doc_type);
     formDataObj.append("notes", formData.notes);
     formDataObj.append("file", file);
+    
+    formDataObj.append("is_received", formData.is_received ? "true" : "false");
+    
+    if (formData.is_collective && formData.collective_doc_ids.length > 0) {
+      formDataObj.append("is_collective", "true");
+      formDataObj.append("collective_doc_ids", JSON.stringify(formData.collective_doc_ids));
+    }
 
     try {
       const res = await authAxios.post(
@@ -603,25 +749,37 @@ function CounsellorDocumentModal({
         formDataObj,
       );
       if (res.data.success) {
-        toast.success("Document shared with student successfully!", {
+        const statusMsg = formData.is_received 
+          ? "Document marked as received and verified!" 
+          : "Document uploaded successfully!";
+        toast.success(statusMsg, {
           toastId: "doc-share-success",
         });
         onSuccess();
         onClose();
         setFile(null);
-        setFormData({ doc_type: "offer_letter", notes: "" });
+        setFormData({ 
+          doc_type: "", 
+          notes: "", 
+          is_received: false,
+          is_collective: false,
+          collective_doc_ids: []
+        });
         setErrors({});
+        submittedRef.current = false;
       }
     } catch (err) {
       console.error("Upload error:", err);
       toast.error(err.response?.data?.message || "Upload failed", {
         toastId: "doc-upload-failed",
       });
+      submittedRef.current = false;
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ SINGLE handleFileChange function (only one!)
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
@@ -637,96 +795,173 @@ function CounsellorDocumentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full mx-4 overflow-hidden">
-        <Title setModal={onClose} className="rounded-t-2xl">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-md w-full mx-4 my-8 overflow-hidden max-h-[90vh] flex flex-col">
+        <Title setModal={onClose} className="rounded-t-2xl flex-shrink-0">
           Share Document
         </Title>
 
-        <div className="px-5 py-2 text-sm text-gray-600 bg-gray-50 border-b border-gray-100">
+        <div className="px-5 py-3 text-sm text-gray-600 bg-gray-50 border-b border-gray-100 flex-shrink-0">
           <p className="font-medium break-words">Student: {student?.name}</p>
           <p className="text-xs text-gray-500 break-words">
             {application?.target_university}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Document Type *
-            </label>
-            {noTypesAvailable ? (
-              <div className="text-amber-600 text-sm bg-amber-50 p-2 rounded-lg">
-                All document types for this application have already been shared
-                and are pending/verified.
-                <br />
-                You can upload again if a document was rejected.
+        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto flex-1">
+          <div className="space-y-4">
+            {/* Document Type Dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Document Type *
+              </label>
+              {noTypesAvailable ? (
+                <div className="text-amber-600 text-sm bg-amber-50 p-3 rounded-lg border border-amber-200">
+                  <p className="font-medium">✅ All documents uploaded</p>
+                  <p className="text-xs mt-1">
+                    All document types for this application have been added.
+                    You can re-upload if a document was rejected.
+                  </p>
+                </div>
+              ) : (
+                <select
+                  required
+                  value={formData.doc_type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, doc_type: e.target.value })
+                  }
+                  className={`w-full border ${
+                    errors.doc_type ? "border-red-400" : "border-gray-200"
+                  } rounded-lg px-4 py-2.5 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none transition`}
+                >
+                  {availableDocTypes.map((type) => (
+                    <option key={type.key} value={type.key}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {errors.doc_type && (
+                <p className="text-red-500 text-xs mt-1">{errors.doc_type}</p>
+              )}
+              {!noTypesAvailable && (
+                <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                  Only shows document types not yet added
+                </p>
+              )}
+            </div>
+
+            {/* File Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Document File *
+              </label>
+              <div className={`border-2 border-dashed ${
+                errors.file ? "border-red-400 bg-red-50" : "border-gray-300 hover:border-teal-400"
+              } rounded-lg p-4 transition`}>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={handleFileChange}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 cursor-pointer"
+                  required
+                />
+                <p className="text-xs text-gray-400 mt-2">
+                  PDF, DOC, DOCX, JPG, PNG (Max 5MB)
+                </p>
               </div>
-            ) : (
-              <select
-                required
-                value={formData.doc_type}
+              {errors.file && (
+                <p className="text-red-500 text-xs mt-1">{errors.file}</p>
+              )}
+            </div>
+
+            {/* Mark as Received Checkbox */}
+            <div className="space-y-1">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="is_received"
+                  checked={formData.is_received}
+                  onChange={(e) => setFormData({ ...formData, is_received: e.target.checked })}
+                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 mt-0.5 cursor-pointer"
+                />
+                <label htmlFor="is_received" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Mark as Received & Verified
+                </label>
+              </div>
+              <p className="text-xs text-gray-400 ml-6">
+                Checking this will verify the document immediately (Admin/Counsellor only)
+              </p>
+            </div>
+
+            {/* Combined PDF Option */}
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="is_collective"
+                  checked={formData.is_collective}
+                  onChange={(e) => setFormData({ ...formData, is_collective: e.target.checked })}
+                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 mt-0.5 cursor-pointer"
+                />
+                <label htmlFor="is_collective" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  This PDF contains multiple documents
+                </label>
+              </div>
+
+              {formData.is_collective && (
+                <div className="ml-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs font-medium text-gray-600 mb-2">
+                    Select which documents are included in this PDF:
+                  </p>
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                    {availableDocTypes.map((type) => (
+                      <label key={type.key} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.collective_doc_ids.includes(type.key)}
+                          onChange={() => toggleCollectiveDoc(type.key)}
+                          className="w-3.5 h-3.5 text-teal-600 border-gray-300 rounded focus:ring-teal-500 cursor-pointer"
+                        />
+                        <span className="text-gray-700">{type.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Notes (Optional)
+              </label>
+              <textarea
+                rows="3"
+                value={formData.notes}
                 onChange={(e) =>
-                  setFormData({ ...formData, doc_type: e.target.value })
+                  setFormData({ ...formData, notes: e.target.value })
                 }
                 className={`w-full border ${
-                  errors.doc_type ? "border-red-400" : "border-gray-200"
-                } rounded-lg px-4 py-2.5 focus:border-teal-400`}
-              >
-                {availableDocTypes.map((type) => (
-                  <option key={type.key} value={type.key}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            )}
-            {errors.doc_type && (
-              <p className="text-red-500 text-xs mt-1">{errors.doc_type}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Document File *
-            </label>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              onChange={handleFileChange}
-              className={`w-full border ${
-                errors.file ? "border-red-400" : "border-gray-200"
-              } rounded-lg px-4 py-2.5 focus:border-teal-400 text-sm`}
-              required
-            />
-            {errors.file && (
-              <p className="text-red-500 text-xs mt-1">{errors.file}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (Optional)
-            </label>
-            <textarea
-              rows="2"
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              className={`w-full border ${
-                errors.notes ? "border-red-400" : "border-gray-200"
-              } rounded-lg px-4 py-2.5 focus:border-teal-400 resize-none`}
-              placeholder="Add notes for the student..."
-              maxLength={255}
-            />
-            <div className="flex justify-between mt-1">
-              {errors.notes && (
-                <p className="text-red-500 text-xs">{errors.notes}</p>
-              )}
+                  errors.notes ? "border-red-400" : "border-gray-200"
+                } rounded-lg px-4 py-2.5 focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none resize-none transition`}
+                placeholder="Add notes for the student..."
+                maxLength={255}
+              />
+              <div className="flex justify-between mt-1">
+                {errors.notes && (
+                  <p className="text-red-500 text-xs">{errors.notes}</p>
+                )}
+                <span className="text-xs text-gray-400 ml-auto">
+                  {formData.notes.length}/255
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 mt-4 border-t border-gray-100">
             <CancelButton handleCancel={onClose} />
             <AddButton
               label="Share Document"
@@ -756,15 +991,22 @@ function SearchableStudentDropdown({ students, onSelect, selectedStudent }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredStudents = students.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredStudents = (students || []).filter((student) => {
+    if (!student) return false;
+    const name = student.name || '';
+    const email = student.email || '';
+    const search = searchTerm.toLowerCase();
+    return (
+      name.toLowerCase().includes(search) ||
+      email.toLowerCase().includes(search)
+    );
+  });
 
   const handleSelect = (student) => {
-    onSelect(student);
-    setSearchTerm(student.name);
+    if (student) {
+      onSelect(student);
+      setSearchTerm(student.name || '');
+    }
     setIsOpen(false);
   };
 
@@ -776,7 +1018,7 @@ function SearchableStudentDropdown({ students, onSelect, selectedStudent }) {
     }
   };
 
-  const displayValue = selectedStudent ? selectedStudent.name : searchTerm;
+  const displayValue = selectedStudent ? selectedStudent.name || '' : searchTerm;
 
   return (
     <div className="relative w-full sm:w-80" ref={dropdownRef}>
@@ -809,13 +1051,15 @@ function SearchableStudentDropdown({ students, onSelect, selectedStudent }) {
           ) : (
             filteredStudents.map((student) => (
               <div
-                key={student.id}
+                key={student.id || student.user_id}
                 onClick={() => handleSelect(student)}
                 className="px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors"
               >
-                <div className="font-medium text-gray-800">{student.name}</div>
+                <div className="font-medium text-gray-800">
+                  {student.name || 'Unnamed Student'}
+                </div>
                 <div className="text-xs text-gray-500 break-all">
-                  {student.email}
+                  {student.email || 'No email'}
                 </div>
               </div>
             ))
@@ -829,6 +1073,7 @@ function SearchableStudentDropdown({ students, onSelect, selectedStudent }) {
 // ===================== MAIN COMPONENT =====================
 export const CounsellorApplication = () => {
   const [students, setStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
   const [applications, setApplications] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -842,11 +1087,13 @@ export const CounsellorApplication = () => {
   const [selectedAppForDoc, setSelectedAppForDoc] = useState(null);
   const [currentAppDocuments, setCurrentAppDocuments] = useState([]);
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [documentTypes, setDocumentTypes] = useState([]);
 
-  // Scroll lock for all modals
+  const user = useSelector((state) => state.auth.user);
+  const isAdmin = user?.role === "admin";
+
   useModalScrollLock([
     showStatusModal,
     showCreateModal,
@@ -866,8 +1113,29 @@ export const CounsellorApplication = () => {
     }
   }, [applications, showDocumentPreview, selectedApplication]);
 
-  const user = useSelector((state) => state.auth.user);
-  const isAdmin = user?.role === "admin";
+  const fetchDocumentTypes = useCallback(async () => {
+    try {
+      const res = await authAxios.get(`${BASE_URL}/config/document_type`);
+      if (res.data.success) {
+        let types = res.data.data || [];
+        if (Array.isArray(types) && types.length === 1 && Array.isArray(types[0])) {
+          types = types[0];
+        }
+        if (!Array.isArray(types)) {
+          types = [];
+        }
+        const formattedTypes = types.map((t) => ({
+          key: t.name?.toLowerCase().replace(/\s+/g, '_') || t.id,
+          label: t.name || 'Unknown',
+          id: t.id,
+        }));
+        setDocumentTypes(formattedTypes);
+      }
+    } catch (error) {
+      console.error("Failed to fetch document types:", error);
+      setDocumentTypes([]);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -877,7 +1145,14 @@ export const CounsellorApplication = () => {
       );
 
       if (res.data.success) {
-        const studentsData = res.data.students || [];
+        const studentsData = (res.data.students || [])
+          .filter(student => student && student.id)
+          .map(student => ({
+            ...student,
+            name: student.name || 'Unnamed Student',
+            email: student.email || '',
+          }));
+        
         setStudents(studentsData);
 
         const allApps = [];
@@ -887,40 +1162,48 @@ export const CounsellorApplication = () => {
           const applicationsList = student.applications || [];
 
           applicationsList.forEach((app) => {
+            if (!app || !app.id) return;
+
             const appDocuments = app.documents || [];
 
             appDocuments.forEach((doc) => {
+              if (!doc) return;
               allDocs.push({
                 ...doc,
                 application_id: app.id,
                 student_id: student.id,
-                student_name: student.name,
-                student_email: student.email,
+                student_name: student.name || 'Unnamed Student',
+                student_email: student.email || '',
               });
             });
 
             allApps.push({
-              id: app.id || app._id,
-              target_university: app.target_university,
-              course: app.course,
-              target_country: app.target_country,
-              deadline: app.deadline,
-              status: app.status,
-              full_name: app.full_name,
-              email: app.email,
-              phone: app.phone,
-              study_level: app.study_level,
-              grades_cgpa: app.grades_cgpa,
-              english_proficiency_test: app.english_proficiency_test,
-              english_test_overall_score: app.english_test_overall_score,
-              counselor_notes: app.counselor_notes,
-              created_at: app.created_at,
-              student_name: student.name,
-              student_email: student.email,
+              id: app.id,
+              target_university: app.target_university || 'N/A',
+              course: app.course || 'N/A',
+              target_country: app.target_country || 'N/A',
+              deadline: app.deadline || null,
+              status: app.status || 'inquiry',
+              full_name: app.full_name || student.name || '',
+              email: app.email || student.email || '',
+              phone: app.phone || student.phone || '',
+              study_level: app.study_level || '',
+              grades_cgpa: app.grades_cgpa || '',
+              english_proficiency_test: app.english_proficiency_test || '',
+              english_test_overall_score: app.english_test_overall_score || '',
+              counselor_notes: app.counselor_notes || '',
+              created_at: app.created_at || new Date().toISOString(),
+              student_name: student.name || 'Unnamed Student',
+              student_email: student.email || '',
+              country_id: app.country_id || null,
+              city_id: app.city_id || null,
+              university_id: app.university_id || null,
+              course_id: app.course_id || null,
+              lead_id: app.lead_id || student.id,
               student_id: student.id,
-              user_id: student.user_id,
+              user_id: student.user_id || student.id,
               documents: appDocuments,
-              consultancy_fee: app.consultancy_fee,
+              consultancy_fee: app.consultancy_fee || 0,
             });
           });
         });
@@ -936,14 +1219,92 @@ export const CounsellorApplication = () => {
     }
   }, []);
 
+  const fetchStudentsForDropdown = useCallback(async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const isAdmin = user?.role === 'admin';
+      
+      const url = `${BASE_URL}/counsellor/leads`;
+      
+      console.log("🔍 Fetching leads from:", url);
+      const res = await authAxios.get(url);
+      console.log("📥 Leads API response:", res.data);
+      
+      if (res.data.success) {
+        let leadsData = [];
+        
+        if (res.data.data && res.data.data.leads && Array.isArray(res.data.data.leads)) {
+          leadsData = res.data.data.leads;
+        } else if (res.data.data && Array.isArray(res.data.data)) {
+          leadsData = res.data.data;
+        } else if (res.data.leads && Array.isArray(res.data.leads)) {
+          leadsData = res.data.leads;
+        } else {
+          console.warn("Unexpected response structure:", res.data);
+          leadsData = [];
+        }
+        
+        console.log("📊 Total leads from API:", leadsData.length);
+        
+        const formattedStudents = leadsData.map(lead => ({
+          id: lead.id,
+          user_id: lead.user_id || lead.id,
+          name: lead.name || 'Unnamed Student',
+          email: lead.email || '',
+          phone: lead.phone || '',
+          status: lead.status || '',
+          counsellor_id: lead.counsellor_id,
+        }));
+        
+        console.log("✅ Final formatted students:", formattedStudents.length);
+        setAllStudents(formattedStudents);
+        return formattedStudents;
+      } else {
+        console.error("API returned success: false", res.data);
+        setAllStudents([]);
+        return [];
+      }
+    } catch (error) {
+      console.error("Failed to fetch students for dropdown:", error);
+      toast.error("Failed to load students: " + (error.response?.data?.message || error.message));
+      setAllStudents([]);
+      return [];
+    }
+  }, []);
+
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchDocumentTypes();
+    fetchStudentsForDropdown();
+  }, [fetchData, fetchDocumentTypes, fetchStudentsForDropdown]);
 
-  // Reset to page 1 when selected student changes
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedStudent]);
+
+  const handleToggleReceived = async (docId, newStatus) => {
+    try {
+      const res = await authAxios.put(
+        `${BASE_URL}/admin/documents/${docId}/toggle-received`,
+        { is_received: newStatus }
+      );
+      if (res.data.success) {
+        toast.success(`Document ${newStatus ? 'marked as received' : 'marked as not received'}`, {
+          toastId: "doc-toggle-received",
+        });
+        await fetchData();
+        setCurrentAppDocuments(prev => 
+          prev.map(doc => 
+            doc.id === docId ? { ...doc, is_received: newStatus } : doc
+          )
+        );
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update received status", {
+        toastId: "doc-toggle-received-failed",
+      });
+    }
+  };
 
   const handleVerifyDocument = async (docId) => {
     try {
@@ -1020,10 +1381,10 @@ export const CounsellorApplication = () => {
     return students.map((s) => ({
       id: s.id,
       user_id: s.user_id || s.id,
-      name: s.name,
-      email: s.email,
+      name: s.name || 'Unnamed Student',
+      email: s.email || '',
       phone: s.phone || "",
-      status: s.status,
+      status: s.status || '',
       study_level: s.study_level || "",
       grades_cgpa: s.grades_cgpa || "",
       english_proficiency_test: s.english_proficiency_test || "",
@@ -1032,23 +1393,23 @@ export const CounsellorApplication = () => {
   }, [students]);
 
   const studentsWithApps = useMemo(() => {
-    return students.filter((s) => s.applications && s.applications.length > 0);
+    return students.filter((s) => {
+      if (!s.applications) return false;
+      if (!Array.isArray(s.applications)) return false;
+      const validApps = s.applications.filter(app => app && app.id);
+      return validApps.length > 0;
+    });
   }, [students]);
 
   const eligibleForNewApp = useMemo(() => {
-    if (isAdmin) return allAssignedStudents;
-    const allowedStatuses = ["new", "contacted", "counseling"];
-    return allAssignedStudents.filter((s) =>
-      allowedStatuses.includes(s.status?.toLowerCase()),
-    );
-  }, [allAssignedStudents, isAdmin]);
+    return allStudents;
+  }, [allStudents]);
 
   const studentApplications = useMemo(() => {
     if (!selectedStudent) return [];
     return applications.filter((app) => app.student_id === selectedStudent.id);
   }, [applications, selectedStudent]);
 
-  // Pagination logic
   const totalItems = studentApplications.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -1057,16 +1418,68 @@ export const CounsellorApplication = () => {
 
   const existingDocTypesForSelectedApp = useMemo(() => {
     if (!selectedAppForDoc) return new Set();
+    
     const app = applications.find((a) => a.id === selectedAppForDoc.id);
     if (!app || !app.documents) return new Set();
+    
     const blocked = new Set();
+    
+    const addToBlocked = (docType) => {
+      if (!docType) return;
+      blocked.add(docType);
+      blocked.add(docType.toLowerCase());
+      blocked.add(docType.toLowerCase().replace(/\s+/g, "_"));
+      blocked.add(docType.replace(/\s+/g, "_"));
+      blocked.add(docType.trim());
+    };
+    
     app.documents.forEach((doc) => {
-      if (doc.status !== "rejected") {
-        blocked.add(doc.doc_type);
+      if (doc.status === "rejected") return;
+      
+      if (doc.doc_type) {
+        addToBlocked(doc.doc_type);
+      }
+      if (doc.doc_type_name) {
+        addToBlocked(doc.doc_type_name);
+      }
+      
+      const isCombined = doc.is_collective === 1 || doc.is_collective === true;
+      
+      if (isCombined && doc.collective_doc_ids) {
+        try {
+          let collectiveIds = doc.collective_doc_ids;
+          if (typeof collectiveIds === 'string') {
+            collectiveIds = JSON.parse(collectiveIds);
+          }
+          
+          if (Array.isArray(collectiveIds) && collectiveIds.length > 0) {
+            collectiveIds.forEach((id) => {
+              const docType = documentTypes.find(t => 
+                t.id === id || 
+                t.key === id || 
+                String(t.id) === String(id) ||
+                String(t.key) === String(id)
+              );
+              
+              if (docType) {
+                addToBlocked(docType.key);
+                addToBlocked(docType.label);
+                addToBlocked(docType.name);
+              } else {
+                blocked.add(id);
+                blocked.add(String(id));
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error processing combined PDF documents:', error);
+        }
       }
     });
+    
+    console.log('🚫 Blocked Doc Types:', Array.from(blocked));
     return blocked;
-  }, [selectedAppForDoc, applications]);
+  }, [selectedAppForDoc, applications, documentTypes]);
 
   return (
     <div className="p-3 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
@@ -1085,8 +1498,7 @@ export const CounsellorApplication = () => {
         />
       </div>
 
-      {/* Applications Table - Responsive with horizontal scroll on mobile */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className=" overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
             <h2 className="font-bold text-gray-800">
@@ -1177,112 +1589,13 @@ export const CounsellorApplication = () => {
                     (d) => d.status === "verified",
                   ).length;
 
-                  return (
-                    <tr
-                      key={app.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {globalIndex}
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-800">
-                          {app.student_name || "Unknown"}
-                        </p>
-                        <p className="text-xs text-gray-500 break-all">
-                          {app.student_email || "No email"}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 text-sm break-words">
-                        {app.target_university || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm break-words">
-                        {app.course || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${getStatusBadge(
-                            app.status,
-                          )}`}
-                        >
-                          {getStatusLabel(app.status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {pendingDocs > 0 && (
-                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full whitespace-nowrap">
-                              {pendingDocs} pending
-                            </span>
-                          )}
-                          {verifiedDocs > 0 && (
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full whitespace-nowrap">
-                              {verifiedDocs} verified
-                            </span>
-                          )}
-                          {appDocs.length === 0 && (
-                            <span className="text-xs text-gray-400">
-                              No docs
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => handleViewDocuments(app)}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 transition"
-                            title="View Documents"
-                          >
-                            <FileText size={14} className="text-blue-600" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedApplication(app);
-                              setShowEditModal(true);
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-amber-50 transition"
-                            title="Edit"
-                          >
-                            <Edit size={14} className="text-amber-600" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedAppForDoc(app);
-                              setSelectedStudent({
-                                id: app.student_id,
-                                name: app.student_name,
-                                email: app.student_email,
-                                user_id: app.user_id,
-                              });
-                              setShowDocModal(true);
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-teal-50 transition"
-                            title="Share Document"
-                          >
-                            <Upload size={14} className="text-teal-600" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedApplication(app);
-                              setShowStatusModal(true);
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-purple-50 transition"
-                            title="Change Status"
-                          >
-                            <Clock size={14} className="text-purple-600" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
+
                 })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination - Only shown when total entries > 10 */}
         {!loading && selectedStudent && studentApplications.length > 10 && (
           <Pagination
             currentPage={currentPage}
@@ -1292,7 +1605,6 @@ export const CounsellorApplication = () => {
         )}
       </div>
 
-      {/* Document Preview Modal */}
       <DocumentPreviewModal
         isOpen={showDocumentPreview}
         onClose={() => {
@@ -1302,9 +1614,11 @@ export const CounsellorApplication = () => {
         documents={currentAppDocuments}
         onVerify={handleVerifyDocument}
         onReject={handleRejectDocument}
+        onToggleReceived={handleToggleReceived}
+        isAdmin={isAdmin}
+        documentTypes={documentTypes}
       />
 
-      {/* Status Change Modal */}
       <ApplicationStatusModal
         isOpen={showStatusModal}
         onClose={() => {
@@ -1315,16 +1629,20 @@ export const CounsellorApplication = () => {
         onSuccess={() => fetchData()}
       />
 
-      {/* Create Application Modal */}
       <CreateApplicationModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={() => fetchData()}
+        onClose={() => {
+          setShowCreateModal(false);
+          setSelectedStudent(null);
+        }}
+        onSuccess={() => {
+          fetchData();
+          setShowCreateModal(false);
+        }}
         students={eligibleForNewApp}
         selectedStudentForCreate={selectedStudent}
       />
 
-      {/* Edit Application Modal */}
       <EditApplicationModal
         isOpen={showEditModal}
         onClose={() => {
@@ -1336,7 +1654,6 @@ export const CounsellorApplication = () => {
         students={eligibleForNewApp}
       />
 
-      {/* Share Document Modal */}
       <CounsellorDocumentModal
         isOpen={showDocModal}
         onClose={() => {
@@ -1344,11 +1661,14 @@ export const CounsellorApplication = () => {
           setSelectedAppForDoc(null);
         }}
         onSuccess={() => {
-          fetchData();
+          if (showDocModal) {
+            fetchData();
+          }
         }}
         student={selectedStudent}
         application={selectedAppForDoc}
         blockedDocTypes={existingDocTypesForSelectedApp}
+        documentTypes={documentTypes}
       />
     </div>
   );

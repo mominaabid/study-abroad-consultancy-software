@@ -1,5 +1,5 @@
 // Leads.jsx
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../../Content/Url";
@@ -18,7 +18,6 @@ import { selectRole } from "../../redux/slices/authSlice";
 // ── Component imports from Components/LeadsComponents ──────────────────────────
 import {
   STAGES,
-  COUNTRIES,
   formatDate,
 } from "../../Components/LeadsComponents/LeadsConstants";
 import LeadDrawer from "../../Components/LeadsComponents/LeadDrawer";
@@ -26,9 +25,6 @@ import { KanbanColumn } from "../../Components/LeadsComponents/KanbanBoard";
 import LeadsTable from "../../Components/LeadsComponents/LeadsTable";
 import { DeleteConfirmationModal } from "../../Components/DeleteConfirmationModal";
 import { AddBtnInHeader } from "../../Components/CustomButtons/AddBtnInHeader";
-
-
-
 
 // ─── Stat Card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color }) {
@@ -67,6 +63,18 @@ export default function Leads() {
   const userRole = useSelector(selectRole);
   // ── State ──────────────────────────────────────────────────────────────────
   const [leads, setLeads] = useState([]);
+  const [allLeads, setAllLeads] = useState([]); // For Kanban view - ALL leads
+  const [countries, setCountries] = useState([]);
+  const [configs, setConfigs] = useState({
+    lead_source: [],
+    study_level: [],
+    english_test_type: [],
+    marital_status: [],
+    degree_type: [],
+  });
+  const [cities, setCities] = useState([]);
+  const [universities, setUniversities] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState(null);
   const [counsellors, setCounsellors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("kanban");
@@ -92,16 +100,27 @@ export default function Leads() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const dispatch = useDispatch();
 
-  // ── Fetch Leads ────────────────────────────────────────────────────────────
-  const fetchLeads = useCallback(async (page = 1) => {
-    setLoading(true);
+  // ── Fetch All Leads for Kanban ────────────────────────────────────────────
+  const fetchAllLeads = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        setLoading(false);
+        setAllLeads([]);
         return;
       }
-      const res = await fetch(`${BASE_URL}/admin/leads?page=${page}`, {
+      
+      // Build query params for filtering
+      const params = new URLSearchParams();
+      params.append('page', 1);
+      params.append('limit', 1000); // Use a large number to get all leads
+      
+      if (search) params.append('search', search);
+      if (filterStatus !== 'All Status') params.append('status', filterStatus);
+      if (filterCountry !== 'All Countries') params.append('country', filterCountry);
+      if (filterCounsellor !== 'All Counsellors') params.append('counsellor', filterCounsellor);
+      
+      // Use the existing endpoint with a large limit
+      const res = await fetch(`${BASE_URL}/admin/leads?${params}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -109,17 +128,156 @@ export default function Leads() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const leadsData = Array.isArray(data) ? data : data.data || [];
+      
+      let leadsData = [];
+      if (data.success && data.data) {
+        if (data.data.leads && Array.isArray(data.data.leads)) {
+          leadsData = data.data.leads;
+        } else if (Array.isArray(data.data)) {
+          leadsData = data.data;
+        }
+      } else if (Array.isArray(data)) {
+        leadsData = data;
+      }
+      
+      console.log("📊 ALL leads for Kanban:", leadsData.length);
+      setAllLeads(leadsData);
+    } catch (err) {
+      console.error("❌ Failed to fetch all leads:", err);
+      setAllLeads([]);
+    }
+  }, [search, filterStatus, filterCountry, filterCounsellor]);
+
+  // ── Fetch Paginated Leads for Table ──────────────────────────────────────
+  const fetchLeads = useCallback(async (page = 1) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        setLeads([]);
+        return;
+      }
+      
+      // Build query params for server-side filtering
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('limit', 10);
+      
+      if (search) params.append('search', search);
+      if (filterStatus !== 'All Status') params.append('status', filterStatus);
+      if (filterCountry !== 'All Countries') params.append('country', filterCountry);
+      if (filterCounsellor !== 'All Counsellors') params.append('counsellor', filterCounsellor);
+      
+      const res = await fetch(`${BASE_URL}/admin/leads?${params}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      console.log("📥 Leads API response:", data);
+      
+      // ✅ Extract leads from data.data.leads
+      let leadsData = [];
+      let total = 0;
+      let totalPages = 1;
+      
+      if (data.success && data.data) {
+        // ✅ Main structure: data.data.leads
+        if (data.data.leads && Array.isArray(data.data.leads)) {
+          leadsData = data.data.leads;
+          total = data.data.pagination?.total || leadsData.length;
+          totalPages = data.data.pagination?.totalPages || 1;
+          console.log("📊 Found leads in data.data.leads:", leadsData.length);
+        } 
+        // ✅ Alternative: data.data is directly an array
+        else if (Array.isArray(data.data)) {
+          leadsData = data.data;
+          total = leadsData.length;
+          console.log("📊 Found leads in data.data array:", leadsData.length);
+        }
+      } 
+      // ✅ Fallback: data is directly an array
+      else if (Array.isArray(data)) {
+        leadsData = data;
+        total = leadsData.length;
+        console.log("📊 Found leads in data array:", leadsData.length);
+      }
+      
       setLeads(leadsData);
       setPagination({
-        page,
-        totalPages: data.totalPages || 1,
-        total: data.total || leadsData.length,
+        page: parseInt(page),
+        totalPages: totalPages || Math.ceil(total / 10) || 1,
+        total: total || leadsData.length,
       });
     } catch (err) {
-      console.error("Failed to fetch leads:", err);
+      console.error("❌ Failed to fetch leads:", err);
+      setLeads([]);
     } finally {
       setLoading(false);
+    }
+  }, [search, filterStatus, filterCountry, filterCounsellor]);
+
+  // ✅ Fetch countries
+  const fetchCountries = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      const res = await fetch(`${BASE_URL}/countries`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      
+      if (data.success) {
+        const countryNames = data.data.map(c => c.name);
+        setCountries(["All Countries", ...countryNames]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch countries:", err);
+    }
+  }, []);
+
+  // ✅ Fetch cities by country
+  const fetchCitiesByCountry = useCallback(async (countryId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      const res = await fetch(`${BASE_URL}/countries/${countryId}/cities`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      
+      if (data.success) {
+        setCities(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch cities:", err);
+    }
+  }, []);
+
+  // ✅ Fetch universities by country
+  const fetchUniversitiesByCountry = useCallback(async (countryId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      
+      const res = await fetch(`${BASE_URL}/countries/${countryId}/universities`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      
+      if (data.success) {
+        setUniversities(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch universities:", err);
     }
   }, []);
 
@@ -128,33 +286,43 @@ export default function Leads() {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        console.error("No token found for fetching counsellors");
+        setCounsellors([]);
         return;
       }
-
       const res = await fetch(`${BASE_URL}/admin/getCounsellors`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setCounsellors(Array.isArray(data) ? data : data.data || []);
-    } catch (err) {
-      console.error("Failed to fetch counsellors:", err);
+      console.log("📥 Counsellors API response:", data);
+      
+      // ✅ Flatten nested array
+      let counsellorsData = [];
+      if (data.success && data.data) {
+        if (data.data.counsellors) {
+          if (Array.isArray(data.data.counsellors) && data.data.counsellors.length > 0) {
+            if (Array.isArray(data.data.counsellors[0])) {
+              counsellorsData = data.data.counsellors[0] || [];
+            } else {
+              counsellorsData = data.data.counsellors;
+            }
+          }
+        } else if (Array.isArray(data.data)) {
+          counsellorsData = data.data;
+        }
+      } else if (Array.isArray(data)) {
+        counsellorsData = data;
+      }
+      
+      console.log("📊 Processed counsellors:", counsellorsData);
+      setCounsellors(counsellorsData);
+    } catch (error) {
+      console.error("❌ Failed to fetch counsellors:", error);
       setCounsellors([]);
     }
   }, []);
 
-  useEffect(() => {
-    fetchLeads(1);
-  }, [fetchLeads]);
-
+  // ── Effects ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (
@@ -183,9 +351,13 @@ export default function Leads() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Fetch data on mount and when filters change
   useEffect(() => {
+    fetchLeads(1);
+    fetchAllLeads(); // Fetch ALL leads for Kanban
     fetchCounsellors();
-  }, [fetchCounsellors]);
+    fetchCountries();
+  }, [fetchLeads, fetchAllLeads, fetchCounsellors, fetchCountries]);
 
   // Close action menu on outside click
   useEffect(() => {
@@ -199,6 +371,10 @@ export default function Leads() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
+    // Update both states optimistically
+    setAllLeads((prev) =>
+      prev.map((l) => (l.id === leadId ? { ...l, status } : l)),
+    );
     setLeads((prev) =>
       prev.map((l) => (l.id === leadId ? { ...l, status } : l)),
     );
@@ -215,8 +391,13 @@ export default function Leads() {
         body: JSON.stringify({ status, note }),
       });
       if (!res.ok) throw new Error();
+      
+      // Refresh both views
+      fetchLeads(currentPage);
+      fetchAllLeads();
     } catch {
-      fetchLeads();
+      fetchLeads(currentPage);
+      fetchAllLeads();
     }
   }
 
@@ -238,7 +419,8 @@ export default function Leads() {
       });
 
       setDeleteConfirm(null);
-      fetchLeads();
+      fetchLeads(currentPage);
+      fetchAllLeads();
     } catch {
       toast.error("Failed to delete lead", { toastId: "lead-delete-error" });
     }
@@ -256,17 +438,22 @@ export default function Leads() {
       "Counsellor",
       "Created",
     ];
-    const rows = filteredLeads.map((l) => [
-      l.name,
-      l.email,
-      l.phone,
-      l.preferred_country,
-      l.study_level,
-      l.status,
-      l.source,
+    
+    // ✅ Ensure allLeads is an array
+    const leadsArray = Array.isArray(allLeads) ? allLeads : [];
+    
+    const rows = leadsArray.map((l) => [
+      l.name || "",
+      l.email || "",
+      l.phone || "",
+      l.preferred_country || "",
+      l.study_level || "N/A",
+      l.status || "New",
+      l.source_name || "N/A",
       l.counsellor?.name || "Unassigned",
-      formatDate(l.createdAt),
+      formatDate(l.created_at) || "",
     ]);
+    
     const csv = [headers, ...rows]
       .map((r) => r.map((v) => `"${v || ""}"`).join(","))
       .join("\n");
@@ -280,29 +467,33 @@ export default function Leads() {
   }
 
   // ── Derived data ───────────────────────────────────────────────────────────
-  const filteredLeads = leads.filter((lead) => {
-    const matchSearch =
-      !search ||
-      lead.name?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.email?.toLowerCase().includes(search.toLowerCase()) ||
-      lead.phone?.includes(search);
+  // For Table view (paginated)
+  const filteredLeads = useMemo(() => {
+    return Array.isArray(leads) ? leads : [];
+  }, [leads]);
 
-    const matchCountry =
-      filterCountry === "All Countries" ||
-      lead.preferred_country
-        ?.split(",")
-        .map((c) => c.trim())
-        .includes(filterCountry);
+  // For Kanban view (ALL leads)
+  const allFilteredLeads = useMemo(() => {
+    return Array.isArray(allLeads) ? allLeads : [];
+  }, [allLeads]);
 
-    const matchStatus =
-      filterStatus === "All Status" || lead.status === filterStatus;
-
-    const matchCounsellor =
-      filterCounsellor === "All Counsellors" ||
-      lead.counsellor?.name === filterCounsellor;
-
-    return matchSearch && matchCountry && matchStatus && matchCounsellor;
-  });
+  // Create leadsByStage from ALL leads
+  const leadsByStage = useMemo(() => {
+    const safeLeads = Array.isArray(allFilteredLeads) ? allFilteredLeads : [];
+    
+    const result = {};
+    STAGES.forEach(s => {
+      result[s.key] = [];
+    });
+    
+    safeLeads.forEach(lead => {
+      if (lead.status && result.hasOwnProperty(lead.status)) {
+        result[lead.status].push(lead);
+      }
+    });
+    
+    return result;
+  }, [allFilteredLeads]);
 
   const handleAddNoteOnly = async (leadId, note) => {
     const token = localStorage.getItem("token");
@@ -332,6 +523,7 @@ export default function Leads() {
 
       if (drawerLead?.id === leadId) {
         fetchLeads(currentPage);
+        fetchAllLeads();
       }
     } catch (error) {
       console.error("Error adding note:", error);
@@ -341,46 +533,51 @@ export default function Leads() {
     }
   };
 
-  const leadsByStage = STAGES.reduce((acc, s) => {
-    acc[s.key] = filteredLeads.filter((l) => l.status === s.key);
-    return acc;
-  }, {});
+  // ✅ Stats based on ALL leads
+  const safeLeads = Array.isArray(allLeads) ? allLeads : [];
 
   const stats = [
-    {
-      label: "Total Leads",
-      value: leads.length,
-      icon: <FiUsers />,
-      color: "#3b82f6",
+    { 
+      label: "New", 
+      value: safeLeads.filter((l) => l.status === "new").length, 
+      icon: <FiTrendingUp />, 
+      color: "#f59e0b" 
     },
-    {
-      label: "In Progress",
-      value: leads.filter((l) => l.status === "new").length,
-      icon: <FiTrendingUp />,
-      color: "#f59e0b",
+    { 
+      label: "Contacted", 
+      value: safeLeads.filter((l) => l.status === "contacted").length, 
+      icon: <FiPhoneCall />, 
+      color: "#8b5cf6" 
     },
-    {
-      label: "Contacted",
-      value: leads.filter(
-        (l) =>
-          l.status !== "new" &&
-          l.status !== "success" &&
-          l.status !== "rejected",
-      ).length,
-      icon: <FiPhoneCall />,
-      color: "#8b5cf6",
+    { 
+      label: "Counseling", 
+      value: safeLeads.filter((l) => l.status === "counseling").length, 
+      icon: <FiCheckCircle />, 
+      color: "#06b67f" 
     },
-    {
-      label: "Success Cases",
-      value: leads.filter((l) => l.status === "success").length,
-      icon: <FiCheckCircle />,
-      color: "#10b981",
+    { 
+      label: "Evaluated", 
+      value: safeLeads.filter((l) => l.status === "evaluated").length, 
+      icon: <FiCheckCircle />, 
+      color: "#eab308" 
     },
-    {
-      label: "Rejected",
-      value: leads.filter((l) => l.status === "rejected").length,
-      icon: <FiXCircle />,
-      color: "#ef4444",
+    { 
+      label: "In Progress", 
+      value: safeLeads.filter((l) => l.status === "applied" || l.status === "visa").length, 
+      icon: <FiCheckCircle />, 
+      color: "#8b5cf6" 
+    },
+    { 
+      label: "Success", 
+      value: safeLeads.filter((l) => l.status === "success").length, 
+      icon: <FiCheckCircle />, 
+      color: "#10b981" 
+    },
+    { 
+      label: "Rejected", 
+      value: safeLeads.filter((l) => l.status === "rejected").length, 
+      icon: <FiXCircle />, 
+      color: "#ef4444" 
     },
   ];
 
@@ -426,10 +623,10 @@ export default function Leads() {
     },
   ];
 
-  // Get unique counsellors for filter (without "Unassigned")
+  // Get unique counsellors for filter
   const counsellorOptions = [
     "All Counsellors",
-    ...counsellors.map((c) => c.name),
+    ...(Array.isArray(counsellors) ? counsellors : []).map((c) => c.name),
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -453,13 +650,11 @@ export default function Leads() {
         </div>
       )}
 
-      {/* ── Filters & Actions Bar (Responsive Stack) ── */}
-
+      {/* ── Filters & Actions Bar ── */}
       <div className="flex-shrink-0 relative">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-          {/* Actions Group - wraps responsively */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            {/* Search - matches Add Lead dimensions */}
+            {/* Search */}
             <div className="flex-1 sm:flex-initial min-w-[160px] sm:min-w-[200px]">
               <div className="flex items-center gap-2 py-3 px-2 sm:px-4 bg-gray-50 border border-gray-200 rounded-lg w-full transition-all focus-within:border-teal-400 focus-within:ring-2 focus-within:ring-teal-100">
                 <svg
@@ -476,13 +671,16 @@ export default function Leads() {
                 <input
                   placeholder="Search leads..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="bg-transparent outline-none text-[15px] sm:text-sm text-gray-700 placeholder-gray-400 w-full"
                 />
               </div>
             </div>
 
-            {/* Counsellor Filter - matches Add Lead dimensions */}
+            {/* Counsellor Filter */}
             <div
               className="relative flex-1 sm:flex-initial"
               ref={counsellorFilterRef}
@@ -551,6 +749,7 @@ export default function Leads() {
                             setFilterCounsellor(opt);
                             setCounsellorFilterOpen(false);
                             setCounsellorSearch("");
+                            setCurrentPage(1);
                           }}
                           className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-2
                             ${filterCounsellor === opt ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
@@ -583,12 +782,15 @@ export default function Leads() {
               )}
             </div>
 
-            {/* Status filter - matches Add Lead dimensions */}
+            {/* Status filter */}
             <div className="relative flex-1 sm:flex-initial">
               <select
                 className="w-full sm:w-auto py-3 pl-2 sm:pl-4 pr-8 border border-gray-200 rounded-lg bg-white text-[15px] sm:text-sm text-gray-600 outline-none focus:border-teal-500 appearance-none cursor-pointer"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value="All Status">All Status</option>
                 {STAGES.map((s) => (
@@ -611,7 +813,7 @@ export default function Leads() {
               </div>
             </div>
 
-            {/* Country filter - matches Add Lead dimensions */}
+            {/* Country filter */}
             <div
               className="relative flex-1 sm:flex-initial"
               ref={countryFilterRef}
@@ -660,47 +862,50 @@ export default function Leads() {
                         setFilterCountry("All Countries");
                         setCountryFilterOpen(false);
                         setCountrySearch("");
+                        setCurrentPage(1);
                       }}
                       className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
                         ${filterCountry === "All Countries" ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
                     >
                       All Countries
                     </div>
-                    {[
-                      ...new Set(
-                        leads.flatMap((l) =>
-                          l.preferred_country
-                            ? l.preferred_country
-                                .split(",")
-                                .map((c) => c.trim())
-                                .filter(Boolean)
-                            : [],
-                        ),
-                      ),
-                    ]
-                      .filter((c) =>
-                        c.toLowerCase().includes(countrySearch.toLowerCase()),
-                      )
-                      .map((c) => (
-                        <div
-                          key={c}
-                          onClick={() => {
-                            setFilterCountry(c);
-                            setCountryFilterOpen(false);
-                            setCountrySearch("");
-                          }}
-                          className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
-                            ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
-                        >
-                          {c}
-                        </div>
-                      ))}
+                    {(() => {
+                      const leadsArray = Array.isArray(allLeads) ? allLeads : [];
+                      const countrySet = new Set();
+                      leadsArray.forEach((l) => {
+                        if (l.preferred_country) {
+                          l.preferred_country.split(",").forEach((c) => {
+                            const trimmed = c.trim();
+                            if (trimmed) countrySet.add(trimmed);
+                          });
+                        }
+                      });
+                      const countryList = Array.from(countrySet);
+                      
+                      return countryList
+                        .filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase()))
+                        .map((c) => (
+                          <div
+                            key={c}
+                            onClick={() => {
+                              setFilterCountry(c);
+                              setCountryFilterOpen(false);
+                              setCountrySearch("");
+                              setCurrentPage(1);
+                            }}
+                            className={`px-4 py-2 text-[13px] cursor-pointer hover:bg-gray-50 transition-colors
+                              ${filterCountry === c ? "text-teal-600 font-medium bg-teal-50" : "text-gray-600"}`}
+                          >
+                            {c}
+                          </div>
+                        ));
+                    })()}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* View Toggle - matches Add Lead dimensions */}
+            {/* View Toggle */}
             <div className="flex border border-gray-200 rounded-lg overflow-hidden shadow-sm">
               {viewButtons.map((v) => (
                 <button
@@ -715,7 +920,7 @@ export default function Leads() {
               ))}
             </div>
 
-            {/* Export - matches Add Lead dimensions */}
+            {/* Export */}
             <button
               onClick={handleExport}
               className="flex items-center gap-1.5 py-3 px-2 sm:px-4 border border-gray-200 rounded-lg text-[15px] sm:text-sm text-gray-600 bg-white hover:bg-gray-50 transition shadow-sm"
@@ -735,7 +940,7 @@ export default function Leads() {
               Export
             </button>
 
-            {/* Add Lead - Hidden on mobile, visible on desktop */}
+            {/* Add Lead */}
             <AddBtnInHeader
               label="Add Lead"
               handleToggle={() => navigate("/admin/leads/new")}
@@ -746,44 +951,48 @@ export default function Leads() {
       </div>
 
       {/* ── Loading ── */}
-      {loading && (
+      {loading && view === "table" && (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
           <div className="w-8 h-8 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
           <span className="text-sm">Loading leads...</span>
         </div>
       )}
 
-      {/* ── Kanban View ── */}
-      {!loading && view === "kanban" && (
+      {/* ── Kanban View (Using allLeads) ── */}
+      {view === "kanban" && (
         <div className="flex-1 min-h-0 overflow-x-auto pb-4">
           <div className="flex gap-3 h-full pt-1">
-            {STAGES.map((stage) => (
-              <KanbanColumn
-                key={stage.key}
-                stage={stage}
-                stages={STAGES}
-                leads={leadsByStage[stage.key] || []}
-                onOpen={setDrawerLead}
-                onMenuAction={(action, l) => {
-                  if (action === "edit") navigate(`/admin/leads/${l.id}/edit`);
-                  if (action === "delete") setDeleteConfirm(l);
-                  if (action === "assign")
-                    navigate(`/admin/leads/${l.id}/assign`);
-                }}
-                onDrop={async (leadId, newStatus) => {
-                  setDraggingLeadId(null);
-                  await handleStage(leadId, newStatus);
-                }}
-                draggingLeadId={draggingLeadId}
-                userRole={userRole}
-              />
-            ))}
+            {STAGES.map((stage) => {
+              const stageLeads = leadsByStage[stage.key] || [];
+              
+              return (
+                <KanbanColumn
+                  key={stage.key}
+                  stage={stage}
+                  stages={STAGES}
+                  leads={stageLeads}
+                  onOpen={setDrawerLead}
+                  onMenuAction={(action, l) => {
+                    if (action === "edit") navigate(`/admin/leads/${l.id}/edit`);
+                    if (action === "delete") setDeleteConfirm(l);
+                    if (action === "assign")
+                      navigate(`/admin/leads/${l.id}/assign`);
+                  }}
+                  onDrop={async (leadId, newStatus) => {
+                    setDraggingLeadId(null);
+                    await handleStage(leadId, newStatus);
+                  }}
+                  draggingLeadId={draggingLeadId}
+                  userRole={userRole}
+                />
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* ── Table View ── */}
-      {!loading && view === "table" && (
+      {/* ── Table View (Using paginated leads) ── */}
+      {view === "table" && (
         <div className="flex-1 min-h-0 overflow-auto">
           <LeadsTable
             filteredLeads={filteredLeads}

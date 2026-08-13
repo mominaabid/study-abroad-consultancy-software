@@ -366,22 +366,43 @@ export const CounsellorProfile = () => {
     return new Date(dateString).toLocaleDateString("en-GB").replace(/\//g, "-");
   };
 
-  const fetchProfile = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${BASE_URL}/counsellor/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProfile(response.data);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      toast.error(error?.response?.data?.message || "Failed to load profile", {
-        toastId: "counsellor-profile-load-fail",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+// In CounsellorProfile component - update fetchProfile
+const fetchProfile = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.get(`${BASE_URL}/counsellor/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    // ✅ Handle the nested data structure
+    const profileData = response.data?.data || response.data;
+    
+    // ✅ Map snake_case to camelCase for frontend compatibility
+    setProfile({
+      id: profileData.id,
+      name: profileData.name,
+      father_name: profileData.father_name,
+      email: profileData.email,
+      phone: profileData.phone,
+      cnic: profileData.cnic,
+      address: profileData.address,
+
+      status: profileData.status,
+      is_active: profileData.is_active,
+      profile_image: profileData.profile_image,
+      createdAt: profileData.created_at,  // ✅ Map to camelCase
+      updatedAt: profileData.updated_at,  // ✅ Map to camelCase
+      profilePictureUrl: profileData.profilePictureUrl || null,
+    });
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    toast.error(error?.response?.data?.message || "Failed to load profile", {
+      toastId: "counsellor-profile-load-fail",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchProfile();
@@ -521,12 +542,7 @@ export const CounsellorProfile = () => {
       label: "Joined Date",
       value: formatDate(profile.createdAt),
     },
-    {
-      icon: Shield,
-      label: "Role",
-      value: "Counsellor",
-      valueColor: "text-teal-600",
-    },
+
   ];
 
   const statusInfo = {

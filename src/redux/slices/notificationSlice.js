@@ -6,7 +6,7 @@ const safeFormatDate = (dateValue) => {
   if (!dateValue) return "Just now";
   const dateObj = new Date(dateValue);
   if (isNaN(dateObj.getTime())) return "Invalid date";
-  return dateObj.toLocaleString(); // e.g., "5/26/2025, 10:30:00 AM"
+  return dateObj.toLocaleString();
 };
 
 // Helper to get time string (hour:minute) or fallback
@@ -54,6 +54,8 @@ const formatDisplayTimestamp = (dateValue) => {
 
 // Helper to format a DB notification into the UI shape
 const formatNotification = (notif) => {
+  if (!notif) return null; // ✅ Guard against null/undefined
+
   const createdDate =
     notif.createdAt || notif.created_at || notif.updatedAt || notif.updated_at;
 
@@ -145,12 +147,12 @@ export const fetchUnreadNotifications = createAsyncThunk(
     const token = localStorage.getItem("token");
     if (!token) return rejectWithValue("No token");
     try {
-      const res = await fetch(`${BASE_URL}/notifications?is_read=true`, {
+const res = await fetch(`${BASE_URL}/notifications?unread=true`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      return data.notifications;
+      return data.notifications || []; // ✅ Ensure array
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -164,13 +166,12 @@ export const fetchAllNotifications = createAsyncThunk(
     const token = localStorage.getItem("token");
     if (!token) return rejectWithValue("No token");
     try {
-      // Force include read + unread
       const res = await fetch(`${BASE_URL}/notifications?all=true`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      return data.notifications;
+      return data.notifications || []; // ✅ Ensure array
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -229,7 +230,7 @@ const notificationSlice = createSlice({
   },
   reducers: {
     addNotification: (state, action) => {
-      const { message, type, metadata } = action.payload;
+      const { message, type, metadata } = action.payload || {}; // ✅ Guard
 
       let icon = "📢";
       let bgColor = "bg-blue-50";
@@ -265,8 +266,8 @@ const notificationSlice = createSlice({
 
       state.items.unshift({
         id: Date.now(),
-        message,
-        type,
+        message: message || "New notification",
+        type: type || "general",
         icon,
         bgColor,
         textColor,
@@ -285,7 +286,9 @@ const notificationSlice = createSlice({
     },
 
     setNotifications: (state, action) => {
-      state.items = action.payload.map(formatNotification);
+      // ✅ Guard against undefined/null
+      const notifications = action.payload || [];
+      state.items = notifications.map(formatNotification).filter(Boolean); // ✅ Filter out nulls
       state.unreadCount = state.items.filter((item) => !item.isRead).length;
     },
 
@@ -314,13 +317,25 @@ const notificationSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchUnreadNotifications.fulfilled, (state, action) => {
-        state.items = action.payload.map(formatNotification);
+        // ✅ Guard against undefined
+        const notifications = action.payload || [];
+        state.items = notifications.map(formatNotification).filter(Boolean);
         state.unreadCount = state.items.filter((item) => !item.isRead).length;
+      })
+      .addCase(fetchUnreadNotifications.rejected, (state) => {
+        state.items = [];
+        state.unreadCount = 0;
       })
       // NEW: Case for fetchAllNotifications
       .addCase(fetchAllNotifications.fulfilled, (state, action) => {
-        state.items = action.payload.map(formatNotification);
+        // ✅ Guard against undefined
+        const notifications = action.payload || [];
+        state.items = notifications.map(formatNotification).filter(Boolean);
         state.unreadCount = state.items.filter((item) => !item.isRead).length;
+      })
+      .addCase(fetchAllNotifications.rejected, (state) => {
+        state.items = [];
+        state.unreadCount = 0;
       })
       .addCase(markAllNotificationsRead.fulfilled, (state) => {
         state.items.forEach((item) => (item.isRead = true));
@@ -342,7 +357,7 @@ export const {
   markAsRead,
 } = notificationSlice.actions;
 
-export const selectNotifications = (state) => state.notifications.items;
-export const selectUnreadCount = (state) => state.notifications.unreadCount;
+export const selectNotifications = (state) => state.notifications.items || [];
+export const selectUnreadCount = (state) => state.notifications.unreadCount || 0;
 
 export default notificationSlice.reducer;

@@ -31,18 +31,16 @@ export default function LeadsTable({
     "px-4 py-2.5 text-left text-[10px] font-bold text-white uppercase tracking-wider whitespace-nowrap bg-[#009E99]";
   const tdCls = "px-4 py-2.5 align-middle";
 
-  // Pagination settings
-  const pageSize = pagination.pageSize || 10;
+  // Use data directly from API (already paginated)
+  const paginatedLeads = filteredLeads;
+  
+  // Pagination settings from API
   const total = pagination.total || 0;
-
-  // Slice data for current page
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+  const pageSize = 10; // Fixed page size
 
   // Correct display range for ShowDataNumber
-  const displayStart = total === 0 ? 0 : startIndex + 1;
-  const displayEnd = Math.min(endIndex, total);
+  const displayStart = total === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
+  const displayEnd = Math.min(currentPage * pageSize, total);
 
   return (
     <div className="flex-1 overflow-auto">
@@ -89,7 +87,7 @@ export default function LeadsTable({
 
               {paginatedLeads.map((lead, idx) => {
                 // Correct serial number across pages
-                const serialNumber = startIndex + idx + 1;
+                const serialNumber = ((currentPage - 1) * pageSize) + idx + 1;
                 return (
                   <tr
                     key={lead.id}
@@ -222,7 +220,7 @@ export default function LeadsTable({
                     <td className={tdCls}>
                       <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
                         <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></span>
-                        {lead.source || "Direct"}
+                        {lead.source_name || "Direct"}
                       </span>
                     </td>
 
@@ -242,7 +240,7 @@ export default function LeadsTable({
                             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                           />
                         </svg>
-                        {formatDate(lead.createdAt)}
+                        {lead.created_at ? formatDate(lead.created_at) : "—"}
                       </div>
                     </td>
 
@@ -278,7 +276,6 @@ export default function LeadsTable({
           </table>
         </div>
 
-        {/* Pagination Section */}
         {/* Pagination Section */}
         {total > 10 && (
           <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-white">

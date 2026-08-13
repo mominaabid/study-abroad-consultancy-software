@@ -43,11 +43,12 @@ const authAxios = {
 };
 
 const formatCurrency = (amount) => {
+  const num = parseFloat(amount) || 0;
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
     currency: "PKR",
     minimumFractionDigits: 2,
-  }).format(amount);
+  }).format(num);
 };
 
 // ---------- Custom Hook: Scroll Lock ----------
@@ -96,9 +97,9 @@ const PaymentModal = ({
     const lowerQuery = paymentAppSearch.toLowerCase();
     return applications.filter(
       (app) =>
-        app.studentName.toLowerCase().includes(lowerQuery) ||
-        app.university.toLowerCase().includes(lowerQuery) ||
-        app.course.toLowerCase().includes(lowerQuery),
+        (app.studentName || "").toLowerCase().includes(lowerQuery) ||
+        (app.university || "").toLowerCase().includes(lowerQuery) ||
+        (app.course || "").toLowerCase().includes(lowerQuery),
     );
   }, [applications, paymentAppSearch]);
 
@@ -195,98 +196,145 @@ const PaymentModal = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Select Student/Application
               </label>
-              <button
-                type="button"
-                onClick={() => setPaymentAppOpen(!paymentAppOpen)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-left text-sm sm:text-base flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
-              >
-                <span
-                  className={selectedApp ? "text-gray-800" : "text-gray-400"}
-                >
-                  {selectedApp
-                    ? getAppDisplayText(selectedApp)
-                    : "Choose an application..."}
-                </span>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="text-gray-400"
-                >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
+              {applications.length > 0 ? (
+                <>
+                <button
+  type="button"
+  onClick={() => setPaymentAppOpen(!paymentAppOpen)}
+  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-left text-sm sm:text-base flex justify-between items-center bg-white hover:border-teal-400 transition-colors"
+>
+  <span
+    className={selectedApp ? "text-gray-800" : "text-gray-400"}
+  >
+    {selectedApp
+      ? selectedApp.isStudentOnly
+        ? `${selectedApp.studentName} (No Application)`
+        : `${selectedApp.studentName} - ${selectedApp.university}`
+      : "Select a student..."}
+  </span>
+     <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="text-gray-400"
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+</button>
 
-              {paymentAppOpen && (
-                <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
-                  <div className="p-2 border-b border-gray-100">
-                    <input
-                      autoFocus
-                      type="text"
-                      value={paymentAppSearch}
-                      onChange={(e) => setPaymentAppSearch(e.target.value)}
-                      placeholder="Search by name, university or course..."
-                      className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
-                    />
-                  </div>
-                  <div className="max-h-52 overflow-y-auto py-1">
-                    {filteredApplications.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-gray-400">
-                        No matching applications
+                  {paymentAppOpen && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
+                      <div className="p-2 border-b border-gray-100">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={paymentAppSearch}
+                          onChange={(e) => setPaymentAppSearch(e.target.value)}
+                          placeholder="Search by name, university or course..."
+                          className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:border-teal-400"
+                        />
                       </div>
-                    ) : (
-                      filteredApplications.map((app) => (
-                        <div
-                          key={app.applicationId}
-                          onClick={() => handleSelectApp(app)}
-                          className={`px-4 py-2 text-sm cursor-pointer hover:bg-teal-50 transition-colors flex items-center justify-between ${
-                            selectedApplicationId === app.applicationId
-                              ? "bg-teal-50 text-teal-700 font-medium"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          <span className="truncate">
-                            {getAppDisplayText(app)}
-                          </span>
-                          {selectedApplicationId === app.applicationId && (
-                            <span className="text-teal-500 text-xs">✓</span>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
+                      <div className="max-h-52 overflow-y-auto py-1">
+                        {filteredApplications.length === 0 ? (
+                          <div className="px-4 py-3 text-sm text-gray-400">
+                            No matching applications
+                          </div>
+                        ) : (
+                          <>
+                            {filteredApplications.map((app) => (
+                              <div
+                                key={app.applicationId || app.studentId}
+                                onClick={() => handleSelectApp(app)}
+                                className={`px-4 py-2 text-sm cursor-pointer hover:bg-teal-50 transition-colors flex items-center justify-between ${
+                                  selectedApplicationId === app.applicationId
+                                    ? "bg-teal-50 text-teal-700 font-medium"
+                                    : "text-gray-700"
+                                }`}
+                              >
+                                <span className="truncate">
+                                  {app.isStudentOnly
+                                    ? `${app.studentName} (No Application)`
+                                    : `${app.studentName} - ${app.university} (${app.course})`}
+                                </span>
+                                {selectedApplicationId === app.applicationId && (
+                                  <span className="text-teal-500 text-xs">✓</span>
+                                )}
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                  No eligible applications are available to record a payment.
                 </div>
               )}
             </div>
           )}
-          {selectedApp && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Payable Amount
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={formatCurrency(selectedApp.payableAmount)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 text-sm sm:text-base"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Remaining Balance
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={formatCurrency(selectedApp.balance)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold text-sm sm:text-base"
-                />
-              </div>
-            </>
+     {selectedApp && !selectedApp.isStudentOnly && (
+  <>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Student
+      </label>
+      <input
+        type="text"
+        readOnly
+        value={selectedApp.studentName}
+        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 text-sm sm:text-base"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        University / Course
+      </label>
+      <input
+        type="text"
+        readOnly
+        value={`${selectedApp.university} (${selectedApp.course})`}
+        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 text-sm sm:text-base"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Payable Amount
+      </label>
+      <input
+        type="text"
+        readOnly
+        value={formatCurrency(selectedApp.payableAmount)}
+        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 text-sm sm:text-base"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Remaining Balance
+      </label>
+      <input
+        type="text"
+        readOnly
+        value={formatCurrency(selectedApp.balance)}
+        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold text-sm sm:text-base"
+      />
+    </div>
+  </>
+)}
+{selectedApp && selectedApp.isStudentOnly && (
+  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+    <p className="font-medium">No Application Found</p>
+    <p className="text-xs mt-1">This student doesn't have any applications yet.</p>
+  </div>
+)}
+          {applications.length === 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+              No eligible applications available for payment. Please select a student or ensure you have assigned applications.
+            </div>
           )}
 
           <InputField
@@ -470,10 +518,11 @@ export const Accounts = () => {
   const user = useSelector((state) => state.auth.user);
   const isStudent = user?.role === "student";
 
-  const uniqueStudentNames = useMemo(() => {
-    const names = applicationsList.map((app) => app.studentName);
-    return [...new Set(names)].sort();
-  }, [applicationsList]);
+const uniqueStudentNames = useMemo(() => {
+  const names = applicationsList.map((app) => app.studentName);
+  console.log("🔍 uniqueStudentNames:", names);
+  return [...new Set(names)].sort();
+}, [applicationsList]);
 
   const studentSummary = useMemo(() => {
     let totalPayable = 0;
@@ -501,66 +550,185 @@ export const Accounts = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const txRes = await authAxios.get(
-        `${BASE_URL}/accounts/all-transactions`,
-      );
-      if (txRes.data.success) {
-        setAllTransactions(txRes.data.transactions);
-      }
-      const appsRes = await authAxios.get(`${BASE_URL}/accounts/applications`);
-      if (appsRes.data.success) {
-        setApplicationsList(appsRes.data.applications);
-      }
-    } catch (err) {
-      console.error("Fetch data error:", err);
-      toast.error("Failed to load accounts data");
-    } finally {
-      setLoading(false);
+const fetchData = useCallback(async () => {
+  try {
+    setLoading(true);
+    
+    // ✅ Fetch transactions
+    const txRes = await authAxios.get(
+      `${BASE_URL}/accounts/all-transactions`,
+    );
+    let transactions = [];
+    if (txRes.data.success) {
+      transactions = txRes.data.transactions || [];
+      setAllTransactions(transactions);
     }
-  }, []);
+    
+    // ✅ Get user role
+    const userRole = user?.role;
+    let studentsData = [];
+    
+if (userRole === 'student') {
+  const res = await authAxios.get(`${BASE_URL}/student/applications`);
+  if (res.data.success) {
+    const applications = res.data.applications || [];
+    
+    // ✅ Calculate total paid from transactions for each application
+ const appsWithPayments = applications.map(app => {
+  let totalPaid = 0;
+  transactions.forEach((tx) => {
+    if (tx.applicationId === app.id && parseFloat(tx.credit) > 0) {
+      totalPaid += parseFloat(tx.credit) || 0;
+    }
+  });
+  
+  return {
+    id: app.id,
+    target_university: app.target_university || 'N/A',
+    course: app.course || '',
+    consultancy_fee: parseFloat(app.consultancy_fee) || 0,
+    totalPaid: totalPaid,
+    balance: (parseFloat(app.consultancy_fee) || 0) - totalPaid,
+    status: app.status || 'inquiry',
+    created_at: app.created_at,
+  };
+});
+    
+    studentsData = [{
+      id: user.id,
+      user_id: user.id,
+      name: user.name || 'Student',
+      email: user.email || '',
+      applications: appsWithPayments
+    }];
+  }
+} else {
+      // ✅ ADMIN/COUNSELLOR: Use counsellor route
+      const res = await authAxios.get(
+        `${BASE_URL}/counsellor/applications/students`,
+      );
+      if (res.data.success) {
+        studentsData = res.data.students || [];
+      }
+    }
+    
+    // ✅ Process applications into the format expected by the UI
+    const apps = [];
+    studentsData.forEach((student) => {
+      const studentApps = student.applications || [];
+      
+      if (studentApps.length === 0) {
+        apps.push({
+          applicationId: null,
+          studentId: student.id,
+          studentName: student.name || 'Unnamed Student',
+          studentEmail: student.email || '',
+          university: 'No Application',
+          course: '',
+          payableAmount: 0,
+          totalPaid: 0,
+          balance: 0,
+          status: 'no_application',
+          createdAt: student.created_at,
+          isStudentOnly: true,
+        });
+      }
+      
+  studentApps.forEach((app) => {
+  if (app && app.id) {
+    let totalPaid = 0;
+    transactions.forEach((tx) => {
+      if (tx.applicationId === app.id && parseFloat(tx.credit) > 0) {
+        totalPaid += parseFloat(tx.credit) || 0;
+      }
+    });
+    
+    apps.push({
+      applicationId: app.id,
+      studentId: student.id,
+      studentName: student.name || 'Unnamed Student',
+      studentEmail: student.email || '',
+      university: app.target_university || 'N/A',
+      course: app.course || '',
+      payableAmount: parseFloat(app.consultancy_fee) || 0,
+      totalPaid: totalPaid,
+      balance: (parseFloat(app.consultancy_fee) || 0) - totalPaid,
+      status: app.status || 'inquiry',
+      createdAt: app.created_at,
+      isStudentOnly: false,
+    });
+  }
+});
+    });
+    
+    setApplicationsList(apps);
+  } catch (err) {
+    console.error("Fetch data error:", err);
+    toast.error("Failed to load accounts data");
+  } finally {
+    setLoading(false);
+  }
+}, [user]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  useEffect(() => {
-    if (!isStudent && !selectedStudent) {
-      setFilteredTransactions([]);
-      return;
-    }
-    let filtered = [...allTransactions];
-    if (fromDate && toDate) {
-      filtered = filtered.filter((tx) => {
-        if (!tx.date) return false;
-        const txDate = tx.date.split("T")[0];
-        return txDate >= fromDate && txDate <= toDate;
-      });
-    }
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (tx) =>
-          (tx.studentName && tx.studentName.toLowerCase().includes(term)) ||
-          (tx.invoiceNo && tx.invoiceNo.toLowerCase().includes(term)) ||
-          (tx.description && tx.description.toLowerCase().includes(term)),
-      );
-    }
-    if (!isStudent && selectedStudent) {
-      filtered = filtered.filter((tx) => tx.studentName === selectedStudent);
-    }
-    setFilteredTransactions(filtered);
-    setCurrentPage(1);
-  }, [
-    allTransactions,
-    fromDate,
-    toDate,
-    searchTerm,
-    selectedStudent,
-    isStudent,
-  ]);
+useEffect(() => {
+  console.log("🔍 Filtering transactions...");
+  console.log("🔍 isStudent:", isStudent);
+  console.log("🔍 selectedStudent:", selectedStudent);
+  console.log("🔍 allTransactions count:", allTransactions.length);
+  
+  // If student is selected OR user is student, show transactions
+  if (!isStudent && !selectedStudent) {
+    console.log("🔍 No student selected, showing empty");
+    setFilteredTransactions([]);
+    return;
+  }
+  
+  let filtered = [...allTransactions];
+  
+  // Filter by date
+  if (fromDate && toDate) {
+    filtered = filtered.filter((tx) => {
+      if (!tx.date) return false;
+      const txDate = tx.date.split("T")[0];
+      return txDate >= fromDate && txDate <= toDate;
+    });
+  }
+  
+  // Filter by search term
+  if (searchTerm.trim()) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(
+      (tx) =>
+        (tx.studentName && tx.studentName.toLowerCase().includes(term)) ||
+        (tx.invoiceNo && tx.invoiceNo.toLowerCase().includes(term)) ||
+        (tx.description && tx.description.toLowerCase().includes(term)),
+    );
+  }
+  
+  // ✅ FILTER BY SELECTED STUDENT
+  if (!isStudent && selectedStudent) {
+    console.log("🔍 Filtering by student:", selectedStudent);
+    filtered = filtered.filter((tx) => {
+      const match = tx.studentName === selectedStudent;
+      console.log(`🔍 tx.studentName: "${tx.studentName}" === "${selectedStudent}" → ${match}`);
+      return match;
+    });
+  }
+  
+  console.log("🔍 Filtered transactions count:", filtered.length);
+  setFilteredTransactions(filtered);
+  setCurrentPage(1);
+}, [
+  allTransactions,
+  fromDate,
+  toDate,
+  searchTerm,
+  selectedStudent,
+  isStudent,
+]);
 
   const totalPages = Math.ceil(filteredTransactions.length / rowsPerPage);
   const paginatedTransactions = filteredTransactions.slice(
@@ -568,13 +736,13 @@ export const Accounts = () => {
     currentPage * rowsPerPage,
   );
 
-  const globalSummary = useMemo(() => {
-    let totalCredit = 0;
-    filteredTransactions.forEach((tx) => {
-      totalCredit += tx.credit || 0;
-    });
-    return { totalCredit };
-  }, [filteredTransactions]);
+const globalSummary = useMemo(() => {
+  let totalCredit = 0;
+  filteredTransactions.forEach((tx) => {
+    totalCredit += tx.credit || 0;
+  });
+  return { totalCredit };
+}, [filteredTransactions]);  // ← Use filteredTransactions, not allTransactions
 
   const handleViewTransaction = (tx) => {
     const app = applicationsList.find(
@@ -585,6 +753,11 @@ export const Accounts = () => {
     setSelectedProgram(app ? `${app.university} (${app.course})` : "—");
     setShowTransactionModal(true);
   };
+
+  const availableApplications = useMemo(() => {
+    if (!selectedStudent) return applicationsList;
+    return applicationsList.filter((app) => app.studentName === selectedStudent);
+  }, [applicationsList, selectedStudent]);
 
   const handlePaymentSuccess = () => {
     fetchData();
@@ -619,12 +792,18 @@ export const Accounts = () => {
       {/* Header Section with Filters - Mobile First Responsive */}
       <div className="flex flex-col gap-2 mb-3">
         {/* Mobile: Add Payment button at top right */}
-        <div className="flex justify-end sm:hidden">
-          <AddBtnInHeader
-            label="Add Payment"
-            handleToggle={openGlobalPaymentModal}
-          />
-        </div>
+       <div className="flex justify-end sm:hidden">
+  {!isStudent && availableApplications.length > 0 ? (
+    <AddBtnInHeader
+      label="Add Payment"
+      handleToggle={openGlobalPaymentModal}
+    />
+  ) : !isStudent && availableApplications.length === 0 ? (
+    <div className="px-3 py-2 rounded-lg bg-amber-50 text-amber-700 text-sm border border-amber-200">
+      No applications available for payment
+    </div>
+  ) : null}
+</div>
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -745,12 +924,18 @@ export const Accounts = () => {
           {/* Desktop: Actions group (Add Payment + Search) */}
           <div className="flex flex-col items-stretch sm:items-end gap-2">
             {/* Add Payment button for desktop and tablet */}
-            <div className="hidden sm:block">
-              <AddBtnInHeader
-                label="Add Payment"
-                handleToggle={openGlobalPaymentModal}
-              />
-            </div>
+       <div className="hidden sm:block">
+  {!isStudent && availableApplications.length > 0 ? (
+    <AddBtnInHeader
+      label="Add Payment"
+      handleToggle={openGlobalPaymentModal}
+    />
+  ) : !isStudent && availableApplications.length === 0 ? (
+    <div className="px-4 py-3 rounded-lg bg-yellow-50 text-sm text-amber-700 border border-amber-200">
+      No eligible applications available for payment.
+    </div>
+  ) : null}
+</div>
             <div className="relative w-full sm:w-64">
               <Search
                 size={16}
@@ -770,7 +955,7 @@ export const Accounts = () => {
 
       {/* Student Summary Card (only for students) */}
       {isStudent && (
-        <div className="mb-6 bg-white rounded-lg shadow p-4 sm:p-5">
+        <div className="mb-6  rounded-lg shadow p-4 sm:p-5">
           <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3">
             Your Account Summary
           </h3>
@@ -804,7 +989,7 @@ export const Accounts = () => {
           <RefreshCw className="animate-spin mx-auto text-teal-600" size={32} />
         </div>
       ) : filteredTransactions.length === 0 ? (
-        <div className="bg-white rounded-2xl p-8 sm:p-12 text-center">
+        <div className=" p-8 sm:p-12 text-center">
           <FileText
             size={40}
             className="mx-auto text-gray-300 mb-3 sm:size-12"
@@ -963,7 +1148,7 @@ export const Accounts = () => {
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        applications={applicationsList}
+        applications={availableApplications}
         selectedAppId={selectedAppForPayment}
         onSuccess={handlePaymentSuccess}
       />

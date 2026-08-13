@@ -17,27 +17,42 @@ export default function SetupCounsellorPassword() {
   const [error, setError] = useState("");
   const [tokenValid, setTokenValid] = useState(false);
 
-  useEffect(() => {
+// SetupCounsellorPassword.jsx - Update the verification
+
+useEffect(() => {
     if (!token) {
-      setError("Invalid link.");
-      setLoading(false);
-      return;
+        setError("Invalid link.");
+        setLoading(false);
+        return;
     }
 
-    fetch(`${BASE_URL}/auth/counsellor/verify-setup-token?token=${token}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.valid) {
-          setUser(data.user);
-          setTokenValid(true);
-        } else {
-          setError(data.message);
-        }
-      })
-      .catch(() => setError("Something went wrong."))
-      .finally(() => setLoading(false));
-  }, [token]);
+    console.log("🔍 Verifying token:", token); // ✅ Debug
 
+    fetch(`${BASE_URL}/auth/counsellor/verify-setup-token?token=${token}`)
+        .then((r) => {
+            console.log("📥 Response status:", r.status); // ✅ Debug
+            return r.json();
+        })
+        .then((data) => {
+            console.log("📥 Response data:", data); // ✅ Debug
+            
+            // ✅ Check both formats
+            if (data.success && data.valid) {
+                setUser(data.user || data.data?.user);
+                setTokenValid(true);
+            } else if (data.valid === true) {
+                setUser(data.user);
+                setTokenValid(true);
+            } else {
+                setError(data.message || "Invalid or expired link");
+            }
+        })
+        .catch((err) => {
+            console.error("❌ Verification error:", err);
+            setError("Something went wrong.");
+        })
+        .finally(() => setLoading(false));
+}, [token]);
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");

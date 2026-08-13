@@ -2,13 +2,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Home,
+  Settings,
   FileText,
   User,
   BarChart,
   MessageSquare,
   LogOut,
   CreditCard,
-  X, // 👈 Added X icon
+  X,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import logo from "../assets/favicon.png";
 import ExpandedLogo from "../assets/Educatia-Logo.png";
@@ -20,6 +23,16 @@ import { selectTotalUnread } from "../redux/slices/chatSlice";
 
 const ADMIN_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/admin/dashboard" },
+  {
+    name: "Configuration",
+    icon: <Settings size={20} />,
+    submenu: [
+      { name: "Countries", path: "/admin/countries" },
+      { name: "Cities", path: "/admin/cities" },
+      { name: "Universities", path: "/admin/universities" },
+      { name: "Miscellaneous Config", path: "/admin/config" },
+    ],
+  },
   { name: "Leads", icon: <BarChart size={20} />, path: "/admin/leads" },
   {
     name: "Applications",
@@ -32,10 +45,16 @@ const ADMIN_MENU = [
 ];
 
 const COUNSELLOR_MENU = [
+  { name: "Dashboard", icon: <Home size={20} />, path: "/counsellor/dashboard" },
   {
-    name: "Dashboard",
-    icon: <Home size={20} />,
-    path: "/counsellor/dashboard",
+    name: "Configuration",
+    icon: <Settings size={20} />,
+    submenu: [
+      { name: "Countries", path: "/counsellor/countries" },
+      { name: "Cities", path: "/counsellor/cities" },
+      { name: "Universities", path: "/counsellor/universities" },
+      { name: "Miscellaneous Config", path: "/counsellor/config" },
+    ],
   },
   { name: "Leads", icon: <BarChart size={20} />, path: "/counsellor/leads" },
   {
@@ -43,11 +62,7 @@ const COUNSELLOR_MENU = [
     icon: <FileText size={20} />,
     path: "/counsellor/applications",
   },
-  {
-    name: "Chats",
-    icon: <MessageSquare size={20} />,
-    path: "/counsellor/chats",
-  },
+  { name: "Chats", icon: <MessageSquare size={20} />, path: "/counsellor/chats" },
 ];
 
 const STUDENT_MENU = [
@@ -81,6 +96,7 @@ const useDesktop = () => {
 
 export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState({});
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -127,6 +143,19 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
     navigate("/login");
     if (!isDesktop) setIsOpen(false);
   }
+
+  // Toggle submenu expansion
+  const toggleSubmenu = (menuName) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menuName]: !prev[menuName],
+    }));
+  };
+
+  // Check if any submenu item is active
+  const isSubmenuActive = (submenu) => {
+    return submenu?.some((item) => location.pathname === item.path);
+  };
 
   return (
     <>
@@ -215,8 +244,78 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
         {/* Nav list elements */}
         <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
           {menuItems.map((item, index) => {
-            const isActive = location.pathname === item.path;
+            const isActive = item.path ? location.pathname === item.path : false;
+            const isSubActive = item.submenu ? isSubmenuActive(item.submenu) : false;
+            const isExpandedMenu = expandedMenus[item.name] || isSubActive;
 
+            // If item has submenu, render it differently
+            if (item.submenu) {
+              return (
+                <div key={index} className="space-y-1">
+                  {/* Main menu item with submenu toggle */}
+                  <div
+                    onClick={() => {
+                      if (isExpanded) {
+                        toggleSubmenu(item.name);
+                      } else {
+                        // If sidebar is collapsed, expand it first
+                        if (isDesktop && !isExpanded) {
+                          setIsHovered(true);
+                          if (onHoverChange) onHoverChange(true);
+                        }
+                        toggleSubmenu(item.name);
+                      }
+                    }}
+                    className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                      isSubActive
+                        ? "bg-[#009E99]/10 text-[#009E99]"
+                        : "hover:bg-[#009E99]/10 hover:text-[#009E99]"
+                    }`}
+                  >
+                    <div className="min-w-[20px]">{item.icon}</div>
+                    {isExpanded && (
+                      <div className="ml-4 flex items-center justify-between w-full">
+                        <span className="whitespace-nowrap text-sm font-medium">
+                          {item.name}
+                        </span>
+                        {isExpandedMenu ? (
+                          <ChevronDown size={16} className="text-gray-400" />
+                        ) : (
+                          <ChevronRight size={16} className="text-gray-400" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Submenu items */}
+                  {isExpanded && isExpandedMenu && (
+                    <div className="ml-8 space-y-1">
+                      {item.submenu.map((subItem, subIndex) => {
+                        const isSubItemActive = location.pathname === subItem.path;
+                        return (
+                          <div
+                            key={subIndex}
+                            onClick={() => {
+                              navigate(subItem.path);
+                              if (!isDesktop) setIsOpen(false);
+                            }}
+                            className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-all duration-200 text-sm ${
+                              isSubItemActive
+                                ? "bg-[#009E99] text-white shadow-md"
+                                : "hover:bg-[#009E99]/10 hover:text-[#009E99] text-gray-600"
+                            }`}
+                          >
+                            <span className="ml-2">{subItem.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Regular menu item (no submenu)
             return (
               <div
                 key={index}

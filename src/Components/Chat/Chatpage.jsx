@@ -74,30 +74,31 @@ export default function ChatPage() {
   }, [conversations, location.state]);
 
   // ----- Ably setup -----
-  useEffect(() => {
-    if (!user?.id) return;
+// ----- Ably setup -----
+useEffect(() => {
+  if (!user?.id) return;
 
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  const token = localStorage.getItem('token');
+  if (!token) return;
 
-    let unsubscribe = null;
+  let unsubscribe = null;
 
-    connectAbly(token)
-      .then(() => {
-        ablyReadyRef.current = true;
-        unsubscribe = subscribeToChannel(
-          `user:${user.id}`,
-          'new_message_notification',
-          () => fetchConversations()
-        );
-      })
-      .catch(err => console.error('Ably connection error:', err));
+  connectAbly()
+    .then(() => {
+      ablyReadyRef.current = true;
+      unsubscribe = subscribeToChannel(
+        `user:${user.id}`,
+        'new_message_notification',
+        () => fetchConversations()
+      );
+    })
+    .catch(err => console.error('Ably connection error:', err));
 
-    return () => {
-      if (typeof unsubscribe === 'function') unsubscribe();
-      unsubscribeFromChannel(`user:${user.id}`);
-    };
-  }, [user?.id]);
+  return () => {
+    if (typeof unsubscribe === 'function') unsubscribe();
+    unsubscribeFromChannel(`user:${user.id}`);
+  };
+}, [user?.id]);
 
   // ----- Conversation selection handler -----
   function handleSelectConversation(conv) {
