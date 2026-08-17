@@ -546,7 +546,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                 <div className="notif-dropdown-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Bell size={15} className="text-primary" />
-                    <h4>Live Student Leads</h4>
+                    <h4>Live Chatbot Leads</h4>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {notifications.length > 0 && (
@@ -645,7 +645,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
             <Users size={24} />
           </div>
           <div className="stat-details">
-            <span className="stat-label">Student Lead</span>
+            <span className="stat-label">Chatbot Leads</span>
             <span className="stat-value">{loading ? '...' : leadCount}</span>
           </div>
           <ArrowRight size={16} className="card-arrow-icon" />
@@ -694,11 +694,11 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
         <div className="dashboard-card-section flex-2">
           <div className="card-header-bar">
             <div>
-              <h3>Student Lead Inquiry Trends</h3>
+              <h3>Chatbot Lead Inquiry Trends</h3>
               <p>
                 {timeFilter === 'week' && 'Daily student inquiries captured through Educatia AI widget (This Week)'}
                 {timeFilter === 'month' && 'Weekly student inquiries distribution (This Month)'}
-                {timeFilter === 'all' && 'Cumulative monthly student lead growth (All Time)'}
+                {timeFilter === 'all' && 'Cumulative monthly chatbot lead growth (All Time)'}
               </p>
             </div>
             <div className="chart-badge-info" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#1e40af', border: '1px solid #bfdbfe' }}>
@@ -897,17 +897,17 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
         <div className="dashboard-card-section flex-2">
           <div className="card-header-bar">
             <div>
-              <h3>Recent Student Leads</h3>
+              <h3>Recent Chatbot Leads</h3>
               <p>Latest prospective students who engaged with Educatia AI</p>
             </div>
             <button className="view-all-link" onClick={() => onNavigateTable('student_leads')}>
-              View All Student Leads <ArrowRight size={14} />
+              View All Chatbot Leads <ArrowRight size={14} />
             </button>
           </div>
 
           <div className="recent-leads-table-wrapper">
             {loading ? (
-              <div className="dashboard-loading-state">Loading recent student leads...</div>
+              <div className="dashboard-loading-state">Loading recent chatbot leads...</div>
             ) : (() => {
                 const filteredLeads = recentLeads.filter(lead => {
                   if (!searchQuery) return true;
@@ -920,7 +920,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                 });
                 
                 if (filteredLeads.length === 0) {
-                  return <div className="dashboard-empty-state">No matching student leads found for "{searchQuery}".</div>;
+                  return <div className="dashboard-empty-state">No matching chatbot leads found for "{searchQuery}".</div>;
                 }
 
                 return (
@@ -978,7 +978,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
             </button>
             <button className="quick-menu-btn" onClick={() => onNavigateTable('student_leads')}>
               <Users size={16} />
-              <span>Manage Student Leads ({leadCount})</span>
+              <span>Manage Chatbot Leads ({leadCount})</span>
             </button>
             <button className="quick-menu-btn" onClick={() => onNavigateTable('chat_sessions')}>
               <MessageSquare size={16} />
@@ -1012,7 +1012,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '16px', fontWeight: '900', color: '#2563eb' }}>
-                  {countryDemandStats[0]?.count || 0} Student Leads
+                  {countryDemandStats[0]?.count || 0} Chatbot Leads
                 </div>
                 <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>
                   {countryDemandStats[0]?.percentage || 0}% of all inquiries

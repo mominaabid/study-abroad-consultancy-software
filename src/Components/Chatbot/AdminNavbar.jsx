@@ -254,7 +254,7 @@ export default function AdminNavbar({
               <div className="notif-dropdown-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Bell size={15} className="text-primary" />
-                  <h4>Live Student Leads</h4>
+                  <h4>Live Chatbot Leads</h4>
                 </div>
                 <span className="notif-count-tag">{notifications.length} New</span>
               </div>
@@ -327,7 +327,7 @@ export default function AdminNavbar({
                       onNavigateTable('student_leads');
                     }}
                   >
-                    View All Student Leads →
+                    View All Chatbot Leads →
                   </button>
                 </div>
               )}

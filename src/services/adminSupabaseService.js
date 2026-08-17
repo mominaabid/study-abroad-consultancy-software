@@ -172,9 +172,9 @@ export const SUPABASE_TABLES = [
     ]
   },
   {
-    category: 'Student Lead & Logs',
+    category: 'Chatbot Leads & Logs',
     tables: [
-      { id: 'student_leads', label: 'Student Lead', primaryKey: 'lead_id', canModify: true, canAdd: false, description: 'Inquiries captured from chatbot students' },
+      { id: 'student_leads', label: 'Chatbot Leads', primaryKey: 'lead_id', canModify: true, canAdd: false, description: 'Inquiries captured from chatbot students' },
       { id: 'chat_sessions', label: 'Sessions', primaryKey: 'id', canModify: true, canAdd: false, description: 'Recorded student chat sessions' },
       { id: 'chat_messages', label: 'Messages', primaryKey: 'id', canModify: true, canAdd: false, description: 'Individual message logs per chat session' },
     ]

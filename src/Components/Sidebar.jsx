@@ -78,9 +78,9 @@ const ADMIN_MENU = [
         ],
       },
       {
-        category: "Student Leads & Logs",
+        category: "Chatbot Leads & Logs",
         items: [
-          { name: "Student Leads", path: "/admin/chatbot-panel?table=student_leads" },
+          { name: "Chatbot Leads", path: "/admin/chatbot-panel?table=student_leads" },
           { name: "Chat Sessions", path: "/admin/chatbot-panel?table=chat_sessions" },
           { name: "Chat Messages", path: "/admin/chatbot-panel?table=chat_messages" },
         ],
@@ -148,9 +148,9 @@ const COUNSELLOR_MENU = [
         ],
       },
       {
-        category: "Student Leads & Logs",
+        category: "Chatbot Leads & Logs",
         items: [
-          { name: "Student Leads", path: "/counsellor/chatbot-panel?table=student_leads" },
+          { name: "Chatbot Leads", path: "/counsellor/chatbot-panel?table=student_leads" },
           { name: "Chat Sessions", path: "/counsellor/chatbot-panel?table=chat_sessions" },
           { name: "Chat Messages", path: "/counsellor/chatbot-panel?table=chat_messages" },
         ],
@@ -254,7 +254,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
 
   const [expandedCategories, setExpandedCategories] = useState({
     "Academics": true,
-    "Student Leads & Logs": true,
+    "Chatbot Leads & Logs": true,
     "Locations": true,
     "Admissions": true,
   });
