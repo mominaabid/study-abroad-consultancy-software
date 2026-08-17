@@ -9,7 +9,6 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [selectedModel, setSelectedModel] = useState(getStoredModel());
   const [supabaseUrl, setSupabaseUrl] = useState(currentSupabase.url);
   const [supabaseKey, setSupabaseKey] = useState(currentSupabase.key);
-  const [tableName, setTableName] = useState(currentSupabase.tableName);
   const [showKey, setShowKey] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -23,7 +22,6 @@ export default function SettingsModal({ isOpen, onClose }) {
     setStoredModel(selectedModel);
     localStorage.setItem('educatia_supabase_url', supabaseUrl.trim());
     localStorage.setItem('educatia_supabase_key', supabaseKey.trim());
-    localStorage.setItem('educatia_supabase_table', tableName.trim());
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
@@ -101,7 +99,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                 <h4 style={{ color: isSupabaseReady ? '#34d399' : '#fbbf24' }}>
                   {isSupabaseReady ? 'Supabase Connected' : 'Supabase Anon Key Required'}
                 </h4>
-                <p>Paste your Supabase anon key below to search your DB</p>
+                <p>Configured for active PostgreSQL database</p>
               </div>
             </div>
             
@@ -112,39 +110,20 @@ export default function SettingsModal({ isOpen, onClose }) {
                 className="form-input"
                 value={supabaseUrl}
                 onChange={(e) => setSupabaseUrl(e.target.value)}
-                placeholder="https://lnjvecykjhfjbsssibih.supabase.co"
+                placeholder="https://almqebfqfdzphdexxgow.supabase.co"
               />
             </div>
 
             <div className="form-group" style={{ marginBottom: '0.6rem' }}>
               <label className="form-label" style={{ fontSize: '0.75rem' }}>
                 <span>Supabase Anon Public Key</span>
-                <a 
-                  href="https://supabase.com/dashboard/project/lnjvecykjhfjbsssibih/settings/api" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="external-link"
-                >
-                  Get Anon Key <ExternalLink size={11} />
-                </a>
               </label>
               <input
                 type="password"
                 className="form-input"
                 value={supabaseKey}
                 onChange={(e) => setSupabaseKey(e.target.value)}
-                placeholder="eyJh..."
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" style={{ fontSize: '0.75rem' }}>Table Name to Search</label>
-              <input
-                type="text"
-                className="form-input"
-                value={tableName}
-                onChange={(e) => setTableName(e.target.value)}
-                placeholder="knowledge_base, faqs, documents, etc."
+                placeholder="sb_publishable_..."
               />
             </div>
           </div>

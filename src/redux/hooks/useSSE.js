@@ -21,7 +21,6 @@ const useSSE = () => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
-      console.log("SSE connection closed");
     }
 
     isConnectingRef.current = false;
@@ -30,14 +29,12 @@ const useSSE = () => {
   const connectSSE = useCallback(
     function connectSSE() {
       if (isConnectingRef.current) {
-        console.log("Connection already in progress, skipping...");
         return;
       }
 
       const token = localStorage.getItem("token");
 
       if (!token || !user) {
-        console.log("No token or user found, skipping SSE connection");
         return;
       }
 
@@ -47,8 +44,6 @@ const useSSE = () => {
       }
 
       const sseUrl = `${BASE_URL}/sse/events?token=${token}`;
-      console.log("Connecting to SSE at:", sseUrl);
-
       isConnectingRef.current = true;
 
       try {
@@ -56,18 +51,15 @@ const useSSE = () => {
         eventSourceRef.current = eventSource;
 
         eventSource.onopen = () => {
-          console.log("SSE connection established for user:", user?.id);
           isConnectingRef.current = false;
         };
 
         eventSource.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log("SSE message received:", data);
 
             switch (data.type) {
               case "connected":
-                console.log("SSE connected:", data.message);
                 break;
 
               case "lead_assigned":
@@ -83,7 +75,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Lead assigned notification dispatched");
                 break;
 
               case "status_change":
@@ -102,7 +93,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Status change notification dispatched");
                 break;
 
               // --- New application events ---
@@ -116,7 +106,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Application created notification dispatched");
                 break;
 
               case "application_updated":
@@ -129,7 +118,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Application updated notification dispatched");
                 break;
 
               case "application_deleted":
@@ -142,7 +130,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Application deleted notification dispatched");
                 break;
 
               // --- Document events ---
@@ -157,7 +144,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Document shared notification dispatched");
                 break;
 
               case "document_verified":
@@ -171,7 +157,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Document verified notification dispatched");
                 break;
 
               case "document_rejected":
@@ -185,11 +170,9 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Document rejected notification dispatched");
                 break;
 
               case "new_chat_message":
-                // ✅ conversationId is required in metadata – fallback to null if missing
                 dispatch(
                   addNotification({
                     message: data.message,
@@ -202,7 +185,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Chat notification added to bell");
                 break;
 
               case "lead_created":
@@ -220,10 +202,8 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Lead created notification dispatched");
                 break;
 
-              // --- New: Counsellor added lead (admin view) ---
               case "counsellor_added_lead":
                 dispatch(
                   addNotification({
@@ -239,7 +219,6 @@ const useSSE = () => {
                     },
                   }),
                 );
-                console.log("Counsellor added lead notification sent to admin");
                 break;
 
               case "counsellor_added_application":
@@ -260,9 +239,6 @@ const useSSE = () => {
                     metadata: data.metadata,
                   }),
                 );
-                console.log(
-                  "Payment awaiting verification notification dispatched",
-                );
                 break;
 
               case "payment_verified":
@@ -273,7 +249,6 @@ const useSSE = () => {
                     metadata: data.metadata,
                   }),
                 );
-                console.log("Payment verified notification dispatched");
                 break;
 
               case "payment_rejected":
@@ -284,7 +259,6 @@ const useSSE = () => {
                     metadata: data.metadata,
                   }),
                 );
-                console.log("Payment rejected notification dispatched");
                 break;
 
               case "payment_added_by_admin":
@@ -295,7 +269,6 @@ const useSSE = () => {
                     metadata: data.metadata,
                   }),
                 );
-                console.log("Payment added by admin notification dispatched");
                 break;
 
               case "consultancy_fee_added":
@@ -329,16 +302,14 @@ const useSSE = () => {
                 break;
 
               default:
-                console.log("Unknown SSE message type:", data.type);
+                break;
             }
-          } catch (err) {
-            console.error("Error parsing SSE message:", err);
+          } catch (_err) {
+            // Silently handle json parsing
           }
         };
 
-        eventSource.onerror = (error) => {
-          console.error("SSE connection error:", error);
-
+        eventSource.onerror = () => {
           if (eventSourceRef.current) {
             eventSourceRef.current.close();
             eventSourceRef.current = null;
@@ -351,12 +322,10 @@ const useSSE = () => {
           }
 
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log("Attempting to reconnect SSE...");
             connectSSE();
           }, 5000);
         };
-      } catch (err) {
-        console.error("Error creating SSE connection:", err);
+      } catch (_err) {
         isConnectingRef.current = false;
       }
     },

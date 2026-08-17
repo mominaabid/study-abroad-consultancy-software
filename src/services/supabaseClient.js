@@ -1,22 +1,37 @@
 import { createClient } from '@supabase/supabase-js';
 
+let cachedClient = null;
+let lastUrl = '';
+let lastKey = '';
+
 export const getSupabaseConfig = () => {
   const metaEnv = typeof import.meta !== 'undefined' ? import.meta.env : null;
   const localStore = typeof localStorage !== 'undefined' ? localStorage : null;
   return {
-    url: metaEnv?.VITE_SUPABASE_URL || localStore?.getItem('educatia_supabase_url') || 'https://almqebfqfdzphdexxgow.supabase.co',
-    key: metaEnv?.VITE_SUPABASE_ANON_KEY || localStore?.getItem('educatia_supabase_key') || 'sb_publishable_jYS4V3V0XwouRT7_7v_NGA_-uXLDzZ5',
+    url: metaEnv?.VITE_SUPABASE_URL || localStore?.getItem('educatia_supabase_url') || '',
+    key: metaEnv?.VITE_SUPABASE_ANON_KEY || localStore?.getItem('educatia_supabase_key') || '',
   };
 };
 
 export const getSupabaseClient = () => {
   const { url, key } = getSupabaseConfig();
-  if (url && key) {
-    return createClient(url, key, {
-      auth: { persistSession: false }
-    });
+  if (!url || !key) return null;
+
+  if (cachedClient && lastUrl === url && lastKey === key) {
+    return cachedClient;
   }
-  return null;
+
+  lastUrl = url;
+  lastKey = key;
+  cachedClient = createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  });
+
+  return cachedClient;
 };
 
 /**
@@ -26,7 +41,6 @@ export const getSupabaseClient = () => {
 export async function fetchContextFromSupabase(userQuery, conversationHistory = []) {
   const client = getSupabaseClient();
   if (!client) {
-    console.log('⚠️ Supabase client missing URL or Key.');
     return { text: null, rawData: null };
   }
 
@@ -100,8 +114,6 @@ export async function fetchContextFromSupabase(userQuery, conversationHistory = 
   const rawDataMap = {};
 
   try {
-    console.log(`🔍 [V_CHATBOT_BOT_DETAILS SEARCH] User Query: "${userQuery}" | Country: ${targetCountry || 'General'} | Degree: ${targetDegree || 'All'}`);
-
     // 2. Primary Query on v_chatbot_bot_details View
     let viewQuery = client
       .from('v_chatbot_bot_details')
@@ -217,15 +229,12 @@ export async function fetchContextFromSupabase(userQuery, conversationHistory = 
       rawDataMap.business_info = binfo;
     }
 
-    console.log(`✅ [SUPABASE CONTEXT RETRIEVED VIA VIEW]:`, rawDataMap);
-
     return {
       text: contextParts.join('\n\n'),
       rawData: rawDataMap
     };
 
   } catch (err) {
-    console.warn('⚠️ [SUPABASE NETWORK / DATABASE NOTICE]:', err.message || err);
     return { text: null, rawData: null, error: 'Network offline / DB unreachable' };
   }
 }
@@ -287,11 +296,8 @@ export async function detectAndSaveLead(userText, fullHistory = []) {
   else if (lowerCombined.includes('australia')) targetCountry = 'Australia';
 
   try {
-    console.log(`📥 [SAVING LEAD TO student_leads]: Name: "${nameStr}", Phone: "${phoneStr}", Country: "${targetCountry}"`);
-
-    // Insert into Supabase `student_leads` table matching exact schema columns:
-    // student_name, phone_number, interested_country, last_message_snippet, status
-    const { data, error } = await client
+    // Insert into Supabase `student_leads` table matching exact schema columns
+    await client
       .from('student_leads')
       .insert([
         {
@@ -301,15 +307,8 @@ export async function detectAndSaveLead(userText, fullHistory = []) {
           last_message_snippet: userText.substring(0, 200),
           status: 'new'
         }
-      ])
-      .select();
-
-    if (error) {
-      console.warn('student_leads insert error:', error.message);
-    } else {
-      console.log('✅ [LEAD SUCCESSFULLY SAVED TO SUPABASE student_leads TABLE]:', data);
-    }
+      ]);
   } catch (err) {
-    console.error('⚠️ Error saving student lead to Supabase:', err);
+    // Silently fail if offline
   }
 }

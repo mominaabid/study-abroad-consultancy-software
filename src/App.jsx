@@ -49,12 +49,6 @@ import StudentPayments from "./Pages/StudentPage/StudentPayment";
 import { StudentProfile } from "./Pages/StudentPage/StudentProfile";
 
 const SSEInitializer = ({ children }) => {
-  const user = useSelector(selectUser);
-  useEffect(() => {
-    if (user) {
-      console.log(`SSE will initialize for user: ${user.role}`);
-    }
-  }, [user]);
   useSSE();
   return children;
 };
@@ -67,10 +61,7 @@ const AblyInitializer = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    console.log("🔌 Initializing Ably for user:", user.id, user.role);
-    connectAbly(token)
-      .then(() => console.log("✅ Ably ready"))
-      .catch((err) => console.error("❌ Ably init failed:", err));
+    connectAbly(token).catch(() => {});
   }, [user?.id]);
 
   return null;

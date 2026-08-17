@@ -18,10 +18,14 @@ export const HUMAN_FIELD_NAMES = {
   application_fee: 'Application Fee',
   fee_currency: 'Currency (EUR / GBP / USD)',
   scholarship_available: 'Scholarship Available?',
+  scholarship_title: 'Scholarship Title',
   scholarship_name: 'Scholarship Name',
   coverage_percentage: 'Scholarship Coverage (%)',
   
   // Requirements & Test Scores
+  doc_category: 'Document Category',
+  doc_name: 'Document Name',
+  is_mandatory: 'Mandatory Document?',
   ielts_score: 'IELTS Min. Score',
   toefl_score: 'TOEFL Min. Score',
   pte_score: 'PTE Min. Score',
@@ -35,6 +39,9 @@ export const HUMAN_FIELD_NAMES = {
   spouse_dependants: 'Spouse / Dependant Allowed?',
   psw_duration: 'Post-Study Work Visa Duration',
   visa_approval_ratio: 'Visa Approval Rate (%)',
+  website: 'Website / Portal',
+  institute_location: 'Location / Address',
+  is_active: 'Active Status?',
   
   // Foreign Key Links
   institute_id: 'University / Institute',
@@ -61,6 +68,9 @@ export const HUMAN_FIELD_NAMES = {
   // Leads & Sessions
   student_name: 'Student Name',
   interested_country: 'Target Country',
+  interested_institute: 'Target University',
+  interested_program: 'Target Program',
+  lead_source: 'Lead Source',
   last_message_snippet: 'Latest Student Query',
   status: 'Status',
   role: 'Role',
@@ -82,14 +92,57 @@ export function getHumanFieldName(col) {
   return col.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
+export function formatUserFriendlyError(error) {
+  if (!error) return 'An unexpected error occurred. Please try again.';
+  const rawMsg = typeof error === 'string' ? error : (error.message || String(error));
+  const lower = rawMsg.toLowerCase();
+
+  // 1. Null constraint / Missing required field
+  if (lower.includes('null value in column') || lower.includes('violates not-null constraint')) {
+    const match = rawMsg.match(/column "([^"]+)"/i);
+    const rawCol = match ? match[1] : '';
+    const humanField = rawCol ? getHumanFieldName(rawCol) : 'a required field';
+    return `Please fill in all required fields (${humanField} is missing).`;
+  }
+
+  // 2. Unique constraint / Duplicate entry
+  if (lower.includes('duplicate key') || lower.includes('violates unique constraint')) {
+    const match = rawMsg.match(/Key \(([^)]+)\)=/i) || rawMsg.match(/constraint "([^"]+)"/i);
+    const rawCol = match ? match[1] : '';
+    const humanField = rawCol ? getHumanFieldName(rawCol) : 'entry';
+    return `A record with this ${humanField} already exists. Please use a unique value.`;
+  }
+
+  // 3. Foreign key constraint
+  if (lower.includes('violates foreign key constraint') || lower.includes('foreign key constraint')) {
+    return 'Unable to save: Please ensure all linked records (such as University or City) are selected.';
+  }
+
+  // 4. Enum constraint error
+  if (lower.includes('invalid input value for enum') || lower.includes('doc_category_enum')) {
+    return 'Invalid selection: Please choose a valid category from the dropdown options.';
+  }
+
+  // 5. RLS / Access Permission
+  if (lower.includes('row-level security') || lower.includes('permission denied')) {
+    return 'Access restricted: You do not have permission to alter this database record.';
+  }
+
+  // 6. Network / Connection Error
+  if (lower.includes('fetch') || lower.includes('network error') || lower.includes('failed to fetch')) {
+    return 'Connection issue. Please check your internet connection and try again.';
+  }
+
+  // 7. Generic DB fallback
+  if (lower.includes('constraint') || lower.includes('relation') || lower.includes('column') || lower.includes('syntax')) {
+    return 'Unable to save record. Please verify all required fields and try again.';
+  }
+
+  return rawMsg;
+}
+
 // List of all Supabase tables and views with metadata
 export const SUPABASE_TABLES = [
-  {
-    category: 'User Configurations',
-    tables: [
-      { id: 'users', label: 'Users', primaryKey: 'id', canModify: true, description: 'Admin panel user accounts, usernames & passwords' },
-    ]
-  },
   {
     category: 'Locations',
     tables: [
@@ -147,38 +200,36 @@ export function getTableConfig(tableName) {
 }
 
 /**
- * Authenticate Admin User against Supabase users table (with default fallback)
+ * Authenticate Admin User strictly against Supabase users table
  */
 export async function authenticateAdminUser(username, password) {
   const client = getSupabaseClient();
   const u = (username || '').trim();
   const p = (password || '').trim();
 
-  // 1. Check Supabase users table
-  if (client && u && p) {
+  if (!u || !p) {
+    return { success: false, error: 'Please enter both username and password.' };
+  }
+
+  if (client) {
     try {
       const { data, error } = await client
         .from('users')
-        .select('*')
+        .select('id, full_name, username, role, email, is_active')
         .eq('username', u)
         .eq('password', p)
         .limit(1);
 
       if (!error && data && data.length > 0) {
-        return { success: true, user: data[0] };
+        const user = data[0];
+        if (user.is_active === false || user.status === 'inactive') {
+          return { success: false, error: 'This user account has been deactivated.' };
+        }
+        return { success: true, user };
       }
     } catch (e) {
       console.warn('users table query notice:', e);
     }
-  }
-
-  // 2. Default superadmin fallback (username: admin, password: admin123)
-  const defaultPass = import.meta.env.VITE_ADMIN_PASSCODE || 'admin123';
-  if ((u.toLowerCase() === 'admin' || u.toLowerCase() === 'superadmin') && p === defaultPass) {
-    return {
-      success: true,
-      user: { id: 1, full_name: 'Master Admin', username: 'admin', role: 'Super Admin' }
-    };
   }
 
   return { success: false, error: 'Invalid username or password.' };
@@ -216,13 +267,15 @@ export async function fetchTableRows(tableName, { page = 1, limit = 10, searchQu
     } else if (tableName === 'users') {
       query = query.or(`full_name.ilike.${term},username.ilike.${term},role.ilike.${term},email.ilike.${term}`);
     } else if (tableName === 'institutes') {
-      query = query.or(`name.ilike.${term},city.ilike.${term},country.ilike.${term}`);
+      query = query.or(`institute_name.ilike.${term},institute_location.ilike.${term},website.ilike.${term}`);
     } else if (tableName === 'programs') {
-      query = query.or(`program_name.ilike.${term},discipline.ilike.${term},degree_level.ilike.${term}`);
+      query = query.or(`program_name.ilike.${term},degree_level.ilike.${term},degree_duration.ilike.${term}`);
     } else if (tableName === 'program_fees') {
       query = query.or(`fee_currency.ilike.${term}`);
     } else if (tableName === 'scholarships') {
-      query = query.or(`scholarship_name.ilike.${term},description.ilike.${term}`);
+      query = query.or(`scholarship_title.ilike.${term},description.ilike.${term}`);
+    } else if (tableName === 'required_docs') {
+      query = query.or(`doc_name.ilike.${term},description.ilike.${term}`);
     } else if (tableName === 'countries') {
       query = query.or(`country_name.ilike.${term},currency.ilike.${term}`);
     } else if (tableName === 'states') {

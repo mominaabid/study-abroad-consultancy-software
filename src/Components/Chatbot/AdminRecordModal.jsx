@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, AlertCircle, Check } from 'lucide-react';
-import { insertTableRow, updateTableRow, fetchTableRows, getHumanFieldName } from '../../services/adminSupabaseService';
+import { insertTableRow, updateTableRow, fetchTableRows, getHumanFieldName, formatUserFriendlyError } from '../../services/adminSupabaseService';
 
 // Foreign key lookup configurations
 const FOREIGN_KEY_MAP = {
@@ -29,7 +29,13 @@ const DEFAULT_TABLE_SCHEMAS = {
   },
   student_leads: {
     student_name: '',
+    phone_number: '',
+    email: '',
     interested_country: '',
+    interested_institute: '',
+    interested_program: '',
+    degree_level: 'Bachelors',
+    lead_source: 'chatbot_widget',
     last_message_snippet: '',
     status: 'new'
   },
@@ -45,10 +51,11 @@ const DEFAULT_TABLE_SCHEMAS = {
     institute_name: '',
     country_id: '',
     institute_type: 'private',
-    country_name: '',
+    institute_location: '',
+    website: '',
     university_ranking_int: '',
     university_ranking_local: '',
-    institute_active: true
+    is_active: true
   },
   campuses: {
     campus_name: '',
@@ -63,8 +70,7 @@ const DEFAULT_TABLE_SCHEMAS = {
     degree_level: 'Bachelors',
     degree_duration: '',
     degree_intakes: '',
-    institute_name: '',
-    program_active: true
+    is_active: true
   },
   program_fees: {
     program_id: '',
@@ -74,7 +80,7 @@ const DEFAULT_TABLE_SCHEMAS = {
     fee_currency: ''
   },
   scholarships: {
-    scholarship_name: '',
+    scholarship_title: '',
     institute_id: '',
     program_id: '',
     coverage_percentage: '',
@@ -88,7 +94,9 @@ const DEFAULT_TABLE_SCHEMAS = {
   },
   required_docs: {
     doc_name: '',
-    description: ''
+    doc_category: 'academic',
+    description: '',
+    is_mandatory: true
   },
   english_requirements: {
     program_id: '',
@@ -302,7 +310,7 @@ export default function AdminRecordModal({
       onClose();
     } catch (err) {
       console.error('Modal Save Error:', err);
-      setError(err.message || 'Failed to save record.');
+      setError(formatUserFriendlyError(err));
       setLoading(false);
     }
   };
@@ -402,6 +410,22 @@ export default function AdminRecordModal({
         >
           <option value={isBool ? 'true' : 'active'}>Active User</option>
           <option value={isBool ? 'false' : 'inactive'}>Inactive User</option>
+        </select>
+      );
+    }
+
+    if (key === 'doc_category') {
+      return (
+        <select
+          value={formData[key] !== undefined && formData[key] !== null ? formData[key] : 'academic'}
+          onChange={(e) => handleChange(key, e.target.value)}
+          className="admin-select-input"
+        >
+          <option value="academic">Academic (Transcripts, Degrees, Marksheets)</option>
+          <option value="identity">Identity (Passport, National ID, Photographs)</option>
+          <option value="language">Language Proficiency (IELTS, TOEFL, PTE, Duolingo)</option>
+          <option value="financial">Financial (Bank Statement, Proof of Funds)</option>
+          <option value="other">Other (SOP, CV, Recommendation Letters)</option>
         </select>
       );
     }

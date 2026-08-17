@@ -5,7 +5,8 @@ import {
   getTableConfig, 
   fetchTableRows, 
   deleteTableRow,
-  fetchSessionMessages
+  fetchSessionMessages,
+  formatUserFriendlyError
 } from '../../services/adminSupabaseService';
 import AdminTableGrid from './AdminTableGrid';
 import AdminRecordModal from './AdminRecordModal';
@@ -128,7 +129,7 @@ export default function AdminPanel({ onLockAdmin }) {
       setTableData(res);
     } catch (err) {
       console.error('Failed to load table:', err);
-      showToast(`Error: ${err.message}`, 'error');
+      showToast(formatUserFriendlyError(err), 'error');
     } finally {
       setLoading(false);
     }
@@ -255,7 +256,7 @@ export default function AdminPanel({ onLockAdmin }) {
       setDeleteConfirmRecord(null);
       loadData();
     } catch (err) {
-      showToast(`Delete failed: ${err.message}`, 'error');
+      showToast(formatUserFriendlyError(err), 'error');
     }
   };
 
@@ -408,21 +409,153 @@ export default function AdminPanel({ onLockAdmin }) {
           />
         ) : (
           /* Data Grid Section */
-          <div className="admin-grid-section">
-              <AdminTableGrid
-                tableConfig={currentTableConfig}
-                rows={tableData.data}
-                totalCount={tableData.totalCount}
-                page={page}
-                totalPages={tableData.totalPages}
-                onPageChange={(p) => setPage(p)}
-                onEditRecord={handleOpenEditModal}
-                onDeleteRecord={handleDeletePrompt}
-                onViewTranscript={handleOpenTranscript}
-                loading={loading}
-                searchQuery={searchQuery}
-              />
+          <div className="admin-grid-section" style={{ padding: '1.5rem' }}>
+            {/* Table Control Header Action Bar */}
+            <div className="table-header-action-bar" style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1rem 1.25rem',
+              background: '#ffffff',
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              marginBottom: '1.25rem',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}>
+              {/* Left: Table Title & Count Tag */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: '#eff6ff',
+                  color: '#2563eb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Database size={20} />
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '700', color: '#0f172a' }}>
+                    {currentTableConfig?.label || 'Records'}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Right: Search Input, Refresh, and Add Record Button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {/* Search Bar Input */}
+                <div style={{ position: 'relative', minWidth: '240px' }}>
+                  <Search size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input
+                    type="text"
+                    placeholder={`Search ${currentTableConfig?.label || 'records'}...`}
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setPage(1);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 30px 8px 34px',
+                      fontSize: '13px',
+                      borderRadius: '10px',
+                      border: '1px solid #cbd5e1',
+                      background: '#f8fafc',
+                      color: '#0f172a',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        padding: '2px'
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Refresh Button */}
+                <button
+                  type="button"
+                  onClick={loadData}
+                  title="Refresh Table Data"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#475569'
+                  }}
+                >
+                  <RefreshCw size={15} className={loading ? 'spin' : ''} />
+                </button>
+
+                {/* Add Record Action Button */}
+                {currentTableConfig?.canModify && currentTableConfig?.canAdd !== false && (
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateModal}
+                    title={`Add New ${currentTableConfig?.label || 'Record'}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      background: '#2563eb',
+                      color: '#ffffff',
+                      fontWeight: '600',
+                      fontSize: '13px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+                    }}
+                  >
+                    <Plus size={16} />
+                    <span>Add {currentTableConfig?.label ? currentTableConfig.label.replace(/s$/, '') : 'Record'}</span>
+                  </button>
+                )}
+              </div>
             </div>
+
+            <AdminTableGrid
+              tableConfig={currentTableConfig}
+              rows={tableData.data}
+              totalCount={tableData.totalCount}
+              page={page}
+              totalPages={tableData.totalPages}
+              onPageChange={(p) => setPage(p)}
+              onEditRecord={handleOpenEditModal}
+              onDeleteRecord={handleDeletePrompt}
+              onViewTranscript={handleOpenTranscript}
+              loading={loading}
+              searchQuery={searchQuery}
+            />
+          </div>
         )}
       </main>
 

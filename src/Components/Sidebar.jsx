@@ -1,5 +1,5 @@
 // Sidebar.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Home,
   Settings,
@@ -50,12 +50,6 @@ const ADMIN_MENU = [
     path: "/admin/chatbot-panel",
     submenu: [
       { name: "Dashboard", path: "/admin/chatbot-panel" },
-      {
-        category: "User Configurations",
-        items: [
-          { name: "Users", path: "/admin/chatbot-panel?table=users" },
-        ],
-      },
       {
         category: "Locations",
         items: [
@@ -126,12 +120,6 @@ const COUNSELLOR_MENU = [
     path: "/counsellor/chatbot-panel",
     submenu: [
       { name: "Dashboard", path: "/counsellor/chatbot-panel" },
-      {
-        category: "User Configurations",
-        items: [
-          { name: "Users", path: "/counsellor/chatbot-panel?table=users" },
-        ],
-      },
       {
         category: "Locations",
         items: [
@@ -278,6 +266,40 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
       [catName]: !prev[catName],
     }));
   };
+
+  // Ref for active sidebar item to handle auto-scrolling
+  const activeItemRef = useRef(null);
+
+  // Automatically expand parent category when navigating to a submodule
+  useEffect(() => {
+    const current = location.pathname + location.search;
+    if (!menuItems || !Array.isArray(menuItems)) return;
+    menuItems.forEach((menu) => {
+      if (menu?.submenu && Array.isArray(menu.submenu)) {
+        menu.submenu.forEach((sub) => {
+          if (sub?.category && sub?.items && Array.isArray(sub.items)) {
+            const isMatch = sub.items.some((nested) => nested?.path === current);
+            if (isMatch) {
+              setExpandedCategories((prev) => ({
+                ...prev,
+                [sub.category]: true,
+              }));
+            }
+          }
+        });
+      }
+    });
+  }, [location.pathname, location.search, menuItems]);
+
+  // Scroll active item into view when sidebar is hovered / expanded
+  useEffect(() => {
+    if (isExpanded && activeItemRef.current) {
+      const timer = setTimeout(() => {
+        activeItemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isExpanded, location.pathname, location.search]);
 
   const isSubmenuActive = (submenu) => {
     const current = location.pathname + location.search;
@@ -439,9 +461,9 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                               {/* Category Header */}
                               <div
                                 onClick={(e) => toggleCategory(subItem.category, e)}
-                                className={`flex items-center justify-between px-2 py-1 rounded-lg cursor-pointer transition-colors text-[11px] font-bold uppercase tracking-wider ${
+                                className={`flex items-center justify-between px-2 py-1 rounded-lg cursor-pointer transition-all text-[11px] font-bold uppercase tracking-wider ${
                                   hasActiveNested
-                                    ? "text-[#009E99] bg-[#009E99]/5"
+                                    ? "text-[#009E99] bg-[#009E99]/10 border-l-2 border-[#009E99] pl-1.5"
                                     : "text-gray-400 hover:text-gray-700 hover:bg-gray-50"
                                 }`}
                               >
@@ -461,6 +483,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                                     return (
                                       <div
                                         key={nIdx}
+                                        ref={isNestedActive ? activeItemRef : null}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           navigate(nested.path);
@@ -468,7 +491,7 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                                         }}
                                         className={`flex items-center px-2.5 py-1.5 rounded-md cursor-pointer transition-all duration-150 text-xs ${
                                           isNestedActive
-                                            ? "bg-[#009E99] text-white shadow-sm font-semibold"
+                                            ? "bg-[#009E99] text-white shadow-sm font-bold scale-[1.02]"
                                             : "hover:bg-[#009E99]/10 hover:text-[#009E99] text-gray-600 font-medium"
                                         }`}
                                       >
@@ -489,13 +512,14 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
                         return (
                           <div
                             key={subIndex}
+                            ref={isSubItemActive ? activeItemRef : null}
                             onClick={() => {
                               navigate(subItem.path);
                               if (!isDesktop) setIsOpen(false);
                             }}
                             className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-all duration-200 text-sm ${
                               isSubItemActive
-                                ? "bg-[#009E99] text-white shadow-md font-semibold"
+                                ? "bg-[#009E99] text-white shadow-md font-bold scale-[1.02]"
                                 : "hover:bg-[#009E99]/10 hover:text-[#009E99] text-gray-600 font-medium"
                             }`}
                           >

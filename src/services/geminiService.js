@@ -1,4 +1,4 @@
-import { fetchContextFromSupabase } from './supabaseClient';
+import { fetchContextFromSupabase, getSupabaseConfig } from './supabaseClient';
 
 const STORAGE_KEY = 'educatia_gemini_api_key';
 const MODEL_KEY = 'educatia_selected_model';
@@ -23,8 +23,8 @@ export const setStoredModel = (model) => {
 export async function sendWidgetMessage({ messages, sessionId }) {
   // 1. Try Supabase Edge Function (/functions/v1/chat)
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://almqebfqfdzphdexxgow.supabase.co';
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_jYS4V3V0XwouRT7_7v_NGA_-uXLDzZ5';
+    const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
+    if (!supabaseUrl || !supabaseKey) throw new Error('Supabase config missing');
 
     const edgeRes = await fetch(`${supabaseUrl}/functions/v1/chat`, {
       method: 'POST',
@@ -41,7 +41,6 @@ export async function sendWidgetMessage({ messages, sessionId }) {
       let data = null;
       try { data = resText ? JSON.parse(resText) : {}; } catch (_e) {}
       if (data && (data.reply || data.text)) {
-        console.log(`✅ [SUPABASE EDGE SUCCESS] Powered by ${data.provider || 'Edge Function'}`);
         return data.reply || data.text;
       }
     }
@@ -60,7 +59,6 @@ export async function sendWidgetMessage({ messages, sessionId }) {
     if (apiRes.ok) {
       const data = await apiRes.json();
       if (data && (data.reply || data.text)) {
-        console.log(`✅ [/api/chat SUCCESS] Powered by ${data.provider || '/api/chat'}`);
         return data.reply || data.text;
       }
     }

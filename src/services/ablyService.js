@@ -16,12 +16,10 @@ export async function connectAbly(token) {
     });
 
     client.connection.once('connected', () => {
-      console.log('✅ Ably Connected');
       resolve(client);
     });
 
     client.connection.once('failed', (err) => {
-      console.error('❌ Ably Failed:', err);
       connectionPromise = null;
       reject(err);
     });
@@ -35,24 +33,20 @@ export async function subscribeToChannel(channelName, eventName, callback) {
   try {
     await connectionPromise; // wait until fully connected
   } catch (err) {
-    console.error('Cannot subscribe, Ably not connected:', err);
     return () => {};
   }
 
   if (!client) {
-    console.warn('❌ No Ably client');
     return () => {};
   }
 
   const channel = client.channels.get(channelName);
 
   const listener = (message) => {
-    console.log(`📨 ${eventName} on ${channelName}:`, message.data);
     callback(message.data);
   };
 
   channel.subscribe(eventName, listener);
-  console.log(`✅ Subscribed to ${channelName} | ${eventName}`);
 
   return () => {
     channel.unsubscribe(eventName, listener);

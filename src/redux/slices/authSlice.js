@@ -178,7 +178,6 @@ const authSlice = createSlice({
                 state.token = action.payload.token;
                 state.user = action.payload.user;
                 state.error = null;
-                console.log("✅ Login successful! User:", action.payload.user);
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.loading = false;
@@ -188,7 +187,6 @@ const authSlice = createSlice({
                 state.error = action.payload;
                 localStorage.removeItem("token");
                 localStorage.removeItem("user");
-                console.log("❌ Login failed:", action.payload);
             });
 
         // Counsellor Login
@@ -203,7 +201,6 @@ const authSlice = createSlice({
                 state.token = action.payload.token;
                 state.user = action.payload.user;
                 state.error = null;
-                console.log("✅ Counsellor login successful!", action.payload.user);
             })
             .addCase(counsellorLogin.rejected, (state, action) => {
                 state.loading = false;
@@ -213,7 +210,6 @@ const authSlice = createSlice({
                 state.error = action.payload;
                 localStorage.removeItem("token");
                 localStorage.removeItem("user");
-                console.log("❌ Counsellor login failed:", action.payload);
             });
 
         // Load User
@@ -229,7 +225,6 @@ const authSlice = createSlice({
                 state.token = action.payload.token;
                 state.user = action.payload.user;
                 state.error = null;
-                console.log("✅ User loaded:", action.payload.user);
             })
             .addCase(loadUser.rejected, (state, action) => {
                 state.authChecked = true;
@@ -240,7 +235,6 @@ const authSlice = createSlice({
                 state.error = action.payload || "Session expired";
                 localStorage.removeItem("token");
                 localStorage.removeItem("user");
-                console.log("❌ Load user failed:", action.payload);
             });
     },
 });

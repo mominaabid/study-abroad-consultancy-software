@@ -24,6 +24,7 @@ import {
   Menu
 } from 'lucide-react';
 import { fetchTableRows } from '../../services/adminSupabaseService';
+import { getSupabaseClient } from '../../services/supabaseClient';
 
 const getTableIcon = (tableId) => {
   if (tableId === 'dashboard') return <LayoutDashboard size={18} className="nav-header-icon" />;
@@ -61,8 +62,10 @@ export default function AdminNavbar({
   const profileRef = useRef(null);
   const notifRef = useRef(null);
 
-  // Load live student leads as notifications and filter out persistent seen IDs
+  // Load live student leads as notifications and listen for real-time inserts
   useEffect(() => {
+    let channel = null;
+
     async function loadLiveLeadNotifs() {
       try {
         const seenIds = JSON.parse(localStorage.getItem('educatia_seen_notif_ids') || '[]');
@@ -89,6 +92,39 @@ export default function AdminNavbar({
       }
     }
     loadLiveLeadNotifs();
+
+    // Supabase Realtime channel for live navbar notifications
+    const client = getSupabaseClient();
+    if (client) {
+      channel = client
+        .channel('admin_navbar_leads_realtime')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_leads' }, (payload) => {
+          const newLead = payload.new;
+          if (!newLead) return;
+
+          const seenIds = JSON.parse(localStorage.getItem('educatia_seen_notif_ids') || '[]');
+          const newNotifItem = {
+            id: newLead.lead_id || `lead-${Date.now()}`,
+            title: 'New Live Lead Captured',
+            student_name: newLead.student_name || 'Prospective Student',
+            country: newLead.interested_country || 'General Study Abroad',
+            time: newLead.created_at ? new Date(newLead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+            desc: newLead.last_message_snippet ? `${newLead.last_message_snippet.substring(0, 50)}...` : 'Inquired on Educatia AI Bot.'
+          };
+
+          if (!seenIds.includes(String(newNotifItem.id))) {
+            setNotifications(prev => [newNotifItem, ...prev.filter(n => n.id !== newNotifItem.id)]);
+            setHasUnreadNotifs(true);
+          }
+        })
+        .subscribe();
+    }
+
+    return () => {
+      if (channel && client) {
+        client.removeChannel(channel);
+      }
+    };
   }, []);
 
   // Close menus when clicking outside

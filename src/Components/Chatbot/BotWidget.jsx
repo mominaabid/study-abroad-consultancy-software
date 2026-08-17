@@ -163,7 +163,6 @@ export default function BotWidget({ onClose }) {
 
     if (phoneMatch || emailMatch) {
       const matchedPhone = phoneMatch ? phoneMatch[0] : null;
-      console.log('🎯 Lead info detected! Auto-saving to Supabase with deduplication check...');
       try {
         let countryPref = 'Unspecified';
         const lowerHist = history.map(h => h.content).join(' ').toLowerCase();
@@ -182,26 +181,19 @@ export default function BotWidget({ onClose }) {
             .limit(1);
 
           if (existingLead && existingLead.length > 0) {
-            console.log('ℹ️ Phone number already exists in DB student_leads table. Skipping duplicate insert.');
             return;
           }
         }
 
-        const { error } = await supabase.from('student_leads').insert([{
+        await supabase.from('student_leads').insert([{
           student_name: 'Website Student',
           phone_number: matchedPhone,
           interested_country: countryPref,
           last_message_snippet: `Auto-captured via BotWidget chat: "${userText}"`,
           status: 'new'
         }]);
-
-        if (error) {
-          console.warn('Lead insert notice:', error.message);
-        } else {
-          console.log('✅ Lead successfully saved to Supabase!');
-        }
       } catch (err) {
-        console.warn('Lead auto-capture error:', err);
+        // Silently catch
       }
     }
   };
@@ -328,7 +320,7 @@ export default function BotWidget({ onClose }) {
           .limit(1);
 
         if (existingLead && existingLead.length > 0) {
-          console.log('ℹ️ Phone number already registered in DB. Skipping duplicate backend insert.');
+          // Phone number already registered in DB
         } else {
           // Insert new lead row into Supabase student_leads table
           await supabase.from('student_leads').insert([{
@@ -338,7 +330,6 @@ export default function BotWidget({ onClose }) {
             last_message_snippet: 'Claimed Exclusive Study Deal via BotWidget Banner',
             status: 'new'
           }]);
-          console.log('✅ New lead saved to database!');
         }
       }
     } catch (err) {

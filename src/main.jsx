@@ -9,6 +9,15 @@ import process from 'process';
 window.Buffer = Buffer;
 window.process = process;
 window.global = window;
+
+// Silence all console logs and warnings in production builds
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.debug = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+}
+
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(

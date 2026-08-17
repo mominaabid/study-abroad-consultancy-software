@@ -25,6 +25,7 @@ import {
   X
 } from 'lucide-react';
 import { fetchTableRows } from '../../services/adminSupabaseService';
+import { getSupabaseClient } from '../../services/supabaseClient';
 
 export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, searchQuery = '' }) {
   const [adminUser] = useState(() => {
@@ -50,8 +51,10 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
   const [notifications, setNotifications] = useState([]);
   const notifRef = useRef(null);
 
-  // Load live student leads as notifications & poll for new leads every 10s
+  // Load live student leads as notifications & listen for real-time inserts
   useEffect(() => {
+    let channel = null;
+
     async function loadLiveLeadNotifs() {
       try {
         const seenIds = JSON.parse(localStorage.getItem('educatia_seen_notif_ids') || '[]');
@@ -78,9 +81,41 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
     }
     loadLiveLeadNotifs();
 
-    // Auto-poll every 10 seconds for real-time lead updates
-    const interval = setInterval(loadLiveLeadNotifs, 10000);
-    return () => clearInterval(interval);
+    // Supabase Realtime subscription for instant lead notifications
+    const client = getSupabaseClient();
+    if (client) {
+      channel = client
+        .channel('admin_dashboard_leads_realtime')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'student_leads' }, (payload) => {
+          const newLead = payload.new;
+          if (!newLead) return;
+
+          const seenIds = JSON.parse(localStorage.getItem('educatia_seen_notif_ids') || '[]');
+          const newNotifItem = {
+            id: newLead.lead_id || `lead-${Date.now()}`,
+            title: 'New Live Lead Captured',
+            student_name: newLead.student_name || 'Prospective Student',
+            country: newLead.interested_country || 'General Study Abroad',
+            time: newLead.created_at ? new Date(newLead.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+            desc: newLead.last_message_snippet ? `${newLead.last_message_snippet.substring(0, 50)}...` : 'Inquired on Educatia AI Bot.'
+          };
+
+          if (!seenIds.includes(String(newNotifItem.id))) {
+            setNotifications(prev => [newNotifItem, ...prev.filter(n => n.id !== newNotifItem.id)]);
+            setHasUnreadNotifs(true);
+          }
+          setLeadCount(prev => prev + 1);
+          setRecentLeads(prev => [newLead, ...prev.slice(0, 5)]);
+          setAllLeads(prev => [newLead, ...prev]);
+        })
+        .subscribe();
+    }
+
+    return () => {
+      if (channel && client) {
+        client.removeChannel(channel);
+      }
+    };
   }, []);
 
   useEffect(() => {
