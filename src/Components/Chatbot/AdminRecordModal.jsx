@@ -50,18 +50,25 @@ const DEFAULT_TABLE_SCHEMAS = {
   institutes: {
     institute_name: '',
     country_id: '',
-    institute_type: 'private',
-    institute_location: '',
+    state_id: '',
+    city_id: '',
     website: '',
+    institute_location: '',
+    institute_type: 'private',
+    admission_processing_days: '',
+    english_language_requirement: '',
+    special_instructions: '',
     university_ranking_int: '',
     university_ranking_local: '',
+    admission_intakes: '',
     is_active: true
   },
   campuses: {
     campus_name: '',
     institute_id: '',
-    city: '',
-    address: ''
+    city_id: '',
+    campus_location: '',
+    is_active: true
   },
   programs: {
     program_name: '',
@@ -70,27 +77,37 @@ const DEFAULT_TABLE_SCHEMAS = {
     degree_level: 'Bachelors',
     degree_duration: '',
     degree_intakes: '',
+    english_language_requirement: '',
     is_active: true
   },
   program_fees: {
     program_id: '',
+    campus_id: '',
+    pathway_foundation: true,
+    scholarship_available: true,
+    application_fee: '',
     tuition_fee: '',
     initial_deposit: '',
-    application_fee: '',
-    fee_currency: ''
+    currency: '',
+    is_active: true
   },
   scholarships: {
     scholarship_title: '',
     institute_id: '',
     program_id: '',
-    coverage_percentage: '',
+    scholarship_min: '',
+    scholarship_max: '',
+    currency: '',
+    scholarship_type: '',
     description: '',
-    scholarship_available: true
+    is_active: true
   },
   program_required_documents: {
     program_id: '',
     doc_id: '',
-    is_mandatory: true
+    pathway_id: '',
+    is_mandatory: true,
+    notes: ''
   },
   required_docs: {
     doc_name: '',
@@ -100,31 +117,45 @@ const DEFAULT_TABLE_SCHEMAS = {
   },
   english_requirements: {
     program_id: '',
+    institute_id: '',
     ielts_score: '',
     toefl_score: '',
     pte_score: '',
-    duolingo_score: ''
+    duolingo_score: '',
+    other: '',
+    note: '',
+    is_active: true
   },
   admission_pathways: {
-    program_id: '',
     pathway_name: '',
+    institute_id: '',
+    campus_id: '',
+    program_id: '',
+    marks_required_min: '',
+    marks_required_max: '',
+    english_language_requirement: '',
+    notes: '',
     pathway_type: '',
-    description: '',
-    admission_processing_days: ''
+    is_active: true
   },
   countries: {
     country_name: '',
     visa_approval_ratio: '',
     psw_duration: '',
-    spouse_dependants: true
+    spouse_dependants: true,
+    currency: '',
+    study_requirements: '',
+    is_active: true
   },
   states: {
     country_id: '',
-    state_name: ''
+    state_name: '',
+    is_active: true
   },
   cities: {
     state_id: '',
-    city_name: ''
+    city_name: '',
+    is_active: true
   }
 };
 
@@ -158,24 +189,23 @@ export default function AdminRecordModal({
     let initial = {};
     if (recordData) {
       initial = { ...recordData };
-    } else if (sampleRow) {
-      const empty = {};
-      Object.keys(sampleRow).forEach(key => {
-        if (key === tableConfig?.primaryKey || key === 'id' || key === 'created_at' || key === 'updated_at') {
-          empty[key] = '';
-        } else if (typeof sampleRow[key] === 'boolean') {
-          empty[key] = true;
-        } else if (typeof sampleRow[key] === 'number') {
-          empty[key] = 0;
-        } else {
-          empty[key] = '';
-        }
-      });
-      initial = empty;
-    } else if (tableConfig && DEFAULT_TABLE_SCHEMAS[tableConfig.id]) {
-      initial = { ...DEFAULT_TABLE_SCHEMAS[tableConfig.id] };
     } else {
-      initial = { name: '', description: '' };
+      const defaultSchema = (tableConfig && DEFAULT_TABLE_SCHEMAS[tableConfig.id]) || {};
+      const sampleEmpty = {};
+      if (sampleRow) {
+        Object.keys(sampleRow).forEach(key => {
+          if (key === tableConfig?.primaryKey || key === 'id' || key === 'created_at' || key === 'updated_at') {
+            sampleEmpty[key] = '';
+          } else if (typeof sampleRow[key] === 'boolean') {
+            sampleEmpty[key] = true;
+          } else if (typeof sampleRow[key] === 'number') {
+            sampleEmpty[key] = 0;
+          } else {
+            sampleEmpty[key] = '';
+          }
+        });
+      }
+      initial = { ...defaultSchema, ...sampleEmpty };
     }
 
     // Explicitly exclude institute fields if table is cities
@@ -259,6 +289,84 @@ export default function AdminRecordModal({
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Pre-submit validation for required fields per table
+    if (tableConfig?.id === 'campuses') {
+      if (!formData.campus_name || !String(formData.campus_name).trim()) {
+        setError('Please enter a Campus Name.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.institute_id) {
+        setError('Please select a University / Institute for this campus.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'institutes') {
+      if (!formData.institute_name || !String(formData.institute_name).trim()) {
+        setError('Please enter a University / Institute Name.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'programs') {
+      if (!formData.program_name || !String(formData.program_name).trim()) {
+        setError('Please enter a Program Name.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.institute_id) {
+        setError('Please select a University / Institute for this program.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'countries') {
+      if (!formData.country_name || !String(formData.country_name).trim()) {
+        setError('Please enter a Country Name.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'states') {
+      if (!formData.state_name || !String(formData.state_name).trim()) {
+        setError('Please enter a State / Province Name.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'cities') {
+      if (!formData.city_name || !String(formData.city_name).trim()) {
+        setError('Please enter a City Name.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'program_fees') {
+      if (!formData.program_id) {
+        setError('Please select a Degree Program / Course for this fee structure.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'scholarships') {
+      if (!formData.scholarship_title || !String(formData.scholarship_title).trim()) {
+        setError('Please enter a Scholarship Title.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'english_requirements') {
+      if (!formData.institute_id && !formData.program_id) {
+        setError('Please select a University / Institute or Degree Program.');
+        setLoading(false);
+        return;
+      }
+    } else if (tableConfig?.id === 'admission_pathways') {
+      if (!formData.pathway_name || !String(formData.pathway_name).trim()) {
+        setError('Please enter an Admission Pathway Name.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.institute_id) {
+        setError('Please select a University / Institute for this pathway.');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       if (mode === 'create') {
@@ -461,6 +569,24 @@ export default function AdminRecordModal({
       );
     }
 
+    if (key === 'scholarship_type') {
+      return (
+        <select
+          value={formData[key] !== undefined && formData[key] !== null ? formData[key] : ''}
+          onChange={(e) => handleChange(key, e.target.value)}
+          className="admin-select-input"
+        >
+          <option value="">-- Select Scholarship Type (Optional) --</option>
+          <option value="Merit-Based">Merit-Based</option>
+          <option value="Need-Based">Need-Based / Financial Aid</option>
+          <option value="Full Tuition Waiver">Full Tuition Waiver (100%)</option>
+          <option value="Partial Tuition Waiver">Partial Tuition Waiver</option>
+          <option value="Bursary">Academic Bursary / Grant</option>
+          <option value="Research Assistantship">Research / Teaching Assistantship</option>
+        </select>
+      );
+    }
+
     if (key === 'pathway_type') {
       return (
         <select
@@ -575,6 +701,23 @@ export default function AdminRecordModal({
     return true;
   });
 
+  // Intelligently sort visible fields into symmetric, logical 2-column grid layout
+  const getFieldCategoryRank = (key) => {
+    if (key.includes('name') || key.includes('title') || key.includes('organization')) return 1;
+    if (FOREIGN_KEY_MAP[key] || key.includes('type') || key.includes('level') || key.includes('category') || key === 'currency' || key === 'role') return 2;
+    if (key.includes('fee') || key.includes('deposit') || key.includes('score') || key.includes('ranking') || key.includes('days') || key.includes('ratio') || key.includes('min') || key.includes('max') || key.includes('duration') || key.includes('intakes') || key.includes('psw') || key === 'other') return 3;
+    if (key.includes('requirements') || key.includes('description') || key.includes('content') || key.includes('address') || key.includes('snippet') || key.includes('timing')) return 4;
+    if (key.includes('active') || key.includes('available') || key.includes('spouse') || key.includes('mandatory') || key.includes('foundation')) return 5;
+    return 3;
+  };
+
+  const sortedVisibleFields = [...visibleFields].sort((a, b) => {
+    const rankA = getFieldCategoryRank(a);
+    const rankB = getFieldCategoryRank(b);
+    if (rankA !== rankB) return rankA - rankB;
+    return 0;
+  });
+
   return (
     <div className="admin-modal-overlay">
       <div className="admin-record-modal" style={{ maxWidth: '680px' }}>
@@ -604,14 +747,14 @@ export default function AdminRecordModal({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="admin-modal-form">
           <div className="admin-form-fields-grid">
-            {visibleFields.length === 0 ? (
+            {sortedVisibleFields.length === 0 ? (
               <p style={{ color: '#64748b', fontSize: '0.9rem', gridColumn: 'span 2' }}>
                 No editable fields found for this record.
               </p>
             ) : (
-              visibleFields.map((key) => {
+              sortedVisibleFields.map((key) => {
                 const humanLabel = getHumanFieldName(key);
-                const isFullWidth = key.includes('requirements') || key.includes('description') || key.includes('content') || key.includes('address');
+                const isFullWidth = key.includes('requirements') || key.includes('description') || key.includes('content') || key.includes('address') || key.includes('snippet');
 
                 return (
                   <div key={key} className={`admin-form-group ${isFullWidth ? 'full-width' : ''}`}>

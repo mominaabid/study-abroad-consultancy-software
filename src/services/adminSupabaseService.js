@@ -17,9 +17,13 @@ export const HUMAN_FIELD_NAMES = {
   initial_deposit: 'Initial Deposit',
   application_fee: 'Application Fee',
   fee_currency: 'Currency (EUR / GBP / USD)',
+  pathway_foundation: 'Pathway Foundation',
   scholarship_available: 'Scholarship Available?',
   scholarship_title: 'Scholarship Title',
   scholarship_name: 'Scholarship Name',
+  scholarship_min: 'Min. Scholarship Value / %',
+  scholarship_max: 'Max. Scholarship Value / %',
+  scholarship_type: 'Scholarship Type',
   coverage_percentage: 'Scholarship Coverage (%)',
   
   // Requirements & Test Scores
@@ -30,17 +34,22 @@ export const HUMAN_FIELD_NAMES = {
   toefl_score: 'TOEFL Min. Score',
   pte_score: 'PTE Min. Score',
   duolingo_score: 'Duolingo Min. Score',
-  study_requirements: 'Admission Documents Needed',
+  other: 'Other Test (MOI / Cambridge / Other)',
+  note: 'Additional Notes / Criteria',
+  study_requirements: 'Country Info',
   
   // Rankings & Visa
   university_ranking_int: 'Global Ranking (#)',
   university_ranking_local: 'National Ranking (#)',
   admission_processing_days: 'Processing Days',
+  special_instructions: 'Special Instructions',
+  admission_intakes: 'Admission Intakes',
   spouse_dependants: 'Spouse / Dependant Allowed?',
   psw_duration: 'Post-Study Work Visa Duration',
   visa_approval_ratio: 'Visa Approval Rate (%)',
   website: 'Website / Portal',
   institute_location: 'Location / Address',
+  campus_location: 'Campus Location / Address',
   is_active: 'Active Status?',
   
   // Foreign Key Links
@@ -53,6 +62,10 @@ export const HUMAN_FIELD_NAMES = {
   doc_id: 'Required Document',
   pathway_id: 'Admission Pathway',
   pathway_type: 'Pathway Type',
+  marks_required_min: 'Min. Required Marks / GPA (%)',
+  marks_required_max: 'Max. Required Marks / GPA (%)',
+  english_language_requirement: 'English Language Requirement',
+  notes: 'Pathway Notes / Details',
 
   // Business Info & Office
   organization_name: 'Organization Name',
@@ -98,24 +111,27 @@ export function formatUserFriendlyError(error) {
   const lower = rawMsg.toLowerCase();
 
   // 1. Null constraint / Missing required field
-  if (lower.includes('null value in column') || lower.includes('violates not-null constraint')) {
-    const match = rawMsg.match(/column "([^"]+)"/i);
+  if (lower.includes('null value in column') || lower.includes('violates not-null constraint') || lower.includes('not-null')) {
+    const match = rawMsg.match(/column "([^"]+)"/i) || rawMsg.match(/column '([^']+)'/i);
     const rawCol = match ? match[1] : '';
     const humanField = rawCol ? getHumanFieldName(rawCol) : 'a required field';
-    return `Please fill in all required fields (${humanField} is missing).`;
+    return `Please fill in required field: ${humanField}`;
   }
 
-  // 2. Unique constraint / Duplicate entry
+  // 2. Foreign key constraint
+  if (lower.includes('violates foreign key constraint') || lower.includes('foreign key constraint') || lower.includes('fkey')) {
+    const match = rawMsg.match(/column "([^"]+)"/i) || rawMsg.match(/Key \(([^)]+)\)=/i);
+    const rawCol = match ? match[1] : '';
+    const humanField = rawCol ? getHumanFieldName(rawCol) : 'Linked Record (such as University or Program)';
+    return `Please select a valid ${humanField}`;
+  }
+
+  // 3. Unique constraint / Duplicate entry
   if (lower.includes('duplicate key') || lower.includes('violates unique constraint')) {
     const match = rawMsg.match(/Key \(([^)]+)\)=/i) || rawMsg.match(/constraint "([^"]+)"/i);
     const rawCol = match ? match[1] : '';
     const humanField = rawCol ? getHumanFieldName(rawCol) : 'entry';
     return `A record with this ${humanField} already exists. Please use a unique value.`;
-  }
-
-  // 3. Foreign key constraint
-  if (lower.includes('violates foreign key constraint') || lower.includes('foreign key constraint')) {
-    return 'Unable to save: Please ensure all linked records (such as University or City) are selected.';
   }
 
   // 4. Enum constraint error
@@ -131,11 +147,6 @@ export function formatUserFriendlyError(error) {
   // 6. Network / Connection Error
   if (lower.includes('fetch') || lower.includes('network error') || lower.includes('failed to fetch')) {
     return 'Connection issue. Please check your internet connection and try again.';
-  }
-
-  // 7. Generic DB fallback
-  if (lower.includes('constraint') || lower.includes('relation') || lower.includes('column') || lower.includes('syntax')) {
-    return 'Unable to save record. Please verify all required fields and try again.';
   }
 
   return rawMsg;
@@ -165,10 +176,10 @@ export const SUPABASE_TABLES = [
   {
     category: 'Admissions',
     tables: [
-      { id: 'program_required_documents', label: 'Program Docs', primaryKey: 'id', canModify: true, description: 'Mapped required docs per program' },
+      { id: 'admission_pathways', label: 'Pathways', primaryKey: 'pathway_id', canModify: true, description: 'Pathway programs & criteria' },
       { id: 'required_docs', label: 'Master Docs', primaryKey: 'doc_id', canModify: true, description: 'Master catalog of admission documents' },
       { id: 'english_requirements', label: 'English Requirements', primaryKey: 'requirement_id', canModify: true, description: 'IELTS, PTE & TOEFL score criteria' },
-      { id: 'admission_pathways', label: 'Pathways', primaryKey: 'pathway_id', canModify: true, description: 'Pathway programs & criteria' },
+      { id: 'program_required_documents', label: 'Program Docs', primaryKey: 'id', canModify: true, description: 'Mapped required docs per program' },
     ]
   },
   {
@@ -387,17 +398,39 @@ export async function insertTableRow(tableName, recordData) {
   const client = getSupabaseClient();
   if (!client) throw new Error('Supabase client is not configured.');
 
-  const { data, error } = await client
-    .from(tableName)
-    .insert(recordData)
-    .select();
+  let currentPayload = { ...recordData };
+  let attempts = 0;
+  const maxAttempts = 5;
 
-  if (error) {
+  while (attempts < maxAttempts) {
+    attempts++;
+    const { data, error } = await client
+      .from(tableName)
+      .insert(currentPayload)
+      .select();
+
+    if (!error) return data;
+
+    const rawMsg = error.message || String(error);
+    const lower = rawMsg.toLowerCase();
+
+    // If Postgres complains about an unknown/missing column in table schema
+    if (lower.includes('column') && (lower.includes('does not exist') || lower.includes('could not find') || lower.includes('schema') || lower.includes('pgrst204'))) {
+      const match = rawMsg.match(/column "?([a-zA-Z0-9_]+)"?/i) || rawMsg.match(/'([a-zA-Z0-9_]+)'/i);
+      const invalidCol = match ? match[1] : null;
+
+      if (invalidCol && Object.prototype.hasOwnProperty.call(currentPayload, invalidCol)) {
+        console.warn(`Stripping column '${invalidCol}' not present in Supabase '${tableName}' schema and retrying insert.`);
+        delete currentPayload[invalidCol];
+        continue;
+      }
+    }
+
     console.error(`Error inserting row into '${tableName}':`, error);
     throw new Error(error.message);
   }
 
-  return data;
+  throw new Error(`Failed to insert row into '${tableName}'.`);
 }
 
 /**
@@ -411,18 +444,39 @@ export async function updateTableRow(tableName, primaryKeyField, primaryKeyValue
     throw new Error(`Cannot update record in '${tableName}': missing primary key ${primaryKeyField}`);
   }
 
-  const { data, error } = await client
-    .from(tableName)
-    .update(recordData)
-    .eq(primaryKeyField, primaryKeyValue)
-    .select();
+  let currentPayload = { ...recordData };
+  let attempts = 0;
+  const maxAttempts = 5;
 
-  if (error) {
+  while (attempts < maxAttempts) {
+    attempts++;
+    const { data, error } = await client
+      .from(tableName)
+      .update(currentPayload)
+      .eq(primaryKeyField, primaryKeyValue)
+      .select();
+
+    if (!error) return data;
+
+    const rawMsg = error.message || String(error);
+    const lower = rawMsg.toLowerCase();
+
+    if (lower.includes('column') && (lower.includes('does not exist') || lower.includes('could not find') || lower.includes('schema') || lower.includes('pgrst204'))) {
+      const match = rawMsg.match(/column "?([a-zA-Z0-9_]+)"?/i) || rawMsg.match(/'([a-zA-Z0-9_]+)'/i);
+      const invalidCol = match ? match[1] : null;
+
+      if (invalidCol && Object.prototype.hasOwnProperty.call(currentPayload, invalidCol)) {
+        console.warn(`Stripping column '${invalidCol}' not present in Supabase '${tableName}' schema and retrying update.`);
+        delete currentPayload[invalidCol];
+        continue;
+      }
+    }
+
     console.error(`Error updating row in '${tableName}' where ${primaryKeyField}=${primaryKeyValue}:`, error);
     throw new Error(error.message);
   }
 
-  return data;
+  throw new Error(`Failed to update row in '${tableName}'.`);
 }
 
 /**

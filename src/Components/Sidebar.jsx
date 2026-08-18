@@ -71,10 +71,10 @@ const ADMIN_MENU = [
       {
         category: "Admissions",
         items: [
-          { name: "Program Docs", path: "/admin/chatbot-panel?table=program_required_documents" },
+          { name: "Pathways", path: "/admin/chatbot-panel?table=admission_pathways" },
           { name: "Master Docs", path: "/admin/chatbot-panel?table=required_docs" },
           { name: "English Requirements", path: "/admin/chatbot-panel?table=english_requirements" },
-          { name: "Pathways", path: "/admin/chatbot-panel?table=admission_pathways" },
+          { name: "Program Docs", path: "/admin/chatbot-panel?table=program_required_documents" },
         ],
       },
       {
@@ -141,10 +141,10 @@ const COUNSELLOR_MENU = [
       {
         category: "Admissions",
         items: [
-          { name: "Program Docs", path: "/counsellor/chatbot-panel?table=program_required_documents" },
+          { name: "Pathways", path: "/counsellor/chatbot-panel?table=admission_pathways" },
           { name: "Master Docs", path: "/counsellor/chatbot-panel?table=required_docs" },
           { name: "English Requirements", path: "/counsellor/chatbot-panel?table=english_requirements" },
-          { name: "Pathways", path: "/counsellor/chatbot-panel?table=admission_pathways" },
+          { name: "Program Docs", path: "/counsellor/chatbot-panel?table=program_required_documents" },
         ],
       },
       {

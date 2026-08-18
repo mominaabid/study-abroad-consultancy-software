@@ -103,6 +103,16 @@ export default function AdminTableGrid({
     return valStr;
   };
 
+  const getColumnAlignmentStyle = (col) => {
+    if (col.includes('active') || col.includes('available') || col.includes('spouse') || col.includes('mandatory') || col.includes('foundation') || col === 'currency' || col === 'code') {
+      return { textAlign: 'center' };
+    }
+    if (col.includes('score') || col.includes('ratio') || col.includes('ranking') || col.includes('days') || col.includes('fee') || col.includes('deposit') || col.includes('min') || col.includes('max')) {
+      return { textAlign: 'center' };
+    }
+    return { textAlign: 'left' };
+  };
+
   const isChatOrLeadTable = tableConfig.id === 'chat_sessions' || tableConfig.id === 'chat_messages' || tableConfig.id === 'student_leads';
   const isTranscriptTable = tableConfig.id === 'chat_sessions' || tableConfig.id === 'student_leads';
 
@@ -114,13 +124,13 @@ export default function AdminTableGrid({
         <table className="admin-data-table">
           <thead>
             <tr>
-              <th className="col-reg-num" style={{ width: '85px', textAlign: 'center' }}>SR#</th>
+              <th className="col-reg-num" style={{ width: '70px', textAlign: 'center' }}>SR#</th>
               {columns.map((col) => (
-                <th key={col}>
+                <th key={col} style={getColumnAlignmentStyle(col)}>
                   {getHumanFieldName(col)}
                 </th>
               ))}
-              {tableConfig.canModify && <th className="col-actions" style={{ textAlign: 'center' }}>Actions</th>}
+              {tableConfig.canModify && <th className="col-actions" style={{ textAlign: 'center', width: '120px' }}>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -134,7 +144,7 @@ export default function AdminTableGrid({
                     {regNum}
                   </td>
                   {columns.map((col) => (
-                    <td key={col} className={col === primaryKey ? 'col-pk' : ''}>
+                    <td key={col} className={col === primaryKey ? 'col-pk' : ''} style={getColumnAlignmentStyle(col)}>
                       {renderCellValue(col, row[col], row)}
                     </td>
                   ))}

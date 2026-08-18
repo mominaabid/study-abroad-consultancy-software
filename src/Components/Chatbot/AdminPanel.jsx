@@ -409,7 +409,7 @@ export default function AdminPanel({ onLockAdmin }) {
           />
         ) : (
           /* Data Grid Section */
-          <div className="admin-grid-section" style={{ padding: '1.5rem' }}>
+          <div className="admin-grid-section">
             {/* Table Control Header Action Bar */}
             <div className="table-header-action-bar" style={{
               display: 'flex',

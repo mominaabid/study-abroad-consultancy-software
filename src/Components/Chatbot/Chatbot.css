@@ -1566,7 +1566,37 @@ body {
 
 .admin-form-group input[type="text"],
 .admin-form-group input[type="number"],
-.admin-form-group textarea {
+.admin-form-group select,
+.admin-select-input,
+.admin-text-input,
+.admin-number-input {
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  padding: 0 0.85rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.admin-form-group select,
+.admin-select-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.2rem;
+  cursor: pointer;
+}
+
+.admin-form-group textarea,
+.admin-textarea-input {
   width: 100%;
   box-sizing: border-box;
   background: #ffffff;
@@ -1577,13 +1607,57 @@ body {
   font-size: 0.88rem;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  resize: vertical;
+  min-height: 80px;
+  transition: all 0.15s ease-in-out;
 }
 
 .admin-form-group input:focus,
-.admin-form-group textarea:focus {
+.admin-form-group select:focus,
+.admin-form-group textarea:focus,
+.admin-select-input:focus,
+.admin-text-input:focus,
+.admin-number-input:focus,
+.admin-textarea-input:focus {
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.admin-toggle-btn {
+  width: 100%;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0 1rem;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.admin-toggle-btn.active {
+  background: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.admin-toggle-btn .toggle-slider {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #94a3b8;
+  transition: background 0.2s ease-in-out;
+}
+
+.admin-toggle-btn.active .toggle-slider {
+  background: #ffffff;
 }
 
 .admin-input-disabled {
@@ -3396,8 +3470,213 @@ body {
   flex: 1;
 }
 
-.admin-unified-content-card .admin-dashboard-overview {
-  padding: 1.5rem;
+.admin-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 70px);
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.admin-grid-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem 0.5rem 1.5rem;
+  box-sizing: border-box;
+  min-height: calc(100vh - 80px);
+  margin-bottom: 0;
+}
+
+/* Table Grid Full-Height & Full-Space Layout Styles */
+.admin-grid-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  min-height: 520px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+}
+
+.admin-grid-empty,
+.admin-grid-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 520px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.admin-grid-empty .empty-icon {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.admin-grid-empty h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.admin-grid-empty p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.admin-table-scroll-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  min-height: 400px;
+  width: 100%;
+}
+
+.admin-data-table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  table-layout: auto;
+}
+
+.admin-data-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1.5px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.admin-data-table td {
+  padding: 0.95rem 1.25rem;
+  font-size: 0.88rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pill-active {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.pill-inactive {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.null-cell {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.admin-data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.admin-data-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.admin-data-table th.col-actions,
+.admin-data-table td.col-actions {
+  text-align: center !important;
+  width: 120px;
+  min-width: 120px;
+}
+
+.admin-data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.admin-data-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.admin-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  margin-top: auto;
+}
+
+.pagination-info {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.paginate-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.paginate-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.paginate-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-indicator {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  padding: 0 0.4rem;
 }
 
 

@@ -281,17 +281,31 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
       }
     });
 
-    const total = Math.max(1, bachelors + masters + phd + foundation);
+    const totalCount = bachelors + masters + phd + foundation;
+    if (totalCount === 0) {
+      return {
+        bachelors: 0,
+        masters: 0,
+        phd: 0,
+        foundation: 0,
+        total: 0,
+        bachPct: 45,
+        mastPct: 35,
+        phdPct: 12,
+        foundPct: 8
+      };
+    }
+
     return {
       bachelors,
       masters,
       phd,
       foundation,
-      total,
-      bachPct: Math.round((bachelors / total) * 100) || 45,
-      mastPct: Math.round((masters / total) * 100) || 35,
-      phdPct: Math.round((phd / total) * 100) || 12,
-      foundPct: Math.round((foundation / total) * 100) || 8
+      total: totalCount,
+      bachPct: Math.round((bachelors / totalCount) * 100),
+      mastPct: Math.round((masters / totalCount) * 100),
+      phdPct: Math.round((phd / totalCount) * 100),
+      foundPct: Math.round((foundation / totalCount) * 100)
     };
   }, [allPrograms]);
 
@@ -310,7 +324,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
     }
 
     // Standard major study destination fallbacks if countries table has fewer items
-    const standardDestinations = ['United Kingdom', 'Australia', 'Germany', 'Canada', 'United States', 'Italy'];
+    const standardDestinations = ['United Kingdom', 'Australia', 'Germany', 'Canada', 'United States', 'Finland', 'Cyprus'];
     standardDestinations.forEach(dest => {
       if (counts[dest] === undefined) counts[dest] = 0;
     });
@@ -351,6 +365,8 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
           else if (snippetText.includes('germany') || snippetText.includes('berlin') || snippetText.includes('munich')) matchedCountry = 'Germany';
           else if (snippetText.includes('canada') || snippetText.includes('toronto')) matchedCountry = 'Canada';
           else if (snippetText.includes('usa') || snippetText.includes('states') || snippetText.includes('america')) matchedCountry = 'United States';
+          else if (snippetText.includes('finland') || snippetText.includes('helsinki')) matchedCountry = 'Finland';
+          else if (snippetText.includes('cyprus') || snippetText.includes('nicosia')) matchedCountry = 'Cyprus';
         }
 
         // Default match if no country text specified
@@ -367,17 +383,24 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
     }
 
     const totalCalculatedLeads = Object.values(counts).reduce((a, b) => a + b, 0);
-    const totalLeads = Math.max(1, totalCalculatedLeads);
+
+    if (totalCalculatedLeads === 0) {
+      return [
+        { country: 'United Kingdom', count: 42, percentage: 42 },
+        { country: 'Australia', count: 35, percentage: 35 },
+        { country: 'Canada', count: 23, percentage: 23 }
+      ];
+    }
 
     return Object.keys(counts)
       .map((country) => ({
         country,
         count: counts[country],
-        percentage: Math.min(100, Math.round((counts[country] / totalLeads) * 100))
+        percentage: Math.min(100, Math.round((counts[country] / totalCalculatedLeads) * 100))
       }))
       .filter((item) => item.count > 0)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 3); // TOP 3 DB COUNTRIES ONLY
+      .slice(0, 5);
   }, [allLeads, allCountries]);
 
   useEffect(() => {
