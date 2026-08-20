@@ -724,12 +724,11 @@ export default function AdminRecordModal({
         {/* Header */}
         <div className="admin-modal-header">
           <div className="admin-modal-title">
-            <div className="modal-icon-badge">
+            <div className="modal-icon-badge" style={{ background: '#009E99', color: '#ffffff' }}>
               {mode === 'create' ? <Plus size={20} /> : <Save size={20} />}
             </div>
             <div>
-              <h3>{mode === 'create' ? `Add New ${tableConfig?.label || 'Record'}` : `Edit ${tableConfig?.label || 'Record'}`}</h3>
-              <p className="modal-subtitle">Simplified record editor with smart foreign key linkage</p>
+              <h3 className="text-gray-800 font-bold text-base m-0">{mode === 'create' ? `Add New ${tableConfig?.label || 'Record'}` : `Edit ${tableConfig?.label || 'Record'}`}</h3>
             </div>
           </div>
           <button className="modal-close-btn" onClick={onClose}>
@@ -773,7 +772,12 @@ export default function AdminRecordModal({
             <button type="button" className="admin-btn-secondary" onClick={onClose} disabled={loading}>
               Cancel
             </button>
-            <button type="submit" className="admin-btn-primary" disabled={loading}>
+            <button 
+              type="submit" 
+              className="admin-btn-primary" 
+              disabled={loading}
+              style={{ background: '#009E99', borderColor: '#008783', color: '#ffffff' }}
+            >
               {loading ? (
                 <>
                   <span className="spinner-sm" /> Saving...

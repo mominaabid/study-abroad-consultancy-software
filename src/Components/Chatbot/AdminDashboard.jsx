@@ -501,7 +501,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
             padding: '6px 14px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
           }}>
-            <Clock size={14} style={{ color: '#2563eb', flexShrink: 0 }} />
+            <Clock size={14} style={{ color: '#009E99', flexShrink: 0 }} />
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
               <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', fontVariantNumeric: 'tabular-nums' }}>
                 {liveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
@@ -611,7 +611,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                             <span className="notif-time">{n.time}</span>
                           </div>
                           <p className="notif-desc">
-                            <strong style={{ color: '#2563eb' }}>{n.country}:</strong> {n.desc}
+                            <strong style={{ color: '#009E99' }}>{n.country}:</strong> {n.desc}
                           </p>
                         </div>
                         <button
@@ -661,71 +661,129 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
       </div>
 
       {/* KPI Stats Cards Grid */}
-      <div className="dashboard-stats-grid">
-        {/* Card 1: Student Lead */}
-        <div className="dashboard-stat-card stat-amber" onClick={() => onNavigateTable('student_leads')}>
-          <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #fffbe0 0%, #fef3c7 100%)', color: '#d97706', border: '1px solid #fde68a' }}>
-            <Users size={24} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-2.5">
+        {/* Card 1: Student Leads */}
+        <div
+          onClick={() => onNavigateTable('student_leads')}
+          className="group bg-white px-4 py-3 rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col justify-between"
+        >
+          <div className="absolute -right-8 -top-8 w-28 h-28 bg-gradient-to-br from-emerald-400 to-teal-500 opacity-10 group-hover:opacity-20 rounded-full transition-all duration-700 group-hover:scale-150" />
+          <div className="relative z-10 flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Chatbot Leads</p>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">{loading ? '...' : leadCount}</h2>
+            </div>
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-md group-hover:scale-110 transition-transform duration-500">
+              <Users size={20} strokeWidth={2.5} />
+            </div>
           </div>
-          <div className="stat-details">
-            <span className="stat-label">Chatbot Leads</span>
-            <span className="stat-value">{loading ? '...' : leadCount}</span>
+          <div className="mt-3 flex items-center justify-between z-10">
+            <div className="flex items-center gap-1.5">
+              <div className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-600">
+                ↑ Live
+              </div>
+              <span className="text-gray-400 text-[10px]">Real-time Database</span>
+            </div>
+            <ArrowRight size={14} className="text-gray-400 group-hover:text-[#009E99] group-hover:translate-x-1 transition-all" />
           </div>
-          <ArrowRight size={16} className="card-arrow-icon" />
         </div>
 
         {/* Card 2: Chat Sessions */}
-        <div className="dashboard-stat-card stat-indigo" onClick={() => onNavigateTable('chat_sessions')}>
-          <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)', color: '#4f46e5', border: '1px solid #c7d2fe' }}>
-            <MessageSquare size={24} />
+        <div
+          onClick={() => onNavigateTable('chat_sessions')}
+          className="group bg-white px-4 py-3 rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col justify-between"
+        >
+          <div className="absolute -right-8 -top-8 w-28 h-28 bg-gradient-to-br from-cyan-500 to-blue-600 opacity-10 group-hover:opacity-20 rounded-full transition-all duration-700 group-hover:scale-150" />
+          <div className="relative z-10 flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Chat Sessions</p>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">{loading ? '...' : sessionCount}</h2>
+            </div>
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md group-hover:scale-110 transition-transform duration-500">
+              <MessageSquare size={20} strokeWidth={2.5} />
+            </div>
           </div>
-          <div className="stat-details">
-            <span className="stat-label">Chat Sessions</span>
-            <span className="stat-value">{loading ? '...' : sessionCount}</span>
+          <div className="mt-3 flex items-center justify-between z-10">
+            <div className="flex items-center gap-1.5">
+              <div className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-50 text-cyan-600">
+                ↑ Active
+              </div>
+              <span className="text-gray-400 text-[10px]">Student Conversations</span>
+            </div>
+            <ArrowRight size={14} className="text-gray-400 group-hover:text-[#009E99] group-hover:translate-x-1 transition-all" />
           </div>
-          <ArrowRight size={16} className="card-arrow-icon" />
         </div>
 
         {/* Card 3: Active Programs */}
-        <div className="dashboard-stat-card stat-sky" onClick={() => onNavigateTable('programs')}>
-          <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)', color: '#0284c7', border: '1px solid #bae6fd' }}>
-            <GraduationCap size={24} />
+        <div
+          onClick={() => onNavigateTable('programs')}
+          className="group bg-white px-4 py-3 rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col justify-between"
+        >
+          <div className="absolute -right-8 -top-8 w-28 h-28 bg-gradient-to-br from-violet-500 to-indigo-600 opacity-10 group-hover:opacity-20 rounded-full transition-all duration-700 group-hover:scale-150" />
+          <div className="relative z-10 flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Active Programs</p>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">{loading ? '...' : programCount}</h2>
+            </div>
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md group-hover:scale-110 transition-transform duration-500">
+              <GraduationCap size={20} strokeWidth={2.5} />
+            </div>
           </div>
-          <div className="stat-details">
-            <span className="stat-label">Active Programs</span>
-            <span className="stat-value">{loading ? '...' : programCount}</span>
+          <div className="mt-3 flex items-center justify-between z-10">
+            <div className="flex items-center gap-1.5">
+              <div className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-violet-50 text-violet-600">
+                ↑ Catalog
+              </div>
+              <span className="text-gray-400 text-[10px]">Academic Degree Offerings</span>
+            </div>
+            <ArrowRight size={14} className="text-gray-400 group-hover:text-[#009E99] group-hover:translate-x-1 transition-all" />
           </div>
-          <ArrowRight size={16} className="card-arrow-icon" />
         </div>
 
         {/* Card 4: Partner Universities */}
-        <div className="dashboard-stat-card stat-emerald" onClick={() => onNavigateTable('institutes')}>
-          <div className="stat-icon-wrapper" style={{ background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', color: '#059669', border: '1px solid #a7f3d0' }}>
-            <Building2 size={24} />
+        <div
+          onClick={() => onNavigateTable('institutes')}
+          className="group bg-white px-4 py-3 rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col justify-between"
+        >
+          <div className="absolute -right-8 -top-8 w-28 h-28 bg-gradient-to-br from-amber-400 to-orange-500 opacity-10 group-hover:opacity-20 rounded-full transition-all duration-700 group-hover:scale-150" />
+          <div className="relative z-10 flex justify-between items-start">
+            <div>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Partner Universities</p>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">{loading ? '...' : uniCount}</h2>
+            </div>
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md group-hover:scale-110 transition-transform duration-500">
+              <Building2 size={20} strokeWidth={2.5} />
+            </div>
           </div>
-          <div className="stat-details">
-            <span className="stat-label">Partner Universities</span>
-            <span className="stat-value">{loading ? '...' : uniCount}</span>
+          <div className="mt-3 flex items-center justify-between z-10">
+            <div className="flex items-center gap-1.5">
+              <div className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-600">
+                ↑ Partners
+              </div>
+              <span className="text-gray-400 text-[10px]">Linked Global Institutes</span>
+            </div>
+            <ArrowRight size={14} className="text-gray-400 group-hover:text-[#009E99] group-hover:translate-x-1 transition-all" />
           </div>
-          <ArrowRight size={16} className="card-arrow-icon" />
         </div>
       </div>
 
       {/* Row 2: Lead Inquiries Growth Chart & Degree Level Distribution */}
       <div className="dashboard-two-column-layout">
         {/* Left: Lead Inquiries Trend Spline Curve Chart */}
-        <div className="dashboard-card-section flex-2">
+        <div className="bg-white p-3.5 sm:p-3.5 rounded-2xl shadow-md border border-gray-100 hover:shadow-xl transition-all duration-500 flex-2">
           <div className="card-header-bar">
             <div>
-              <h3>Chatbot Lead Inquiry Trends</h3>
-              <p>
+              <h3 className="font-semibold text-base sm:text-lg text-gray-800 flex items-center gap-2">
+                <div className="w-2.5 h-2.5 bg-[#009E99] rounded-full animate-pulse" /> Chatbot Lead Inquiry Trends
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
                 {timeFilter === 'week' && 'Daily student inquiries captured through Educatia AI widget (This Week)'}
                 {timeFilter === 'month' && 'Weekly student inquiries distribution (This Month)'}
                 {timeFilter === 'all' && 'Cumulative monthly chatbot lead growth (All Time)'}
               </p>
             </div>
-            <div className="chart-badge-info" style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', color: '#1e40af', border: '1px solid #bfdbfe' }}>
-              <Activity size={14} className="text-primary" />
+            <div className="chart-badge-info" style={{ background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)', color: '#0f766e', border: '1px solid #99f6e4' }}>
+              <Activity size={14} style={{ color: '#009E99' }} />
               <span>Peak: {peakItem?.label} ({peakItem?.leads} leads)</span>
             </div>
           </div>
@@ -737,15 +795,15 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                 <defs>
                   {/* Glowing Smooth Area Fill Gradient */}
                   <linearGradient id="splineAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563eb" stopOpacity="0.45" />
-                    <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.12" />
-                    <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.0" />
+                    <stop offset="0%" stopColor="#009E99" stopOpacity="0.45" />
+                    <stop offset="60%" stopColor="#14b8a6" stopOpacity="0.12" />
+                    <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0.0" />
                   </linearGradient>
                   {/* Glowing Line Stroke Gradient */}
                   <linearGradient id="splineLineGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#1d4ed8" />
-                    <stop offset="50%" stopColor="#2563eb" />
-                    <stop offset="100%" stopColor="#3b82f6" />
+                    <stop offset="0%" stopColor="#008783" />
+                    <stop offset="50%" stopColor="#009E99" />
+                    <stop offset="100%" stopColor="#14b8a6" />
                   </linearGradient>
                   {/* Glow Shadow Filter */}
                   <filter id="chartGlow" x="-20%" y="-20%" width="140%" height="140%">
@@ -797,7 +855,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                           y1="30"
                           x2={pt.x}
                           y2="140"
-                          stroke="#93c5fd"
+                          stroke="#99f6e4"
                           strokeDasharray="2 2"
                           strokeWidth="1.5"
                         />
@@ -809,7 +867,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                         cy={pt.y}
                         r={isHovered ? 9 : isPeak ? 7 : 5}
                         fill="#ffffff"
-                        stroke="#2563eb"
+                        stroke="#009E99"
                         strokeWidth={isHovered ? 3.5 : 2.5}
                         style={{ transition: 'all 0.2s ease-in-out' }}
                       />
@@ -819,7 +877,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                         cx={pt.x}
                         cy={pt.y}
                         r={isHovered ? 4 : 2.5}
-                        fill="#2563eb"
+                        fill="#009E99"
                       />
 
                       {/* Floating Tooltip Pill on Hover or Peak */}
@@ -831,7 +889,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                             width="48"
                             height="20"
                             rx="10"
-                            fill={isHovered ? '#0f172a' : '#1e40af'}
+                            fill={isHovered ? '#0f172a' : '#009E99'}
                             style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
                           />
                           <text
@@ -852,7 +910,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                         x={pt.x}
                         y="158"
                         textAnchor="middle"
-                        fill={isHovered ? '#1d4ed8' : '#64748b'}
+                        fill={isHovered ? '#009E99' : '#64748b'}
                         fontSize="11"
                         fontWeight={isHovered || isPeak ? '800' : '600'}
                       >
@@ -867,11 +925,13 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
         </div>
 
         {/* Right: Degree Level Breakdown Donut Visual */}
-        <div className="dashboard-card-section flex-1">
+        <div className="bg-white p-3.5 sm:p-3.5 rounded-2xl shadow-md border border-gray-100 hover:shadow-xl transition-all duration-500 flex-1">
           <div className="card-header-bar">
             <div>
-              <h3>Degree Breakdown</h3>
-              <p>Program offerings distribution</p>
+              <h3 className="font-semibold text-base sm:text-lg text-gray-800 flex items-center gap-2">
+                <div className="w-2.5 h-2.5 bg-[#009E99] rounded-full animate-pulse" /> Degree Breakdown
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Program offerings distribution</p>
             </div>
             <PieChartIcon size={18} className="text-muted" />
           </div>
@@ -880,13 +940,13 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
             <svg viewBox="0 0 160 160" className="donut-svg">
               <circle cx="80" cy="80" r="60" fill="transparent" stroke="#f1f5f9" strokeWidth="22" />
               {/* Bachelors - 45% */}
-              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#2563eb" strokeWidth="22" strokeDasharray="170 377" strokeDashoffset="0" />
+              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#009E99" strokeWidth="22" strokeDasharray="170 377" strokeDashoffset="0" />
               {/* Masters - 32% */}
-              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#10b981" strokeWidth="22" strokeDasharray="120 377" strokeDashoffset="-170" />
+              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#14b8a6" strokeWidth="22" strokeDasharray="120 377" strokeDashoffset="-170" />
               {/* PhD - 13% */}
               <circle cx="80" cy="80" r="60" fill="transparent" stroke="#f59e0b" strokeWidth="22" strokeDasharray="50 377" strokeDashoffset="-290" />
               {/* Foundation - 10% */}
-              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#0284c7" strokeWidth="22" strokeDasharray="37 377" strokeDashoffset="-340" />
+              <circle cx="80" cy="80" r="60" fill="transparent" stroke="#06b67f" strokeWidth="22" strokeDasharray="37 377" strokeDashoffset="-340" />
               
               <text x="80" y="76" textAnchor="middle" fill="#0f172a" fontSize="18" fontWeight="800">{degreeStats.bachPct}%</text>
               <text x="80" y="92" textAnchor="middle" fill="#64748b" fontSize="10" fontWeight="600">Bachelors</text>
@@ -894,11 +954,11 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
 
             <div className="legend-list">
               <div className="legend-item">
-                <span className="legend-dot" style={{ background: '#2563eb' }} />
+                <span className="legend-dot" style={{ background: '#009E99' }} />
                 <span className="legend-lbl">Bachelors Degree ({degreeStats.bachPct}%)</span>
               </div>
               <div className="legend-item">
-                <span className="legend-dot" style={{ background: '#10b981' }} />
+                <span className="legend-dot" style={{ background: '#14b8a6' }} />
                 <span className="legend-lbl">Masters Degree ({degreeStats.mastPct}%)</span>
               </div>
               <div className="legend-item">
@@ -906,7 +966,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                 <span className="legend-lbl">PhD / Doctorate ({degreeStats.phdPct}%)</span>
               </div>
               <div className="legend-item">
-                <span className="legend-dot" style={{ background: '#0284c7' }} />
+                <span className="legend-dot" style={{ background: '#06b67f' }} />
                 <span className="legend-lbl">Foundation / Diploma ({degreeStats.foundPct}%)</span>
               </div>
             </div>
@@ -917,11 +977,13 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
       {/* Row 3: Recent Leads Table & English Score Benchmarks */}
       <div className="dashboard-two-column-layout">
         {/* Left Column: Recent Student Leads Table */}
-        <div className="dashboard-card-section flex-2">
+        <div className="bg-white p-3.5 sm:p-3.5 rounded-2xl shadow-md border border-gray-100 hover:shadow-xl transition-all duration-500 flex-2">
           <div className="card-header-bar">
             <div>
-              <h3>Recent Chatbot Leads</h3>
-              <p>Latest prospective students who engaged with Educatia AI</p>
+              <h3 className="font-semibold text-base sm:text-lg text-gray-800 flex items-center gap-2">
+                <div className="w-2.5 h-2.5 bg-[#009E99] rounded-full animate-pulse" /> Recent Chatbot Leads
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Latest prospective students who engaged with Educatia AI</p>
             </div>
             <button className="view-all-link" onClick={() => onNavigateTable('student_leads')}>
               View All Chatbot Leads <ArrowRight size={14} />
@@ -960,7 +1022,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                     <tbody>
                       {filteredLeads.map((lead, i) => (
                         <tr key={lead.lead_id || i}>
-                          <td style={{ textAlign: 'center', fontWeight: '700', color: '#2563eb', fontSize: '0.8rem' }}>{i + 1}</td>
+                          <td style={{ textAlign: 'center', fontWeight: '700', color: '#009E99', fontSize: '0.8rem' }}>{i + 1}</td>
                           <td className="font-semibold">{lead.student_name || 'Anonymous Student'}</td>
                           <td>
                             <span className="country-pill">{lead.interested_country || 'General'}</span>
@@ -980,13 +1042,15 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
         </div>
 
         {/* Right Column: Admin Command Center & Consultancy Contact Overview */}
-        <div className="dashboard-card-section flex-1">
+        <div className="bg-white p-3.5 sm:p-3.5 rounded-2xl shadow-md border border-gray-100 hover:shadow-xl transition-all duration-500 flex-1">
           <div className="card-header-bar">
             <div>
-              <h3>Admin Command Center</h3>
-              <p>Quick management shortcuts & actions</p>
+              <h3 className="font-semibold text-base sm:text-lg text-gray-800 flex items-center gap-2">
+                <div className="w-2.5 h-2.5 bg-[#009E99] rounded-full animate-pulse" /> Admin Command Center
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">Quick management shortcuts & actions</p>
             </div>
-            <Sparkles size={18} style={{ color: '#2563eb' }} />
+            <Sparkles size={18} style={{ color: '#009E99' }} />
           </div>
 
           {/* Quick Action Buttons Grid */}
@@ -1017,24 +1081,24 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
           <div className="consultancy-info-box" style={{ marginTop: '1rem', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', border: '1px solid #cbd5e1' }}>
             <div className="info-box-header" style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Globe size={16} style={{ color: '#2563eb' }} />
+                <Globe size={16} style={{ color: '#009E99' }} />
                 <span style={{ fontWeight: '700' }}>Country Demand Breakdown</span>
               </div>
-              <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', fontWeight: '700' }}>
+              <span style={{ fontSize: '11px', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '12px', fontWeight: '700' }}>
                 👑 SR# 1 {countryDemandStats[0]?.country || 'UK'} ({countryDemandStats[0]?.percentage || 0}%)
               </span>
             </div>
 
             {/* Featured #1 Most Demanded Banner */}
-            <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '10px 12px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)', border: '1px solid #99f6e4', borderRadius: '10px', padding: '10px 12px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#1d4ed8', fontWeight: '800' }}>Most Demanded Country</span>
+                <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0f766e', fontWeight: '800' }}>Most Demanded Country</span>
                 <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginTop: '1px' }}>
                   {countryDemandStats[0]?.country || 'United Kingdom'}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '16px', fontWeight: '900', color: '#2563eb' }}>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: '#009E99' }}>
                   {countryDemandStats[0]?.count || 0} Chatbot Leads
                 </div>
                 <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>
@@ -1055,7 +1119,7 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
                       style={{ 
                         width: `${Math.max(6, item.percentage)}%`, 
                         height: '100%', 
-                        background: idx === 0 ? 'linear-gradient(90deg, #2563eb, #3b82f6)' : 'linear-gradient(90deg, #94a3b8, #cbd5e1)',
+                        background: idx === 0 ? 'linear-gradient(90deg, #009E99, #14b8a6)' : 'linear-gradient(90deg, #94a3b8, #cbd5e1)',
                         borderRadius: '4px',
                         transition: 'width 0.5s ease-in-out'
                       }} 

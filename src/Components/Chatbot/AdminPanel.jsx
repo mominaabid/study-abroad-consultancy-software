@@ -296,7 +296,7 @@ export default function AdminPanel({ onLockAdmin }) {
                 width: '34px', 
                 height: '34px', 
                 borderRadius: '8px', 
-                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', 
+                background: 'linear-gradient(135deg, #009E99 0%, #008783 100%)', 
                 color: '#ffffff', 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -305,7 +305,7 @@ export default function AdminPanel({ onLockAdmin }) {
                 fontSize: '19px',
                 fontFamily: 'Outfit, sans-serif',
                 lineHeight: 1,
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+                boxShadow: '0 2px 8px rgba(0, 158, 153, 0.3)',
                 flexShrink: 0 
               }}
               title="Educatia"
@@ -385,10 +385,10 @@ export default function AdminPanel({ onLockAdmin }) {
         <div className="admin-sidebar-footer" style={{ padding: '0.85rem 1rem', fontSize: '11px', textAlign: 'center', color: '#64748b', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
           {!isSidebarCollapsed ? (
             <span>
-              Developed with ❤️ by <a href="https://technicmentors.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: '700', textDecoration: 'none' }}>Technic Mentors</a>
+              Developed with ❤️ by <a href="https://technicmentors.com/" target="_blank" rel="noopener noreferrer" style={{ color: '#009E99', fontWeight: '700', textDecoration: 'none' }}>Technic Mentors</a>
             </span>
           ) : (
-            <a href="https://technicmentors.com/" target="_blank" rel="noopener noreferrer" title="Developed with ❤️ by Technic Mentors" style={{ color: '#2563eb', fontWeight: '800', textDecoration: 'none', fontSize: '13px' }}>
+            <a href="https://technicmentors.com/" target="_blank" rel="noopener noreferrer" title="Developed with ❤️ by Technic Mentors" style={{ color: '#009E99', fontWeight: '800', textDecoration: 'none', fontSize: '13px' }}>
               TM
             </a>
           )}
@@ -430,8 +430,8 @@ export default function AdminPanel({ onLockAdmin }) {
                   width: '42px',
                   height: '42px',
                   borderRadius: '12px',
-                  background: '#eff6ff',
-                  color: '#2563eb',
+                  background: '#ccfbf1',
+                  color: '#009E99',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -526,13 +526,13 @@ export default function AdminPanel({ onLockAdmin }) {
                       padding: '8px 16px',
                       height: '38px',
                       borderRadius: '10px',
-                      background: '#2563eb',
+                      background: '#009E99',
                       color: '#ffffff',
                       fontWeight: '600',
                       fontSize: '13px',
                       border: 'none',
                       cursor: 'pointer',
-                      boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)'
+                      boxShadow: '0 2px 6px rgba(0, 158, 153, 0.25)'
                     }}
                   >
                     <Plus size={16} />
@@ -565,12 +565,11 @@ export default function AdminPanel({ onLockAdmin }) {
           <div className="admin-auth-card" style={{ maxWidth: '650px', width: '90%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
             <div className="admin-auth-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className="admin-lock-badge" style={{ background: '#2563eb', color: '#fff' }}>
+                <div className="admin-lock-badge" style={{ background: '#009E99', color: '#fff' }}>
                   <MessageSquare size={20} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0 }}>Session Transcript</h3>
-                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>ID: {transcriptSessionId}</p>
                 </div>
               </div>
               <button
@@ -606,7 +605,7 @@ export default function AdminPanel({ onLockAdmin }) {
                         borderRadius: '12px',
                         fontSize: '13px',
                         lineHeight: '1.5',
-                        background: m.role === 'user' ? '#2563eb' : '#ffffff',
+                        background: m.role === 'user' ? '#009E99' : '#ffffff',
                         color: m.role === 'user' ? '#ffffff' : '#1e293b',
                         border: m.role === 'user' ? 'none' : '1px solid #cbd5e1',
                         whiteSpace: 'pre-wrap',
@@ -651,12 +650,11 @@ export default function AdminPanel({ onLockAdmin }) {
           <div className="admin-auth-card" style={{ maxWidth: '480px', width: '90%' }}>
             <div className="admin-auth-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className="admin-lock-badge" style={{ background: '#2563eb', color: '#fff' }}>
+                <div className="admin-lock-badge" style={{ background: '#009E99', color: '#fff' }}>
                   <Users size={20} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0 }}>Edit Admin Profile</h3>
-                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>Update your administrator account details</p>
                 </div>
               </div>
               <button
@@ -737,12 +735,11 @@ export default function AdminPanel({ onLockAdmin }) {
           <div className="admin-auth-card" style={{ maxWidth: '440px', width: '90%' }}>
             <div className="admin-auth-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className="admin-lock-badge" style={{ background: '#d97706', color: '#fff' }}>
+                <div className="admin-lock-badge" style={{ background: '#009E99', color: '#fff' }}>
                   <Lock size={20} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0 }}>Change Admin Password</h3>
-                  <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>Set a new password for admin authentication</p>
                 </div>
               </div>
               <button
@@ -799,7 +796,7 @@ export default function AdminPanel({ onLockAdmin }) {
                 <button type="button" className="admin-btn-secondary" onClick={() => setIsResetPasswordModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="admin-create-btn" style={{ background: '#d97706' }}>
+                <button type="submit" className="admin-create-btn" style={{ background: '#009E99', color: '#fff' }}>
                   Update Password
                 </button>
               </div>
@@ -817,12 +814,9 @@ export default function AdminPanel({ onLockAdmin }) {
                 <AlertTriangle size={24} />
               </div>
               <div>
-                <h3>Confirm Delete Record</h3>
-                <p>Are you sure you want to permanently delete this row?</p>
+                <h3>Confirm Delete</h3>
+                <p>Are you sure you want to delete this record?</p>
               </div>
-            </div>
-            <div className="delete-confirm-details">
-              <code>ID: {deleteConfirmRecord[currentTableConfig.primaryKey || 'id']}</code>
             </div>
             <div className="admin-auth-actions">
               <button className="admin-btn-secondary" onClick={() => setDeleteConfirmRecord(null)}>

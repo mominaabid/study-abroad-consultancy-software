@@ -481,8 +481,8 @@ export default function BotWidget({ onClose }) {
             {!dealSubmitted ? (
               <form onSubmit={handleDealSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Gift size={16} color="#2563eb" />
-                  <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#1e3a8a' }}>
+                  <Gift size={16} color="#009E99" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0f766e' }}>
                     Claim Exclusive Fee Discounts & Deals!
                   </span>
                 </div>
@@ -544,7 +544,7 @@ export default function BotWidget({ onClose }) {
                     type="submit"
                     disabled={isSubmittingDeal}
                     style={{
-                      background: '#2563eb',
+                      background: '#009E99',
                       color: '#ffffff',
                       border: 'none',
                       padding: '5px 14px',
@@ -552,7 +552,7 @@ export default function BotWidget({ onClose }) {
                       fontSize: '0.78rem',
                       fontWeight: '700',
                       cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
+                      boxShadow: '0 2px 8px rgba(0, 158, 153, 0.3)'
                     }}
                   >
                     {isSubmittingDeal ? 'Submitting...' : 'Claim Deal'}

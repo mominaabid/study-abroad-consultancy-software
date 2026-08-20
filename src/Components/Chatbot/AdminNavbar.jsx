@@ -253,7 +253,7 @@ export default function AdminNavbar({
             <div className="admin-notif-dropdown">
               <div className="notif-dropdown-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Bell size={15} className="text-primary" />
+                  <Bell size={15} style={{ color: '#009E99' }} />
                   <h4>Live Chatbot Leads</h4>
                 </div>
                 <span className="notif-count-tag">{notifications.length} New</span>
@@ -285,7 +285,7 @@ export default function AdminNavbar({
                           <span className="notif-time">{n.time}</span>
                         </div>
                         <p className="notif-desc">
-                          <strong style={{ color: '#2563eb' }}>{n.country}:</strong> {n.desc}
+                          <strong style={{ color: '#009E99' }}>{n.country}:</strong> {n.desc}
                         </p>
                       </div>
                       <button

@@ -9,7 +9,7 @@
   --widget-text: #1e293b;
   --widget-muted: #64748b;
   
-  --user-bubble-bg: #1d4ed8;
+  --user-bubble-bg: #009E99;
   --user-bubble-text: #ffffff;
   
   --bot-bubble-bg: #e5e7eb;
@@ -17,7 +17,8 @@
   
   --input-bg: #ffffff;
   --input-border: #e2e8f0;
-  --brand-blue: #2563eb;
+  --brand-blue: #009E99;
+  --brand-teal: #009E99;
 }
 
 body {
@@ -1990,7 +1991,7 @@ body {
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #023668;
+  background: #009E99;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -2026,8 +2027,8 @@ body {
 .admin-number-input:focus,
 .admin-textarea-input:focus {
   outline: none;
-  border-color: #023668;
-  box-shadow: 0 0 0 3px rgba(2, 54, 104, 0.1);
+  border-color: #009E99;
+  box-shadow: 0 0 0 3px rgba(0, 158, 153, 0.15);
 }
 
 .admin-textarea-input {
@@ -2052,10 +2053,10 @@ body {
 }
 
 .admin-toggle-btn.active {
-  background: #10b981;
-  border-color: #059669;
+  background: #009E99;
+  border-color: #008783;
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 158, 153, 0.25);
 }
 
 .toggle-slider {
@@ -2332,7 +2333,8 @@ body {
 /* Two Column Layout */
 .dashboard-two-column-layout {
   display: flex;
-  gap: 0.55rem;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
   align-items: stretch;
 }
 
@@ -2695,20 +2697,20 @@ body {
 
 .quick-menu-btn:hover {
   background: #f8fafc;
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: #009E99;
+  color: #009E99;
   transform: translateX(2px);
 }
 
 .quick-menu-btn.primary-glow {
-  background: #2563eb;
+  background: #009E99;
   color: #ffffff;
-  border-color: #1d4ed8;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  border-color: #008783;
+  box-shadow: 0 4px 12px rgba(0, 158, 153, 0.25);
 }
 
 .quick-menu-btn.primary-glow:hover {
-  background: #1d4ed8;
+  background: #008783;
   color: #ffffff;
 }
 
@@ -2962,9 +2964,9 @@ body {
 
 .admin-navbar-icon-btn:hover,
 .admin-navbar-icon-btn.active {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #2563eb;
+  background: #f0fdfa;
+  border-color: #99f6e4;
+  color: #009E99;
 }
 
 .notif-unread-dot {
@@ -2974,7 +2976,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #ef4444;
+  background: #009E99;
   border: 2px solid #ffffff;
 }
 
@@ -3021,7 +3023,7 @@ body {
 }
 
 .notif-count-tag {
-  background: #2563eb;
+  background: #009E99;
   color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
@@ -3043,7 +3045,7 @@ body {
 }
 
 .notif-item.unread {
-  background: #f0f7ff;
+  background: #f0fdfa;
 }
 
 .notif-item:hover {
@@ -3054,8 +3056,8 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #e0f2fe;
-  color: #0284c7;
+  background: #ccfbf1;
+  color: #009E99;
   display: flex;
   align-items: center;
   justify-content: center;
