@@ -285,14 +285,14 @@ const Cities = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#009E99] border-b border-[#009E99]">
-                <th className={`${thCls} w-12`}>
+                <th className={`${thCls} w-12 text-center`}>
                   <span>Sr#</span>
                 </th>
-                <th className={thCls}>City Name</th>
                 <th className={thCls}>Country</th>
-                <th className={thCls}>Status</th>
-                
-                <th className={`${thCls} w-16`}>Actions</th>
+                <th className={thCls}>State</th>
+                <th className={thCls}>City Name</th>
+                <th className={`${thCls} text-center`}>Active</th>
+                <th className={`${thCls} w-16 text-center`}>Actions</th>
               </tr>
             </thead>
 
@@ -342,6 +342,19 @@ const Cities = () => {
                       </td>
 
                       <td className={tdCls}>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-lg text-xs font-medium text-blue-700">
+                          <Globe size={12} className="text-blue-500" />
+                          {city.country_name || "—"}
+                        </div>
+                      </td>
+
+                      <td className={tdCls}>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 rounded-lg text-xs font-medium text-purple-700">
+                          {city.state_name || city.state || "—"}
+                        </div>
+                      </td>
+
+                      <td className={tdCls}>
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-xs ring-1 ring-gray-200 group-hover:ring-indigo-300 transition-all duration-200">
                             {city.name?.charAt(0)?.toUpperCase() || "C"}
@@ -355,14 +368,7 @@ const Cities = () => {
                       </td>
 
                       <td className={tdCls}>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-lg text-xs font-medium text-blue-700">
-                          <Globe size={12} className="text-blue-500" />
-                          {city.country_name || "—"}
-                        </div>
-                      </td>
-
-                      <td className={tdCls}>
-                        <div className="transform transition-all duration-200 group-hover:scale-105">
+                        <div className="flex justify-center transform transition-all duration-200 group-hover:scale-105">
                           <span
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
                               city.is_active === 1

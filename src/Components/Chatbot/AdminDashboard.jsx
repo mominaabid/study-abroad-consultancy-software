@@ -688,27 +688,27 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
           </div>
         </div>
 
-        {/* Card 2: Chat Sessions */}
+        {/* Card 2: Study Destinations */}
         <div
-          onClick={() => onNavigateTable('chat_sessions')}
+          onClick={() => onNavigateTable('countries')}
           className="group bg-white px-4 py-3 rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 cursor-pointer relative overflow-hidden flex flex-col justify-between"
         >
           <div className="absolute -right-8 -top-8 w-28 h-28 bg-gradient-to-br from-cyan-500 to-blue-600 opacity-10 group-hover:opacity-20 rounded-full transition-all duration-700 group-hover:scale-150" />
           <div className="relative z-10 flex justify-between items-start">
             <div>
-              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Chat Sessions</p>
-              <h2 className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">{loading ? '...' : sessionCount}</h2>
+              <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Study Destinations</p>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1 tracking-tight">{loading ? '...' : countryCount}</h2>
             </div>
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-md group-hover:scale-110 transition-transform duration-500">
-              <MessageSquare size={20} strokeWidth={2.5} />
+              <Globe size={20} strokeWidth={2.5} />
             </div>
           </div>
           <div className="mt-3 flex items-center justify-between z-10">
             <div className="flex items-center gap-1.5">
               <div className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-50 text-cyan-600">
-                ↑ Active
+                ↑ Global
               </div>
-              <span className="text-gray-400 text-[10px]">Student Conversations</span>
+              <span className="text-gray-400 text-[10px]">Target Countries</span>
             </div>
             <ArrowRight size={14} className="text-gray-400 group-hover:text-[#009E99] group-hover:translate-x-1 transition-all" />
           </div>
@@ -1067,9 +1067,9 @@ export default function AdminDashboard({ onNavigateTable, onOpenCreateModal, sea
               <Users size={16} />
               <span>Manage Chatbot Leads ({leadCount})</span>
             </button>
-            <button className="quick-menu-btn" onClick={() => onNavigateTable('chat_sessions')}>
-              <MessageSquare size={16} />
-              <span>Inspect Chat Logs ({sessionCount})</span>
+            <button className="quick-menu-btn" onClick={() => onNavigateTable('countries')}>
+              <Globe size={16} />
+              <span>Manage Study Destinations ({countryCount})</span>
             </button>
             <button className="quick-menu-btn" onClick={() => onNavigateTable('scholarships')}>
               <Award size={16} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, AlertCircle, Check } from 'lucide-react';
-import { insertTableRow, updateTableRow, fetchTableRows, getHumanFieldName, formatUserFriendlyError } from '../../services/adminSupabaseService';
+import { insertTableRow, updateTableRow, fetchTableRows, getHumanFieldName, formatUserFriendlyError, getSingularLabel } from '../../services/adminSupabaseService';
 
 // Foreign key lookup configurations
 const FOREIGN_KEY_MAP = {
@@ -52,15 +52,17 @@ const DEFAULT_TABLE_SCHEMAS = {
     country_id: '',
     state_id: '',
     city_id: '',
-    website: '',
     institute_location: '',
+    campuses: '',
+    campus_location: '',
     institute_type: 'private',
-    admission_processing_days: '',
-    english_language_requirement: '',
-    special_instructions: '',
+    website: '',
     university_ranking_int: '',
     university_ranking_local: '',
+    admission_processing_days: '',
     admission_intakes: '',
+    english_language_requirement: '',
+    special_instructions: '',
     is_active: true
   },
   campuses: {
@@ -71,13 +73,24 @@ const DEFAULT_TABLE_SCHEMAS = {
     is_active: true
   },
   programs: {
-    program_name: '',
     institute_id: '',
     campus_id: '',
+    program_name: '',
     degree_level: 'Bachelors',
     degree_duration: '',
     degree_intakes: '',
+    tuition_fee: '',
+    application_fee: '',
+    initial_deposit: '',
+    currency: 'USD',
+    scholarship_title: '',
+    scholarship_type: 'Merit-Based',
+    scholarship_min: '',
+    scholarship_max: '',
+    scholarship_description: '',
     english_language_requirement: '',
+    pathway_foundation: true,
+    scholarship_available: true,
     is_active: true
   },
   program_fees: {
@@ -112,8 +125,11 @@ const DEFAULT_TABLE_SCHEMAS = {
   required_docs: {
     doc_name: '',
     doc_category: 'academic',
+    applicable_degree_level: 'All Degree Levels',
+    programs_required: 'All Programs',
     description: '',
-    is_mandatory: true
+    is_mandatory: true,
+    is_active: true
   },
   english_requirements: {
     program_id: '',
@@ -127,15 +143,20 @@ const DEFAULT_TABLE_SCHEMAS = {
     is_active: true
   },
   admission_pathways: {
-    pathway_name: '',
     institute_id: '',
     campus_id: '',
     program_id: '',
+    pathway_name: '',
+    pathway_type: 'Direct',
     marks_required_min: '',
     marks_required_max: '',
-    english_language_requirement: '',
+    ielts_score: '',
+    pte_score: '',
+    toefl_score: '',
+    duolingo_score: '',
+    other: '',
+    english_language_requirements: '',
     notes: '',
-    pathway_type: '',
     is_active: true
   },
   countries: {
@@ -186,26 +207,97 @@ export default function AdminRecordModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    let initial = {};
+    const defaultSchema = (tableConfig && DEFAULT_TABLE_SCHEMAS[tableConfig.id]) ? { ...DEFAULT_TABLE_SCHEMAS[tableConfig.id] } : {};
+    let initial = { ...defaultSchema };
+
     if (recordData) {
-      initial = { ...recordData };
-    } else {
-      const defaultSchema = (tableConfig && DEFAULT_TABLE_SCHEMAS[tableConfig.id]) || {};
-      const sampleEmpty = {};
-      if (sampleRow) {
-        Object.keys(sampleRow).forEach(key => {
-          if (key === tableConfig?.primaryKey || key === 'id' || key === 'created_at' || key === 'updated_at') {
-            sampleEmpty[key] = '';
-          } else if (typeof sampleRow[key] === 'boolean') {
-            sampleEmpty[key] = true;
-          } else if (typeof sampleRow[key] === 'number') {
-            sampleEmpty[key] = 0;
-          } else {
-            sampleEmpty[key] = '';
-          }
-        });
+      initial = { ...defaultSchema, ...recordData };
+    }
+
+    // Clean up & guarantee merged fields for Institutes table
+    if (tableConfig?.id === 'institutes') {
+      if (initial.state_id === undefined) initial.state_id = '';
+      if (initial.city_id === undefined) initial.city_id = '';
+      if (initial.institute_location === undefined) initial.institute_location = '';
+      if (initial.campuses === undefined) initial.campuses = '';
+      if (initial.campus_location === undefined) initial.campus_location = '';
+    }
+
+    // Clean up & guarantee merged fields for Programs table
+    if (tableConfig?.id === 'programs') {
+      if (initial.institute_id === undefined) initial.institute_id = '';
+      if (initial.campus_id === undefined) initial.campus_id = '';
+      if (initial.program_name === undefined) initial.program_name = '';
+      if (initial.degree_level === undefined) initial.degree_level = 'Bachelors';
+      if (initial.degree_duration === undefined) initial.degree_duration = '';
+      if (initial.degree_intakes === undefined) initial.degree_intakes = '';
+      if (initial.tuition_fee === undefined) initial.tuition_fee = '';
+      if (initial.application_fee === undefined) initial.application_fee = '';
+      if (initial.initial_deposit === undefined) initial.initial_deposit = '';
+      if (initial.currency === undefined || !initial.currency) initial.currency = 'USD';
+      if (initial.pathway_foundation === undefined) initial.pathway_foundation = true;
+      if (initial.scholarship_available === undefined) initial.scholarship_available = true;
+      if (initial.scholarship_title === undefined) initial.scholarship_title = '';
+      if (initial.scholarship_type === undefined) initial.scholarship_type = 'Merit-Based';
+      if (initial.scholarship_min === undefined) initial.scholarship_min = '';
+      if (initial.scholarship_max === undefined) initial.scholarship_max = '';
+      if (initial.scholarship_description === undefined) initial.scholarship_description = '';
+      if (initial.english_language_requirement === undefined) initial.english_language_requirement = '';
+      if (initial.is_active === undefined) initial.is_active = true;
+
+      // Clean formatted currency symbols or dashes when loading existing record
+      if (initial.tuition_fee) {
+        initial.tuition_fee = String(initial.tuition_fee).replace(/^[A-Z]{3}\s*/, '').replace(/—/g, '');
       }
-      initial = { ...defaultSchema, ...sampleEmpty };
+      if (initial.application_fee) {
+        initial.application_fee = String(initial.application_fee).replace(/^[A-Z]{3}\s*/, '').replace(/—/g, '');
+      }
+      if (initial.initial_deposit) {
+        initial.initial_deposit = String(initial.initial_deposit).replace(/^[A-Z]{3}\s*/, '').replace(/—/g, '');
+      }
+      if (initial.scholarship_title === '—') initial.scholarship_title = '';
+      if (initial.scholarship_min === '—') initial.scholarship_min = '';
+      if (initial.scholarship_max === '—') initial.scholarship_max = '';
+      if (initial.scholarship_description === '—') initial.scholarship_description = '';
+    }
+
+    // Clean up & guarantee merged fields for Pathways table
+    if (tableConfig?.id === 'admission_pathways') {
+      if (initial.institute_id === undefined) initial.institute_id = '';
+      if (initial.campus_id === undefined) initial.campus_id = '';
+      if (initial.program_id === undefined) initial.program_id = '';
+      if (initial.pathway_name === undefined) initial.pathway_name = '';
+      if (initial.pathway_type === undefined) initial.pathway_type = 'Direct';
+      if (initial.marks_required_min === undefined) initial.marks_required_min = '';
+      if (initial.marks_required_max === undefined) initial.marks_required_max = '';
+      if (initial.ielts_score === undefined) initial.ielts_score = '';
+      if (initial.pte_score === undefined) initial.pte_score = '';
+      if (initial.toefl_score === undefined) initial.toefl_score = '';
+      if (initial.duolingo_score === undefined) initial.duolingo_score = '';
+      if (initial.other === undefined) initial.other = '';
+      if (initial.english_language_requirements === undefined) initial.english_language_requirements = initial.english_language_requirement || '';
+      if (initial.notes === undefined) initial.notes = initial.note || '';
+      if (initial.is_active === undefined) initial.is_active = true;
+
+      // Clean dashes when editing existing record
+      if (initial.ielts_score === '—') initial.ielts_score = '';
+      if (initial.pte_score === '—') initial.pte_score = '';
+      if (initial.toefl_score === '—') initial.toefl_score = '';
+      if (initial.duolingo_score === '—') initial.duolingo_score = '';
+      if (initial.other === '—') initial.other = '';
+      if (initial.english_language_requirements === '—') initial.english_language_requirements = '';
+      if (initial.notes === '—') initial.notes = '';
+    }
+
+    // Clean up & guarantee merged fields for Documents table
+    if (tableConfig?.id === 'required_docs') {
+      if (initial.doc_name === undefined) initial.doc_name = '';
+      if (initial.doc_category === undefined) initial.doc_category = 'academic';
+      if (initial.applicable_degree_level === undefined) initial.applicable_degree_level = 'All Degree Levels';
+      if (initial.programs_required === undefined) initial.programs_required = 'All Programs';
+      if (initial.is_mandatory === undefined) initial.is_mandatory = true;
+      if (initial.description === undefined) initial.description = '';
+      if (initial.is_active === undefined) initial.is_active = true;
     }
 
     // Explicitly exclude institute fields if table is cities
@@ -235,11 +327,11 @@ export default function AdminRecordModal({
       for (const fkKey of fkKeys) {
         const fkConf = FOREIGN_KEY_MAP[fkKey];
         try {
-          const res = await fetchTableRows(fkConf.table, { limit: 100 });
+          const res = await fetchTableRows(fkConf.table, { limit: 500 });
           if (res && res.data && isMounted) {
             newFkOpts[fkKey] = res.data.map(item => ({
-              id: item[fkConf.pKey] || item.id,
-              label: item[fkConf.labelKey] || item.name || `ID #${item[fkConf.pKey] || item.id}`,
+              id: item[fkConf.pKey] !== undefined ? item[fkConf.pKey] : item.id,
+              label: item[fkConf.labelKey] || item.name || item.title || `ID #${item[fkConf.pKey] || item.id}`,
               rawItem: item
             }));
           }
@@ -426,6 +518,9 @@ export default function AdminRecordModal({
   // Generate custom, realistic transparent placeholder examples
   const getFieldPlaceholder = (key) => {
     const k = key.toLowerCase();
+    if (k === 'campuses') return 'e.g. Main Campus, London Campus, West Campus';
+    if (k === 'institute_location') return 'e.g. 27 King\'s College Circle / Main University Address';
+    if (k === 'campus_location') return 'e.g. Branch Campus Address / Specific Campus Facility Location';
     if (k.includes('email')) return 'e.g. student@example.com';
     if (k.includes('phone') || k.includes('whatsapp')) return 'e.g. +44 7911 123456';
     if (k.includes('program_name') || k === 'program') return 'e.g. MSc Artificial Intelligence';
@@ -439,13 +534,18 @@ export default function AdminRecordModal({
     if (k.includes('intakes')) return 'e.g. September, January';
     if (k.includes('tuition_fee')) return 'e.g. 15000';
     if (k.includes('deposit')) return 'e.g. 3000';
-    if (k.includes('scholarship_name')) return 'e.g. Merit Academic Excellence Scholarship';
+    if (k.includes('scholarship_name') || k.includes('scholarship_title')) return 'e.g. Merit Academic Excellence Scholarship';
     if (k.includes('coverage') || k.includes('percentage') || k.includes('ratio')) return 'e.g. 90';
+    if (k.includes('marks_required_min') || k.includes('min_marks')) return 'e.g. 60% / GPA 2.5';
+    if (k.includes('marks_required_max') || k.includes('max_marks')) return 'e.g. 85% / GPA 3.5';
     if (k.includes('ielts')) return 'e.g. 6.5';
     if (k.includes('toefl')) return 'e.g. 85';
     if (k.includes('pte')) return 'e.g. 58';
     if (k.includes('duolingo')) return 'e.g. 115';
-    if (k.includes('doc_name') || k.includes('doc')) return 'e.g. Academic Transcripts & Passport Copy';
+    if (k === 'other') return 'e.g. Duolingo accepted with 105+, or MOI English certificate valid.';
+    if (k.includes('english_language_requirement')) return 'e.g. IELTS 6.5 with no band less than 6.0';
+    if (k === 'notes' || k === 'note') return 'e.g. Work experience waiver applicable for mature students.';
+    if (k.includes('doc_name') || k === 'doc') return 'e.g. Academic Transcripts & Passport Copy';
     if (k.includes('pathway')) return 'e.g. International Foundation Year';
     if (k.includes('days')) return 'e.g. 14';
     if (k.includes('ranking')) return 'e.g. 100';
@@ -464,7 +564,31 @@ export default function AdminRecordModal({
 
     // 1. Foreign Key Dropdown Select
     if (FOREIGN_KEY_MAP[key] && key !== tableConfig?.primaryKey) {
-      const options = fkOptions[key] || [];
+      let options = fkOptions[key] || [];
+
+      // Dependent cascading: Filter states by selected country
+      if (key === 'state_id' && formData.country_id) {
+        const filtered = options.filter(opt => opt.rawItem && String(opt.rawItem.country_id) === String(formData.country_id));
+        if (filtered.length > 0) options = filtered;
+      }
+
+      // Dependent cascading: Filter cities by selected state or country
+      if (key === 'city_id' && formData.state_id) {
+        const filtered = options.filter(opt => opt.rawItem && String(opt.rawItem.state_id) === String(formData.state_id));
+        if (filtered.length > 0) options = filtered;
+      }
+
+      // Dependent cascading: Filter programs by selected institute
+      if (key === 'program_id' && formData.institute_id) {
+        const filtered = options.filter(opt => opt.rawItem && String(opt.rawItem.institute_id) === String(formData.institute_id));
+        if (filtered.length > 0) options = filtered;
+      }
+
+      // Dependent cascading: Filter campuses by selected institute
+      if (key === 'campus_id' && formData.institute_id) {
+        const filtered = options.filter(opt => opt.rawItem && String(opt.rawItem.institute_id) === String(formData.institute_id));
+        if (filtered.length > 0) options = filtered;
+      }
 
       return (
         <select
@@ -534,6 +658,41 @@ export default function AdminRecordModal({
           <option value="language">Language Proficiency (IELTS, TOEFL, PTE, Duolingo)</option>
           <option value="financial">Financial (Bank Statement, Proof of Funds)</option>
           <option value="other">Other (SOP, CV, Recommendation Letters)</option>
+        </select>
+      );
+    }
+
+    if (key === 'applicable_degree_level') {
+      return (
+        <select
+          value={formData[key] !== undefined && formData[key] !== null ? formData[key] : 'All Degree Levels'}
+          onChange={(e) => handleChange(key, e.target.value)}
+          className="admin-select-input"
+        >
+          <option value="All Degree Levels">All Degree Levels (Bachelors, Masters, etc.)</option>
+          <option value="Bachelors">Bachelors Only</option>
+          <option value="Masters">Masters Only</option>
+          <option value="PhD">PhD / Doctorate</option>
+          <option value="Diploma">Diploma / Certifications</option>
+          <option value="Foundation">Foundation / Pre-University</option>
+        </select>
+      );
+    }
+
+    if (key === 'programs_required') {
+      const progOptions = fkOptions['program_id'] || [];
+      return (
+        <select
+          value={formData[key] !== undefined && formData[key] !== null ? formData[key] : 'All Programs'}
+          onChange={(e) => handleChange(key, e.target.value)}
+          className="admin-select-input"
+        >
+          <option value="All Programs">All Programs (Universal / General Requirement)</option>
+          {progOptions.map((opt) => (
+            <option key={opt.id} value={opt.label}>
+              {opt.label} {opt.rawItem?.institute_name ? `(${opt.rawItem.institute_name})` : ''}
+            </option>
+          ))}
         </select>
       );
     }
@@ -627,7 +786,7 @@ export default function AdminRecordModal({
     }
 
     // 3. Text fields (Durations, Intakes, PSW, etc.) - ALWAYS render as TEXT input
-    if (key.includes('duration') || key.includes('psw') || key.includes('intake')) {
+    if (key.includes('duration') || key.includes('psw') || key.includes('intake') || key === 'campuses') {
       return (
         <input
           type="text"
@@ -655,7 +814,7 @@ export default function AdminRecordModal({
     }
 
     // 5. Multi-line Textareas for requirements, descriptions, address
-    if (key.includes('requirements') || key.includes('description') || key.includes('content') || key.includes('address') || key.includes('snippet')) {
+    if (key.includes('requirements') || key.includes('description') || key.includes('content') || key.includes('address') || key.includes('snippet') || key.includes('instructions')) {
       return (
         <textarea
           rows={3}
@@ -681,7 +840,7 @@ export default function AdminRecordModal({
       );
     }
 
-    // 6. Default text input
+    // 7. Default text input
     return (
       <input
         type="text"
@@ -703,12 +862,82 @@ export default function AdminRecordModal({
 
   // Intelligently sort visible fields into symmetric, logical 2-column grid layout
   const getFieldCategoryRank = (key) => {
+    if (tableConfig?.id === 'programs') {
+      if (key === 'institute_id') return 1;
+      if (key === 'campus_id') return 2;
+      if (key === 'program_name') return 3;
+      if (key === 'degree_level') return 4;
+      if (key === 'degree_duration') return 5;
+      if (key === 'degree_intakes') return 6;
+      if (key === 'tuition_fee') return 7;
+      if (key === 'application_fee') return 8;
+      if (key === 'initial_deposit') return 9;
+      if (key === 'currency') return 10;
+      if (key === 'scholarship_title') return 11;
+      if (key === 'scholarship_type') return 12;
+      if (key === 'scholarship_min') return 13;
+      if (key === 'scholarship_max') return 14;
+      if (key === 'scholarship_description' || key === 'description') return 15;
+      if (key === 'english_language_requirement') return 16;
+      if (key === 'pathway_foundation') return 17;
+      if (key === 'scholarship_available') return 18;
+      if (key === 'is_active' || key === 'active') return 19;
+      return 20;
+    }
+    if (tableConfig?.id === 'institutes') {
+      if (key === 'institute_name') return 1;
+      if (key === 'country_id') return 2;
+      if (key === 'state_id') return 3;
+      if (key === 'city_id') return 4;
+      if (key === 'institute_location') return 5;
+      if (key === 'campuses') return 6;
+      if (key === 'campus_location') return 7;
+      if (key === 'institute_type') return 8;
+      if (key === 'website') return 9;
+      if (key === 'university_ranking_int') return 10;
+      if (key === 'university_ranking_local') return 11;
+      if (key === 'admission_processing_days') return 12;
+      if (key === 'admission_intakes') return 13;
+      if (key === 'english_language_requirement') return 14;
+      if (key === 'special_instructions') return 15;
+      if (key === 'is_active' || key === 'active') return 16;
+      return 17;
+    }
+    if (tableConfig?.id === 'admission_pathways') {
+      if (key === 'institute_id') return 1;
+      if (key === 'campus_id') return 2;
+      if (key === 'program_id') return 3;
+      if (key === 'pathway_name') return 4;
+      if (key === 'pathway_type') return 5;
+      if (key === 'marks_required_min') return 6;
+      if (key === 'marks_required_max') return 7;
+      if (key === 'ielts_score') return 8;
+      if (key === 'pte_score') return 9;
+      if (key === 'toefl_score') return 10;
+      if (key === 'duolingo_score') return 11;
+      if (key === 'other') return 12;
+      if (key === 'english_language_requirements' || key === 'english_language_requirement') return 13;
+      if (key === 'notes' || key === 'note') return 14;
+      if (key === 'is_active' || key === 'active') return 15;
+      return 16;
+    }
+    if (tableConfig?.id === 'required_docs') {
+      if (key === 'doc_name') return 1;
+      if (key === 'doc_category') return 2;
+      if (key === 'applicable_degree_level') return 3;
+      if (key === 'programs_required') return 4;
+      if (key === 'description') return 5;
+      if (key === 'is_mandatory') return 6;
+      if (key === 'is_active' || key === 'active') return 7;
+      return 8;
+    }
     if (key.includes('name') || key.includes('title') || key.includes('organization')) return 1;
-    if (FOREIGN_KEY_MAP[key] || key.includes('type') || key.includes('level') || key.includes('category') || key === 'currency' || key === 'role') return 2;
-    if (key.includes('fee') || key.includes('deposit') || key.includes('score') || key.includes('ranking') || key.includes('days') || key.includes('ratio') || key.includes('min') || key.includes('max') || key.includes('duration') || key.includes('intakes') || key.includes('psw') || key === 'other') return 3;
-    if (key.includes('requirements') || key.includes('description') || key.includes('content') || key.includes('address') || key.includes('snippet') || key.includes('timing')) return 4;
-    if (key.includes('active') || key.includes('available') || key.includes('spouse') || key.includes('mandatory') || key.includes('foundation')) return 5;
-    return 3;
+    if (key === 'country_id' || key === 'city_id' || key === 'state_id') return 2;
+    if (FOREIGN_KEY_MAP[key] || key.includes('type') || key.includes('level') || key.includes('category') || key === 'currency' || key === 'role') return 3;
+    if (key.includes('fee') || key.includes('deposit') || key.includes('score') || key.includes('ranking') || key.includes('days') || key.includes('ratio') || key.includes('min') || key.includes('max') || key.includes('duration') || key.includes('intakes') || key.includes('psw') || key === 'other') return 4;
+    if (key.includes('requirements') || key.includes('description') || key.includes('content') || key.includes('address') || key.includes('snippet') || key.includes('timing') || key.includes('instructions')) return 5;
+    if (key.includes('active') || key.includes('available') || key.includes('spouse') || key.includes('mandatory') || key.includes('foundation')) return 6;
+    return 4;
   };
 
   const sortedVisibleFields = [...visibleFields].sort((a, b) => {
@@ -728,7 +957,7 @@ export default function AdminRecordModal({
               {mode === 'create' ? <Plus size={20} /> : <Save size={20} />}
             </div>
             <div>
-              <h3 className="text-gray-800 font-bold text-base m-0">{mode === 'create' ? `Add New ${tableConfig?.label || 'Record'}` : `Edit ${tableConfig?.label || 'Record'}`}</h3>
+              <h3 className="text-gray-800 font-bold text-base m-0">{mode === 'create' ? `Add New ${getSingularLabel(tableConfig)}` : `Edit ${getSingularLabel(tableConfig)}`}</h3>
             </div>
           </div>
           <button className="modal-close-btn" onClick={onClose}>

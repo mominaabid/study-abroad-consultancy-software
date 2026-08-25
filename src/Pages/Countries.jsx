@@ -330,8 +330,8 @@ const Countries = () => {
                 </th>
                 <th className={thCls}>Country Name</th>
                 <th className={thCls}>Code</th>
-                <th className={thCls}>Status</th>
                 <th className={thCls}>Created</th>
+                <th className={thCls}>Active</th>
                 <th className={`${thCls} w-16`}>Actions</th>
               </tr>
             </thead>
@@ -401,6 +401,15 @@ const Countries = () => {
                       </td>
 
                       <td className={tdCls}>
+                        <div className="flex items-center gap-1.5 text-[10px] text-gray-500 whitespace-nowrap">
+                          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {country.created_at ? new Date(country.created_at).toLocaleDateString() : "—"}
+                        </div>
+                      </td>
+
+                      <td className={tdCls}>
                         <div className="transform transition-all duration-200 group-hover:scale-105">
                           <span
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -412,15 +421,6 @@ const Countries = () => {
                             <span className={`w-1.5 h-1.5 rounded-full ${country.is_active === 1 ? "bg-green-500" : "bg-red-500"}`}></span>
                             {country.is_active === 1 ? "Active" : "Inactive"}
                           </span>
-                        </div>
-                      </td>
-
-                      <td className={tdCls}>
-                        <div className="flex items-center gap-1.5 text-[10px] text-gray-500 whitespace-nowrap">
-                          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          {country.created_at ? new Date(country.created_at).toLocaleDateString() : "—"}
                         </div>
                       </td>
 

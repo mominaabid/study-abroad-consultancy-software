@@ -351,7 +351,7 @@ const DropdownConfig = () => {
                 <th className={thCls}>Name</th>
                 <th className={thCls}>Type</th>
                 <th className={thCls}>Sort Order</th>
-                <th className={thCls}>Status</th>
+                <th className={thCls}>Active</th>
                 <th className={`${thCls} w-16`}>Actions</th>
               </tr>
             </thead>

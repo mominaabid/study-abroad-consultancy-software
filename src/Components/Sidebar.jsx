@@ -5,6 +5,8 @@ import {
   Settings,
   FileText,
   User,
+  Users,
+  FileCheck,
   BarChart,
   MessageSquare,
   LogOut,
@@ -61,59 +63,36 @@ const ADMIN_MENU = [
       {
         category: "Academics",
         items: [
-          { name: "Universities", path: "/admin/chatbot-panel?table=institutes" },
-          { name: "Campuses", path: "/admin/chatbot-panel?table=campuses" },
-          { name: "Programs", path: "/admin/chatbot-panel?table=programs" },
-          { name: "Program Fees", path: "/admin/chatbot-panel?table=program_fees" },
-          { name: "Scholarships", path: "/admin/chatbot-panel?table=scholarships" },
+          { name: "Institutes", path: "/admin/chatbot-panel?table=institutes" },
+          { name: "Programs & Fees", path: "/admin/chatbot-panel?table=programs" },
         ],
       },
       {
         category: "Admissions",
         items: [
           { name: "Pathways", path: "/admin/chatbot-panel?table=admission_pathways" },
-          { name: "Master Docs", path: "/admin/chatbot-panel?table=required_docs" },
-          { name: "English Requirements", path: "/admin/chatbot-panel?table=english_requirements" },
-          { name: "Program Docs", path: "/admin/chatbot-panel?table=program_required_documents" },
+          { name: "Documents", path: "/admin/chatbot-panel?table=required_docs" },
         ],
       },
-      {
-        category: "Chatbot Leads & Logs",
-        items: [
-          { name: "Chatbot Leads", path: "/admin/chatbot-panel?table=student_leads" },
-          { name: "Chat Sessions", path: "/admin/chatbot-panel?table=chat_sessions" },
-          { name: "Chat Messages", path: "/admin/chatbot-panel?table=chat_messages" },
-        ],
-      },
-      {
-        category: "Office Info",
-        items: [
-          { name: "Office Contact", path: "/admin/chatbot-panel?table=business_info" },
-        ],
-      },
+      { name: "Chatbot Leads", path: "/admin/chatbot-panel?table=student_leads" },
+      { name: "Office Info", path: "/admin/chatbot-panel?table=business_info" },
     ],
   },
 ];
 
 const COUNSELLOR_MENU = [
   { name: "Dashboard", icon: <Home size={20} />, path: "/counsellor/dashboard" },
-  {
-    name: "Configuration",
-    icon: <Settings size={20} />,
-    submenu: [
-      { name: "Countries", path: "/counsellor/countries" },
-      { name: "Cities", path: "/counsellor/cities" },
-      { name: "Universities", path: "/counsellor/universities" },
-      { name: "Miscellaneous Config", path: "/counsellor/config" },
-    ],
-  },
-  { name: "Leads", icon: <BarChart size={20} />, path: "/counsellor/leads" },
+  { name: "Leads", icon: <Users size={20} />, path: "/counsellor/leads" },
   {
     name: "Applications",
     icon: <FileText size={20} />,
-    path: "/counsellor/applications",
+    path: "/counsellor/application",
   },
-  { name: "Chats", icon: <MessageSquare size={20} />, path: "/counsellor/chats" },
+  {
+    name: "Documents",
+    icon: <FileCheck size={20} />,
+    path: "/counsellor/documents",
+  },
   {
     name: "Chatbot Panel",
     icon: <Bot size={20} />,
@@ -131,36 +110,19 @@ const COUNSELLOR_MENU = [
       {
         category: "Academics",
         items: [
-          { name: "Universities", path: "/counsellor/chatbot-panel?table=institutes" },
-          { name: "Campuses", path: "/counsellor/chatbot-panel?table=campuses" },
-          { name: "Programs", path: "/counsellor/chatbot-panel?table=programs" },
-          { name: "Program Fees", path: "/counsellor/chatbot-panel?table=program_fees" },
-          { name: "Scholarships", path: "/counsellor/chatbot-panel?table=scholarships" },
+          { name: "Institutes", path: "/counsellor/chatbot-panel?table=institutes" },
+          { name: "Programs & Fees", path: "/counsellor/chatbot-panel?table=programs" },
         ],
       },
       {
         category: "Admissions",
         items: [
           { name: "Pathways", path: "/counsellor/chatbot-panel?table=admission_pathways" },
-          { name: "Master Docs", path: "/counsellor/chatbot-panel?table=required_docs" },
-          { name: "English Requirements", path: "/counsellor/chatbot-panel?table=english_requirements" },
-          { name: "Program Docs", path: "/counsellor/chatbot-panel?table=program_required_documents" },
+          { name: "Documents", path: "/counsellor/chatbot-panel?table=required_docs" },
         ],
       },
-      {
-        category: "Chatbot Leads & Logs",
-        items: [
-          { name: "Chatbot Leads", path: "/counsellor/chatbot-panel?table=student_leads" },
-          { name: "Chat Sessions", path: "/counsellor/chatbot-panel?table=chat_sessions" },
-          { name: "Chat Messages", path: "/counsellor/chatbot-panel?table=chat_messages" },
-        ],
-      },
-      {
-        category: "Office Info",
-        items: [
-          { name: "Office Contact", path: "/counsellor/chatbot-panel?table=business_info" },
-        ],
-      },
+      { name: "Chatbot Leads", path: "/counsellor/chatbot-panel?table=student_leads" },
+      { name: "Office Info", path: "/counsellor/chatbot-panel?table=business_info" },
     ],
   },
 ];
@@ -254,7 +216,6 @@ export const Sidebar = ({ isOpen, setIsOpen, onHoverChange }) => {
 
   const [expandedCategories, setExpandedCategories] = useState({
     "Academics": true,
-    "Chatbot Leads & Logs": true,
     "Locations": true,
     "Admissions": true,
   });

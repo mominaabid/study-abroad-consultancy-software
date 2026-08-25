@@ -286,25 +286,48 @@ export async function detectAndSaveLead(userText, fullHistory = []) {
   // Capitalize name
   nameStr = nameStr.replace(/\b\w/g, char => char.toUpperCase());
 
-  // Detect target country from chat context
-  const lowerCombined = combinedText.toLowerCase();
-  let targetCountry = 'General Study Abroad';
-  if (lowerCombined.includes('ireland')) targetCountry = 'Ireland';
-  else if (lowerCombined.includes('cyprus')) targetCountry = 'Cyprus';
-  else if (lowerCombined.includes('canada')) targetCountry = 'Canada';
-  else if (lowerCombined.includes('uk') || lowerCombined.includes('united kingdom')) targetCountry = 'UK';
-  else if (lowerCombined.includes('australia')) targetCountry = 'Australia';
+  // Serialize conversation history into JSON
+  const transcriptJson = JSON.stringify(conversationHistory.map(m => ({
+    role: m.role || 'user',
+    content: m.content || '',
+    created_at: m.timestamp || new Date().toISOString()
+  })));
+
+  const activeSid = sessionId || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('educatia_active_session_id') : null) || `sess_${Date.now()}`;
 
   try {
-    // Insert into Supabase `student_leads` table matching exact schema columns
+    // 1. Ensure chat_sessions parent row exists
+    try {
+      await client.from('chat_sessions').upsert([{
+        id: activeSid,
+        last_message_snippet: String(userText || 'Inquiry').substring(0, 150),
+        updated_at: new Date().toISOString()
+      }], { onConflict: 'id' });
+    } catch (_sErr) {}
+
+    // 2. Insert into chat_messages if conversationHistory provided
+    if (conversationHistory.length > 0) {
+      try {
+        await client.from('chat_messages').insert(
+          conversationHistory.map(m => ({
+            session_id: activeSid,
+            role: m.role === 'user' ? 'user' : 'bot',
+            content: m.content
+          }))
+        );
+      } catch (_mErr) {}
+    }
+
+    // 3. Insert into Supabase `student_leads` table matching exact schema columns
     await client
       .from('student_leads')
       .insert([
         {
+          session_id: activeSid,
           student_name: nameStr,
           phone_number: phoneStr,
           interested_country: targetCountry,
-          last_message_snippet: userText.substring(0, 200),
+          last_message_snippet: transcriptJson.length > 2 ? transcriptJson : userText.substring(0, 200),
           status: 'new'
         }
       ]);

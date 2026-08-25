@@ -23,7 +23,7 @@ import {
   X,
   Menu
 } from 'lucide-react';
-import { fetchTableRows } from '../../services/adminSupabaseService';
+import { fetchTableRows, getSingularLabel } from '../../services/adminSupabaseService';
 import { getSupabaseClient } from '../../services/supabaseClient';
 
 const getTableIcon = (tableId) => {
@@ -218,10 +218,10 @@ export default function AdminNavbar({
             type="button" 
             className="admin-create-btn" 
             onClick={onOpenCreateModal}
-            title={`Add New ${currentTableConfig?.label || 'Record'}`}
+            title={`Add New ${getSingularLabel(currentTableConfig)}`}
           >
             <Plus size={15} />
-            <span>Add Record</span>
+            <span>Add {getSingularLabel(currentTableConfig)}</span>
           </button>
         )}
 

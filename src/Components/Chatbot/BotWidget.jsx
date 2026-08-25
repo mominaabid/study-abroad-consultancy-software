@@ -157,43 +157,129 @@ export default function BotWidget({ onClose }) {
     setShowScrollBottom(isUp);
   };
 
+  /**
+   * Save full conversation to chat_messages using a given key (session or phone-based)
+   * phoneKey if provided makes the messages always retrievable by phone number
+   */
+  const saveMessagesToDB = async (historyList, phoneKey) => {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+
+      const validMsgs = (historyList || messages).filter(m => m && m.content && String(m.content).trim());
+      if (validMsgs.length === 0) return;
+
+      // Save twice: once with sessionId, once with phone-based key
+      const keys = [sessionId];
+      if (phoneKey) keys.push(`phone_${phoneKey}`);
+
+      for (const key of keys) {
+        const toInsert = validMsgs.map(m => ({
+          session_id: key,
+          role: m.role === 'user' ? 'user' : 'bot',
+          content: m.content
+        }));
+        try {
+          await supabase.from('chat_messages').insert(toInsert);
+        } catch (_e) {}
+      }
+    } catch (_e) {}
+  };
+
+  const logMessageToSupabase = async (role, content) => {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase || !sessionId || !content) return;
+      
+      // 1. Ensure chat_sessions parent row exists first
+      try {
+        await supabase.from('chat_sessions').upsert([{
+          id: sessionId,
+          last_message_snippet: String(content).substring(0, 150),
+          updated_at: new Date().toISOString()
+        }], { onConflict: 'id' });
+      } catch (_sErr) {
+        // Fall through
+      }
+
+      // 2. Insert into chat_messages
+      await supabase.from('chat_messages').insert([{
+        session_id: sessionId,
+        role: role === 'user' ? 'user' : 'bot',
+        content: content
+      }]);
+    } catch (_e) {
+      // Background logging notice
+    }
+  };
+
   const detectAndSaveLead = async (userText, history) => {
     const phoneMatch = userText.match(/(\+?\d{10,13}|03\d{9})/);
-    const emailMatch = userText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
 
-    if (phoneMatch || emailMatch) {
-      const matchedPhone = phoneMatch ? phoneMatch[0] : null;
+    if (phoneMatch) {
+      const matchedPhone = phoneMatch[0];
       try {
         let countryPref = 'Unspecified';
         const lowerHist = history.map(h => h.content).join(' ').toLowerCase();
         if (lowerHist.includes('cyprus')) countryPref = 'Cyprus';
         else if (lowerHist.includes('germany')) countryPref = 'Germany';
         else if (lowerHist.includes('ireland')) countryPref = 'Ireland';
+        else if (lowerHist.includes('uk') || lowerHist.includes('united kingdom')) countryPref = 'United Kingdom';
+        else if (lowerHist.includes('usa') || lowerHist.includes('united states')) countryPref = 'USA';
+        else if (lowerHist.includes('canada')) countryPref = 'Canada';
+        else if (lowerHist.includes('australia')) countryPref = 'Australia';
 
         const supabase = getSupabaseClient();
 
-        if (matchedPhone) {
-          // Check if phone already registered in database
-          const { data: existingLead } = await supabase
-            .from('student_leads')
-            .select('lead_id, phone_number')
-            .eq('phone_number', matchedPhone)
-            .limit(1);
+        // Serialize full conversation history as JSON
+        const transcriptPayload = JSON.stringify(history.map(m => ({
+          role: m.role,
+          content: m.content,
+          created_at: m.timestamp || new Date().toISOString()
+        })));
 
-          if (existingLead && existingLead.length > 0) {
-            return;
-          }
+        // Backup to localStorage
+        try {
+          const saved = JSON.parse(localStorage.getItem('educatia_saved_transcripts') || '{}');
+          saved[sessionId] = history;
+          saved[matchedPhone] = history;
+          localStorage.setItem('educatia_saved_transcripts', JSON.stringify(saved));
+        } catch (_e) {}
+
+        // Save messages to chat_messages with BOTH sessionId AND phone-based key
+        await saveMessagesToDB(history, matchedPhone);
+
+        // Check if phone already registered
+        const { data: existingLead } = await supabase
+          .from('student_leads')
+          .select('lead_id, phone_number')
+          .eq('phone_number', matchedPhone)
+          .limit(1);
+
+        if (existingLead && existingLead.length > 0) {
+          // Update existing lead with transcript JSON
+          await supabase
+            .from('student_leads')
+            .update({
+              session_id: `phone_${matchedPhone}`,
+              last_message_snippet: transcriptPayload,
+              status: 'new'
+            })
+            .eq('phone_number', matchedPhone);
+          return;
         }
 
+        // Insert new lead — no email field (doesn't exist in DB)
         await supabase.from('student_leads').insert([{
+          session_id: `phone_${matchedPhone}`,
           student_name: 'Website Student',
           phone_number: matchedPhone,
           interested_country: countryPref,
-          last_message_snippet: `Auto-captured via BotWidget chat: "${userText}"`,
+          last_message_snippet: transcriptPayload,
           status: 'new'
         }]);
       } catch (err) {
-        // Silently catch
+        console.warn('detectAndSaveLead error:', err);
       }
     }
   };
@@ -227,6 +313,16 @@ export default function BotWidget({ onClose }) {
     setMessages(newHistory);
     setIsLoading(true);
 
+    // Save to local backup
+    try {
+      const savedTranscripts = JSON.parse(localStorage.getItem('educatia_saved_transcripts') || '{}');
+      savedTranscripts[sessionId] = newHistory;
+      localStorage.setItem('educatia_saved_transcripts', JSON.stringify(savedTranscripts));
+    } catch (_e) {}
+
+    // Asynchronously log user message to Supabase
+    logMessageToSupabase('user', userText);
+
     // Trigger Exclusive Deals Banner after 4-5 turns or when asking about admissions/applying
     const userMsgCount = newHistory.filter(m => m.role === 'user').length;
     const lowerText = userText.toLowerCase();
@@ -253,21 +349,38 @@ export default function BotWidget({ onClose }) {
       const replyContent = typeof botRes === 'object' ? (botRes.reply || botRes.text || '') : String(botRes);
       const botTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      setMessages([...newHistory, {
+      // Asynchronously log bot reply to Supabase
+      logMessageToSupabase('bot', replyContent);
+
+      const finalHistory = [...newHistory, {
         role: 'bot',
         content: replyContent,
         timestamp: botTimeStr
-      }]);
+      }];
+
+      setMessages(finalHistory);
+
+      // Save updated history to local backup
+      try {
+        const savedTranscripts = JSON.parse(localStorage.getItem('educatia_saved_transcripts') || '{}');
+        savedTranscripts[sessionId] = finalHistory;
+        localStorage.setItem('educatia_saved_transcripts', JSON.stringify(savedTranscripts));
+      } catch (_e) {}
 
     } catch (err) {
       console.error(err);
       const botTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const errorReply = `Sorry, I encountered an error: ${err.message || 'Unable to connect'}. Please check your settings.`;
 
-      setMessages([...newHistory, {
+      logMessageToSupabase('bot', errorReply);
+
+      const finalHistory = [...newHistory, {
         role: 'bot',
-        content: `Sorry, I encountered an error: ${err.message || 'Unable to connect'}. Please check your settings.`,
+        content: errorReply,
         timestamp: botTimeStr
-      }]);
+      }];
+
+      setMessages(finalHistory);
     } finally {
       setIsLoading(false);
       setDbStatusText('');
@@ -281,8 +394,12 @@ export default function BotWidget({ onClose }) {
     }
   };
 
-  const handleClearHistory = () => {
+  const handleClearSession = () => {
     try {
+      sessionStorage.removeItem('educatia_active_session_id');
+      const newSid = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      sessionStorage.setItem('educatia_active_session_id', newSid);
+      setSessionId(newSid);
       localStorage.removeItem(SESSION_STORAGE_KEY);
       localStorage.removeItem(DEALS_SHOWN_KEY);
     } catch (e) {
@@ -301,7 +418,6 @@ export default function BotWidget({ onClose }) {
     const trimmedName = dealName.trim() || 'Website Student';
 
     if (!trimmedPhone && !dealName.trim()) {
-      // Optional field: user can proceed without entering
       setShowDealsCard(false);
       return;
     }
@@ -311,8 +427,26 @@ export default function BotWidget({ onClose }) {
     try {
       const supabase = getSupabaseClient();
 
+      // Serialize entire conversation history as JSON string
+      const chatTranscriptJson = JSON.stringify(messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        created_at: m.timestamp || new Date().toISOString()
+      })));
+
+      // Backup to localStorage
+      try {
+        const saved = JSON.parse(localStorage.getItem('educatia_saved_transcripts') || '{}');
+        saved[sessionId] = messages;
+        if (trimmedPhone) saved[trimmedPhone] = messages;
+        localStorage.setItem('educatia_saved_transcripts', JSON.stringify(saved));
+      } catch (_e) {}
+
       if (trimmedPhone) {
-        // Backend Lead Deduplication Check
+        // Save ALL chat messages to chat_messages keyed by phone number (guaranteed retrieval)
+        await saveMessagesToDB(messages, trimmedPhone);
+
+        // Deduplication check
         const { data: existingLead } = await supabase
           .from('student_leads')
           .select('lead_id, phone_number')
@@ -320,14 +454,24 @@ export default function BotWidget({ onClose }) {
           .limit(1);
 
         if (existingLead && existingLead.length > 0) {
-          // Phone number already registered in DB
+          // Update existing lead — set session_id to phone-based key so admin can find messages
+          await supabase
+            .from('student_leads')
+            .update({
+              student_name: trimmedName,
+              session_id: `phone_${trimmedPhone}`,
+              last_message_snippet: chatTranscriptJson,
+              status: 'new'
+            })
+            .eq('phone_number', trimmedPhone);
         } else {
-          // Insert new lead row into Supabase student_leads table
+          // Insert new lead — no email field (doesn't exist in DB schema)
           await supabase.from('student_leads').insert([{
+            session_id: `phone_${trimmedPhone}`,
             student_name: trimmedName,
             phone_number: trimmedPhone,
             interested_country: 'Unspecified',
-            last_message_snippet: 'Claimed Exclusive Study Deal via BotWidget Banner',
+            last_message_snippet: chatTranscriptJson,
             status: 'new'
           }]);
         }
@@ -337,7 +481,6 @@ export default function BotWidget({ onClose }) {
     } finally {
       setIsSubmittingDeal(false);
       setDealSubmitted(true);
-      // Automatically hide deal card after 3.5s
       setTimeout(() => {
         setShowDealsCard(false);
       }, 3500);

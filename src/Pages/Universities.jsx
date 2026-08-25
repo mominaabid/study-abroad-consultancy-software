@@ -175,11 +175,11 @@ const Universities = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) {
-      newErrors.name = "University name is required";
+      newErrors.name = "Institute name is required";
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = "University name must be at least 2 characters";
+      newErrors.name = "Institute name must be at least 2 characters";
     } else if (formData.name.trim().length > 255) {
-      newErrors.name = "University name must be at most 255 characters";
+      newErrors.name = "Institute name must be at most 255 characters";
     }
     if (!formData.country_id) {
       newErrors.country_id = "Please select a country";
@@ -225,8 +225,8 @@ const Universities = () => {
       if (res.data.success) {
         toast.success(
           editingUniversity
-            ? "University updated successfully"
-            : "University added successfully"
+            ? "Institute updated successfully"
+            : "Institute added successfully"
         );
         fetchData();
         handleCloseModal();
@@ -234,8 +234,8 @@ const Universities = () => {
         toast.error(res.data.message || "Operation failed");
       }
     } catch (error) {
-      console.error("❌ Error saving university:", error);
-      toast.error(error.response?.data?.message || "Failed to save university");
+      console.error("❌ Error saving institute:", error);
+      toast.error(error.response?.data?.message || "Failed to save institute");
     } finally {
       setSubmitting(false);
     }
@@ -326,13 +326,13 @@ const Universities = () => {
     <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-zinc-100 min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Universities</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Institutes</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage universities for student applications
+            Manage institutes for student applications
           </p>
         </div>
         <AddBtnInHeader
-          label="Add University"
+          label="Add Institute"
           handleToggle={() => handleOpenModal()}
         />
       </div>
@@ -347,14 +347,14 @@ const Universities = () => {
             />
             <input
               type="text"
-              placeholder="Search universities..."
+              placeholder="Search institutes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:border-teal-400 focus:ring-2 focus:ring-teal-100 outline-none"
             />
           </div>
           <span className="text-xs text-slate-400 whitespace-nowrap">
-            {total} university{total !== 1 ? "s" : ""}
+            {total} institute{total !== 1 ? "s" : ""}
           </span>
         </div>
 
@@ -363,15 +363,15 @@ const Universities = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#009E99] border-b border-[#009E99]">
-                <th className={`${thCls} w-12`}>
+                <th className={`${thCls} w-12 text-center`}>
                   <span>Sr#</span>
                 </th>
-                <th className={thCls}>University</th>
+                <th className={thCls}>Institute Name</th>
                 <th className={thCls}>Country</th>
                 <th className={thCls}>City</th>
                 <th className={thCls}>Ranking</th>
-                <th className={thCls}>Status</th>
-                <th className={`${thCls} w-16`}>Actions</th>
+                <th className={`${thCls} text-center`}>Active</th>
+                <th className={`${thCls} w-16 text-center`}>Actions</th>
               </tr>
             </thead>
 
@@ -380,7 +380,7 @@ const Universities = () => {
                 <tr>
                   <td colSpan={7} className="text-center py-12">
                     <RefreshCw size={24} className="animate-spin mx-auto text-teal-500" />
-                    <p className="text-sm text-slate-400 mt-2">Loading universities...</p>
+                    <p className="text-sm text-slate-400 mt-2">Loading institutes...</p>
                   </td>
                 </tr>
               ) : paginatedUniversities.length === 0 ? (
@@ -392,10 +392,10 @@ const Universities = () => {
                       </div>
                       <div>
                         <p className="text-gray-700 font-semibold text-sm">
-                          {searchTerm ? "No universities match your search" : "No universities added yet"}
+                          {searchTerm ? "No institutes match your search" : "No institutes added yet"}
                         </p>
                         <p className="text-gray-400 text-xs mt-1">
-                          {searchTerm ? "Try adjusting your search" : "Click 'Add University' to create one"}
+                          {searchTerm ? "Try adjusting your search" : "Click 'Add Institute' to create one"}
                         </p>
                       </div>
                     </div>
@@ -585,19 +585,19 @@ const Universities = () => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <Title setModal={handleCloseModal}>
-              {editingUniversity ? "Edit University" : "Add University"}
+              {editingUniversity ? "Edit Institute" : "Add Institute"}
             </Title>
 
             <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
               <InputField
-                labelName="University Name *"
+                labelName="Institute Name *"
                 name="name"
                 value={formData.name}
                 handlerChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
                 icon={<Building2 size={18} />}
-                placeholder="e.g., Harvard University"
+                placeholder="e.g., Oxford Institute / University"
                 error={errors.name}
               />
 
